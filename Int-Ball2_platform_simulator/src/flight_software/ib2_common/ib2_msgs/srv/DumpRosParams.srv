@@ -1,0 +1,5 @@
+# request
+string path
+---
+# response
+bool success

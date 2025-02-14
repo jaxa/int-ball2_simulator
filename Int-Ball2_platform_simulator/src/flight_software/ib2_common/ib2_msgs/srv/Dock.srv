@@ -1,0 +1,14 @@
+# Order to docking station.
+# request command type
+uint8 STOP_MOTOR = 0
+uint8 DOCK = 1
+uint8 RELEASE = 2
+# request
+uint8 command
+---
+# response type
+uint8 SUCCESS = 0
+uint8 DEVICE_ERROR = 1
+uint8 UNKNOWN_ERROR = 2
+# response
+uint8 result

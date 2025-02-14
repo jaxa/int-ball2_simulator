@@ -1,0 +1,9 @@
+# 起動方法 $rosrun ctl_command_client ctl_command_client _paramfile:=src/ground/ctl_command_client/commandRelativeTarget2.txt
+RELATIVE_TARGET	# コマンド種別
+30. 	# timeout[sec]
+-0.1 	# 位置x成分[m]
+-0.5 	# 位置y成分[m]
+-0.2 	# 位置z成分[m]
+-60.	# 姿勢ヨー角[deg]
+-20.	# 姿勢ピッチ角[deg]
+ 30.	# 姿勢ロール角[deg]

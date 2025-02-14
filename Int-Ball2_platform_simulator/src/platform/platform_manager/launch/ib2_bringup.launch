@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- launch platform nodes -->
+  <include file="$(find audio_capture)/launch/bringup.launch"/>
+
+  <!-- <include file="$(find gscam)/launch/bringup_main.launch"/> -->
+  <!-- Start: Provisional processing: platform_manager processing controls camera_main node -->
+  <group ns="platform_manager">
+    <param name="bringup_camera_main" value="true" />
+  </group>
+  <!-- End: Provisional processing -->
+
+  <include file="$(find platform_manager)/launch/bringup.launch"/>
+  <include file="$(find platform_monitor)/launch/bringup.launch"/>
+
+  <!-- launch normal flight software nodes -->
+  <include file="$(find platform_manager)/launch/alive_monitor_bringup.launch"/>
+  <include file="$(find dock)/launch/bringup.launch"/>
+  <include file="$(find file_monitor)/launch/bringup.launch"/>
+  <include file="$(find led_display)/launch/bringup.launch"/>
+  <include file="$(find parameter_manager)/launch/bringup.launch"/>
+  <include file="$(find platform_manager)/launch/imu_bringup.launch"/>
+  <include file="$(find platform_manager)/launch/prop_bringup.launch"/>
+  <include file="$(find system_monitor)/launch/bringup.launch"/>
+  <include file="$(find platform_manager)/launch/trans_communication_bringup.launch"/>
+
+</launch>

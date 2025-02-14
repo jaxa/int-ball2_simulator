@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find slam_wrapper)/slam_wrapper.yaml" />
+  <node name="slam_wrapper" pkg="slam_wrapper" type="slam_wrapper" args="--disable-cmd-io" />
+
+</launch>

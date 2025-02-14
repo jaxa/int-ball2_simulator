@@ -1,0 +1,332 @@
+###############################################
+# Model
+###############################################
+model_name:
+  iss_name  : "iss"
+  ib2_name  : "ib2"
+
+###############################################
+# Robot Mass Property
+############################################### 
+robot_mass_property:
+  mass   : 3.216                                         # [kg]
+  cg     : {x : 0.001489, y : 0.001363, z : 0.000249}    # [m]
+  radius : 0.1                                           # [m]
+
+###############################################
+# JPM Pose(ISS ACS)
+###############################################
+jpm_pose:
+  pos     : {x : 10.9358938, y : -2.3364698, z : 4.85058720} # [m]
+  att     : {r : 180.0,      p : 0.0,        y : -90.0}      # [deg]
+
+###############################################
+# Docking Station Pose(JPM Ref. Coord.)
+###############################################
+ds_pose:
+  pos     : {x : 1.15, y : 0.0, z : 0.73}  # [m]
+  att     : {r : 0.0, p : 0.0, y : 0.0}  # [deg]
+
+###############################################
+# nav plugin parameter
+###############################################
+nav_parameter:
+  error   : {
+    # Error Source (true : csv  false : random)
+    error_source_csv : false,
+    # if error_source_csv = true,  nav error will be added baset on CSV File
+    csv      : "nav_error/nav_error.csv",
+    #csv      : "",
+    # if error_source_csv = false, nav error will be added based on the below parameter
+    pos      : {
+      mean      : {x : -0.0021,    y : -0.0018,     z : -0.000067304}, # [m]
+      stddev    : {x : 0.00084609, y : 0.00085207,  z : 0.00017358}    # [m]
+    },
+    vel      : {
+      mean      : {x : -0.0056,    y : -0.0043,     z : 0.00023766},   # [m/s]
+      stddev    : {x : 0.0018,     y : 0.0013,      z : 0.00041765}    # [m/s]
+    },
+    acc      : {
+      mean      : {x : 0.0089,     y : -0.0069,     z : -0.0032},      # [m/s^2]
+      stddev    : {x : 0.03,       y : 0.0256,      z : 0.0367}        # [m/s^2]
+    },
+    att      : {
+      mean      : {x : 0.0032,     y : -0.007,      z : -0.0049},      # [deg]
+      stddev    : {x : 0.0103,     y : 0.0107,      z : 0.0062}        # [deg]
+    },
+    att_rate : {
+      mean      : {x : 0.01,       y : 0.0051,      z : -0.0312},      # [deg/s]
+      stddev    : {x : 0.0092,     y : 0.0221,      z : 0.0116}        # [deg/s]
+    }
+  }
+  control : 
+    # Control Frequency Fluctuation
+    #    f =    A   * sin(      w         * t) + WhiteGaussian
+    #        <gain> * sin((2*PI * <freq>) * t) + WhiteGaussian(<mean>, <stddev>)
+    #
+    #        (*) mean value of "WhiteGaussian" is Nominal Control Frequency
+    mean   : 200.0  # [Hz]
+    stddev :  0.0   # [Hz]
+    gain   :  0.0   # [-]
+    freq   :  0.0   # [Hz]
+  
+  delay   : 0.1    # [s]
+
+  marker  : 1    # positive : success / not positive : failure
+
+  initial_nav_on : true # initial state of navigation. (true=NAV_FUSION, false=NAV_OFF)
+
+###############################################
+# thr plugin parameter
+###############################################
+thr_parameter:
+  # For DEBUG
+  # if this flag is true, force and torque command from "ctl" node directly set to Gazebo
+  debug   : false
+
+  fan_num : 8
+
+  # pos    : Fan mounting Position
+  # vec    : Thrust vector
+  # stddev : Standard Deviation of the noise of Fan Force
+  # kappa  : Drag torque coefficient
+  # Kprop  : Coefficient used to calculate PWM duty
+  fan1 : {
+    pos    : {x : 0.045,        y : 0.070,        z : 0.0555},
+    vec    : {x : -0.754180198, y : -0.414799109, z : -0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan2 : {
+    pos    : {x : 0.045,        y : -0.070,       z : 0.0555},
+    vec    : {x : -0.754180198, y : 0.414799109,  z : -0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan3 : {
+    pos    : {x : 0.045,        y : -0.070,       z : -0.0555},
+    vec    : {x : -0.754180198, y : 0.414799109,  z : 0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan4 : {
+    pos    : {x : 0.045,        y : 0.070,        z : -0.0555},
+    vec    : {x : -0.754180198, y : -0.414799109, z : 0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan5 : {
+    pos    : {x : -0.045,       y : 0.070,        z : -0.0555},
+    vec    : {x : 0.754180198,  y : -0.414799109, z : 0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan6 : {
+    pos    : {x : -0.045,       y : 0.070,        z : 0.0555},
+    vec    : {x : 0.754180198,  y : -0.414799109, z : -0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan7 : {
+    pos    : {x : -0.045,       y : -0.070,       z : 0.0555},
+    vec    : {x : 0.754180198,  y : 0.414799109,  z : -0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+  fan8 : {
+    pos    : {x : -0.045,       y : -0.070,       z : -0.0555},
+    vec    : {x : 0.754180198,  y : 0.414799109,  z : 0.509071634},
+    force  : 0.06,
+    stddev : 0.012,
+    kappa  : 0.00,
+    Kprop  : 4.082482905
+  }
+
+  # 2nd Order Filter
+  #             b0 + b1*z^-1 + b2*z^-2
+  #    H(z) = - - - - - - - - - - - - - -
+  #             a0 + a1*z^-1 + a2*z^-2
+  filter : {
+    # tau = 0.0[s]
+    # coeff_a : {a0 : 1.0, a1 : 0.0, a2 : 0.0},
+    # coeff_b : {b0 : 1.0, b1 : 0.0, b2 : 0.0}
+    # tau = 0.01[s]
+    coeff_a : {a0 : 1.0,                 a1 : -0.904761904761905,  a2 : 0.0},
+    coeff_b : {b0 : 0.0476190476190476,  b1 : 0.0476190476190476,  b2 : 0.0}
+    # tau = 0.2[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.99501246882793,    a2 : 0.0},
+    # coeff_b : {b0 : 0.00249376558603491,  b1 : 0.00249376558603491,  b2 : 0.0}
+    # tau = 0.4[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.997503121098627,   a2 : 0.0},
+    # coeff_b : {b0 : 0.00124843945068664,  b1 : 0.00124843945068664,  b2 : 0.0}
+    # tau = 0.6[s]
+    # coeff_a : {a0 : 1.0,                  a1 :  -0.998334721065779,  a2 : 0.0},
+    # coeff_b : {b0 : 0.000832639467110741, b1 : 0.000832639467110741, b2 : 0.0}
+    # tau = 0.8[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.998750780762024,   a2 : 0.0},
+    # coeff_b : {b0 : 0.000624609618988132, b1 : 0.000624609618988132, b2 : 0.0}
+    # tau = 1.0[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.999000499750125,   a2 : 0.0},
+    # coeff_b : {b0 : 0.000499750124937531, b1 : 0.000499750124937531, b2 : 0.0}
+    # tau = 1.2[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.999167013744273,   a2 : 0.0},
+    # coeff_b : {b0 : 0.00041649312786339,  b1 : 0.00041649312786339,  b2 : 0.0}
+    # tau = 1.4[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.99928596929668,    a2 : 0.0},
+    # coeff_b : {b0 : 0.000357015351660121, b1 : 0.000357015351660121, b2 : 0.0}
+    # tau = 1.6[s]
+    # coeff_a : {a0 : 1.0,                  a1 : -0.999375195251484,   a2 : 0.0},
+    # coeff_b : {b0 : 0.000312402374258044, b1 : 0.000312402374258044, b2 : 0.0}
+  }
+
+###############################################
+# airflow plugin parameter
+###############################################
+airflow_parameter:
+  # Point of Load[m]
+  load_point : {
+    p0 : {x :  0.1, y :  0.0, z :  0.0},
+    p1 : {x : -0.1, y :  0.0, z :  0.0},
+    p2 : {x :  0.0, y :  0.1, z :  0.0},
+    p3 : {x :  0.0, y : -0.1, z :  0.0},
+    p4 : {x :  0.0, y :  0.0, z :  0.1},
+    p5 : {x :  0.0, y :  0.0, z : -0.1}
+  }
+  # 抗力/トルク誤差標準偏差(F = Fnom * (1.0 + stddev * Norm))
+  # Norm : 平均0、標準偏差1の正規乱数
+  force_stddev    : 0.005
+  torque_stddev   : 0.005
+  # Drag Torque Coefficient [N/(m/s)/m^2]
+  kappa     : 0.06
+  # File Name (<file>XXXXXX.pcd)
+  pcd       : /pcd_mhi_plus_noise/jpm_airflow_
+  # Time Step for Read PCD File [ms](Integer) and Publish Wind Vector
+  time_step : 1000
+  # Fd Table file
+  table     : /force_table/force_table_linear.csv
+  # Point Incex Get Cycle(K-nn Search Execute Cycle)[s]
+  get_cycle : 0.1
+  # Publish Cycle[s]
+  pub_cycle : 0.1
+
+###############################################
+# hill plugin parameter
+###############################################
+hill_parameter:
+  cycle   : 0.1       # Publish Cycle[s]
+  w       : 0.0666667 # ISS Orbit Rate[deg/s]
+
+###############################################
+# issdyn plugin parameter
+###############################################
+issdyn_parameter:
+  # ISS Navigation Publish Cycle[s]
+  cycle : 0.01
+
+  # Control Frequency Fluctuation
+  # att =   A    * sin((2*PI *    f    * t) +    a    * t
+  #       <gain> * sin((2*PI * <freq>) * t) + <slope>
+  slope : {x : 0.001, y : 0.001, z : 0.001}          # [deg/s]
+  gain  : {x : 0.1,   y : 0.1,   z : 0.1}            # [deg/s]
+  freq  : {x : 0.02,  y : 0.02,  z : 0.02}           # [Hz]
+
+###############################################
+# mag plugin parameter
+###############################################
+mag_parameter:
+  power_status : true
+  robo_if      : {x : -0.100, y : 0.00, z : 0.00}         # [m] in IB2 Body Coord.
+  ds_if        : {x : -0.100, y : 0.00, z : 0.00}         # [m] in Home Coord.
+  threshold    : 0.058                                    # [m]
+  coeff_far    : {a : -32.80, b :  12000.0, c :   0.0}    # 遠方用(当該係数での計算結果は[mN]となる)
+  coeff_prox   : {a :   5.55, b : 314000.0, c : -60.0}    # 近傍用(当該係数での計算結果は[mN]となる)
+  stddev       : 0.05                                     # 磁力誤差標準偏差(F = Fnom * (1.0 + stddev * Norm))
+                                                          # Norm : 平均0、標準偏差1の正規乱数
+  cycle        : 0.1                                      # Publish Cycle[s]
+
+###############################################
+# ib2_imu_sensor_plugin plugin parameter
+###############################################
+ib2_imu:
+  add_noise: true
+  noise:
+    velocity:
+      mean:   {x: 0.01,  y: 0.01,  z: 0.01  }
+      stddev: {x: 0.005, y: 0.005, z: 0.005 }
+    acceleration:
+      mean:   {x: 0.01,  y: 0.01,  z: 0.01  }
+      stddev: {x: 0.005, y: 0.005, z: 0.005 }
+
+###############################################
+# custom_pose_plugin plugin parameter
+###############################################
+# parameters for spawn ib2 model
+ib2:
+  x: 10.9358938
+  y: -4.3364698
+  z: 4.8505872
+  roll: 3.14159265358979
+  pitch: 0.0
+  yaw: -1.5707963267949
+
+###############################################
+# ib2_route_display plugin parameter
+###############################################
+ib2_route_display:
+  rate: 10
+  history:
+    frame_id: iss_body
+    count_max: 50
+    min_distance: 0.2
+    scale: 0.2
+    color:
+      a: 0.5
+      r: 0
+      g: 1.0
+      b: 0
+  route:
+    frame_id: dock_body
+    line:
+      scale: 0.01
+      color:
+        a: 0.8
+        r: 0.5
+        g: 1.0
+        b: 0.5
+    start:
+      scale: 0.1
+      color:
+        a: 0.8
+        r: 0
+        g: 0
+        b: 1.0
+    end:
+      scale: 0.1
+      color:
+        a: 0.8
+        r: 1.0
+        g: 0
+        b: 0
+
+########################################
+# シミュレーション共通パラメータ
+########################################
+sim_common:
+  # 以下プラグインで利用する乱数のシード値
+  # airflow, custom_pose_spawn, ib2_imu_sensor, mag, nav, thr
+  # 利用しない（Gazeboデフォルト値を利用する）場合は負数
+  random_seed: -1

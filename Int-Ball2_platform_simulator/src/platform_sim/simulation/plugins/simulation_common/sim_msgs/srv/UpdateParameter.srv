@@ -1,0 +1,6 @@
+#request
+---
+#response
+bool  FAILURE = False
+bool  SUCCESS = True
+bool  result  # response status

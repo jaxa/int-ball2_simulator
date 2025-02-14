@@ -1,0 +1,29 @@
+# bringup_packages contains following values:
+# - name (*required)
+# - package (optional, default value is same as name)
+# - launch_file (optional, default value is 'bringup.launch')
+# - pre_command (optional)
+# - post_command (optional)
+# - startup (optional, default value is true)
+bringup_packages:
+  - name: 'camera_left'
+    package: 'gscam'
+    launch_file: 'bringup_left.launch'
+    startup: false
+  - name: 'camera_right'
+    package: 'gscam'
+    launch_file: 'bringup_right.launch'
+    startup: false
+  - name: 'slam_wrapper'
+    package: 'platform_manager'
+    launch_file: 'slam_wrapper_bringup.launch'
+    pre_command: 'sudo systemctl start acsl_v4l2_cam_front.service;sudo systemctl start acsl_slam.service;sudo systemctl start acsl_detect_marker.service'
+    post_command: 'sudo systemctl stop acsl_detect_marker.service;sudo systemctl stop acsl_slam.service;sudo systemctl stop acsl_v4l2_cam_front.service'
+  - name: 'sensor_fusion'
+    package: 'platform_manager'
+    launch_file: 'sensor_fusion_bringup.launch'
+  - name: 'ctl_only'
+  - name: 'fsm'
+non_simultaneous_package_info:
+  - ['slam_wrapper', 'camera_left']
+  - ['slam_wrapper', 'camera_right']

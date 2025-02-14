@@ -1,0 +1,40 @@
+{
+  "user_program_list": [
+    {
+      "user": "sample_tests",
+      "launch": [
+        "test_fan_duty.launch",
+        "simple_test.launch",
+        "test_navigation.launch",
+        "test_force_and_torque.launch",
+        "test_led_colors.launch",
+        "test_camera_images.launch",
+        "test_force_torque_and_fan_duty.launch",
+        "test_visual_slam.launch"
+      ]
+    },
+    {
+      "user": "up_ctl_only",
+      "launch": [
+        "bringup.launch"
+      ]
+    },
+    {
+      "user": "up_guidance_control_common",
+      "launch": [
+      ]
+    },
+    {
+      "user": "user_program_interface",
+      "launch": [
+        "user_program_interface.launch"
+      ]
+    },
+    {
+      "user": "user_template",
+      "launch": [
+        "template_py.launch"
+      ]
+    }
+  ]
+}

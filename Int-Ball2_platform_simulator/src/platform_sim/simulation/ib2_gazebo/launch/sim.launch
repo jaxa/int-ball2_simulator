@@ -1,0 +1,69 @@
+<launch>
+
+  <arg name="use_platform" default="true" />
+  <arg name="use_flight_sw" default="true" />
+  <arg name="use_ctl_only" default="true" />
+  <arg name="use_fsm" default="true" />
+  
+  <arg name="paused" default="true"/>
+  <arg name="use_sim_time" default="true"/>
+  <arg name="gui" default="true"/>
+  <arg name="headless" default="false"/>
+  <arg name="debug" default="false"/>
+  <arg name="verbose" default="true" />
+  <arg name="rviz" default="true"/>
+
+  <include file="$(find gazebo_ros)/launch/empty_world.launch">
+    <arg name="world_name" value="$(find ib2_gazebo)/worlds/empty.world"/>
+    <arg name="debug" value="$(arg debug)" />
+    <arg name="gui" value="$(arg gui)" />
+    <arg name="paused" value="$(arg paused)"/>
+    <arg name="use_sim_time" value="$(arg use_sim_time)"/>
+    <arg name="headless" value="$(arg headless)"/>
+    <arg name="verbose" value="$(arg verbose)"/>
+  </include>
+
+  <rosparam command="load" file="$(find prop)/prop.yaml" />
+  <rosparam command="load" file="$(find ib2_gazebo)/sim/sim.yaml" />
+
+  <group if="$(arg use_platform)" >
+    <group unless="$(arg use_flight_sw)" >
+      <rosparam command="load" file="$(find ctl_only)/ctl.yaml" />
+
+      <group if="$(arg use_ctl_only)" >
+        <node name="ctl_only" pkg="ctl_only" type="ctl_only" />
+      </group>
+
+      <group if="$(arg use_fsm)" >
+        <node name="fsm" pkg="fsm" type="fsm" />
+      </group>
+    </group>
+  </group>
+
+  <group unless="$(arg use_platform)" >
+    <rosparam command="load" file="$(find ctl)/ctl.yaml" />
+    <node name="ctl" pkg="ctl" type="ctl" />
+  </group>
+
+  <node name="prop" pkg="prop" type="prop" />
+
+  <!--
+    In the spawn settings of this launch file, only the ISS model is set.
+    Other models are set in empty.world.
+  -->
+  <param name="iss_description" textfile="$(find description)/urdf/iss.urdf" />
+  <node name="spawn_iss" pkg="gazebo_ros" type="spawn_model"
+    args="-urdf
+          -model iss 
+          -param iss_description
+          -x 0 -y 0 -z 0
+          -R 0 -P 0 -Y 0"
+  />
+
+  <group if="$(arg rviz)">
+    <include file="$(find description)/launch/description.launch" />
+  </group>
+
+  <!-- ** The following definition must be written after all launch definitions. ** -->
+  <rosparam command="load" file="$(find ib2_gazebo)/sim/custom.yaml" />
+</launch>

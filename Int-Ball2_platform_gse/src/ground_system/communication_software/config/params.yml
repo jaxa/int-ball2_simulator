@@ -1,0 +1,17 @@
+communication_config_path: '$(find communication_software)/config/config.yml'
+intball2_telecommand_target_ip: [192.168.1.19]
+intball2_telecommand_target_port: [23456]
+intball2_telemetry_multicast_receive: false
+intball2_telemetry_multicast_group: 1.0.0.0
+dock_telecommand_target_ip: 0.0.0.0
+dock_telecommand_target_port: 49303
+dock_telemetry_multicast_receive: false
+dock_telemetry_multicast_group: 1.0.0.0
+pocs_target_host: 0.0.0.0
+pocs_target_port: 34567
+intball2_telemetry_receive_port: 34567
+dock_telemetry_receive_port: 49304
+simulate_pocs: True
+print_telemetry: False
+required_telecommand_duration: 1.0
+telecommand_timeout: 5.0

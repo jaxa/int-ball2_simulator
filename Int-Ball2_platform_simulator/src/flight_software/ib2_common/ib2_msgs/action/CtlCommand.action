@@ -1,0 +1,16 @@
+#goal
+geometry_msgs/PoseStamped target	# time at sending, target position and orientation
+CtlStatusType type			# control command type
+---
+#result
+uint8 TERMINATE_SUCCESS = 0
+uint8 TERMINATE_ABORTED = 1
+uint8 TERMINATE_TIME_OUT = 2
+uint8 TERMINATE_INVALID_NAV = 3
+uint8 TERMINATE_INVALID_CMD = 4
+time stamp	# goal reached time
+uint8 type	# result status
+---
+#feedback
+duration time_to_go				# time to goal
+geometry_msgs/Pose pose_to_go	# target - nav

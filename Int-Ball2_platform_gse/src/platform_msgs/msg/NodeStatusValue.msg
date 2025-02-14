@@ -1,0 +1,2 @@
+string node
+string value

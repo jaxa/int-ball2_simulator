@@ -1,0 +1,5 @@
+# request
+bool maintenance_on
+---
+# response
+Mode mode

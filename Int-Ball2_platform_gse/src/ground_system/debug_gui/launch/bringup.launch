@@ -1,0 +1,8 @@
+<launch>
+    <arg name="gui_only" default="false"/>
+
+    <include file="$(find communication_software)/launch/bringup.launch" unless="$(arg gui_only)" />
+
+    <node name="debug_gui" pkg="debug_gui" type="debug_gui"
+        required="true"/>
+</launch>

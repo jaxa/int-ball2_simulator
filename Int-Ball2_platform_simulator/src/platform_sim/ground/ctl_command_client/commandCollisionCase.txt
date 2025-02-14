@@ -1,0 +1,9 @@
+# 起動方法 $rosrun ctl_command_client ctl_command_client _paramfile:=src/ground/ctl_command_client/commandCollisionCase.txt
+RELATIVE_TARGET	# コマンド種別
+30. 	# timeout[sec]
+3.0 	# 位置x成分[m]
+15.0 	# 位置y成分[m]
+0.0 	# 位置z成分[m]
+0.	# 姿勢ヨー角[deg]
+0.	# 姿勢ピッチ角[deg]
+0.	# 姿勢ロール角[deg]

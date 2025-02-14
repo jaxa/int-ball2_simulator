@@ -1,0 +1,197 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>intball::TelecommandDockWidget</class>
+ <widget class="QWidget" name="intball::TelecommandDockWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>246</height>
+   </rect>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(53, 51, 53);</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupDock">
+     <property name="styleSheet">
+      <string notr="true">QGroupBox {
+  border: 0;
+  margin-top: 25px;
+  font-size: 20px;
+  background-color: rgb(29, 31, 34);
+}
+QLabel {
+    background-color: rgb(29, 31, 34);
+}</string>
+     </property>
+     <property name="title">
+      <string>Docking station</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout">
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelGroundSystemIP">
+        <property name="text">
+         <string>Ground System IP:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="lineEditlabelGroundSystemIP">
+        <property name="font">
+         <font/>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QLineEdit {
+  background-color: rgb(94, 85, 82);
+  color: rgb(255, 255, 255);
+}
+QLineEdit:disabled {
+  background-color: rgb(49, 51, 54);
+  color: rgb(94, 85, 82);
+}</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelIntBall2IP">
+        <property name="text">
+         <string>Int-Ball2 IP:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="lineEditIntBall2IP">
+        <property name="font">
+         <font/>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QLineEdit {
+  background-color: rgb(94, 85, 82);
+  color: rgb(255, 255, 255);
+}
+QLineEdit:disabled {
+  background-color: rgb(49, 51, 54);
+  color: rgb(94, 85, 82);
+}</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelReceivePort">
+        <property name="text">
+         <string>Receive port:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lineEditReceivePort">
+        <property name="font">
+         <font/>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QLineEdit {
+  background-color: rgb(94, 85, 82);
+  color: rgb(255, 255, 255);
+}
+QLineEdit:disabled {
+  background-color: rgb(49, 51, 54);
+  color: rgb(94, 85, 82);
+}</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelChargeOnOff">
+        <property name="text">
+         <string>Charge:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QComboBox" name="comboBoxChargeOnOff">
+        <property name="styleSheet">
+         <string notr="true">QComboBox {
+  background-color: rgb(94, 85, 82);
+  color: rgb(255, 255, 255);
+}</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelMotorOnOff">
+        <property name="text">
+         <string>Motor:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QComboBox" name="comboBoxMotorOnOff">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0" colspan="2">
+       <widget class="intball::CommandButton" name="dockSendButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>Send</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>intball::CommandButton</class>
+   <extends>QPushButton</extends>
+   <header>command_button.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

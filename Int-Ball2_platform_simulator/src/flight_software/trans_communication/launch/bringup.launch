@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="config_path" default="$(find trans_communication)/config/config.yml" />
+  <arg name="ocs_host" default="localhost" />
+  <arg name="ocs_port" default="34567" />
+  <arg name="receive_port" default="23456" />
+  <arg name="lex_min_user_data_bytes" default="68" />
+  <arg name="telemetry_rate" default="1" />
+  <arg name="wait_after_send_error" default="3" />
+  <arg name="ros_wait_for_service_time" default="10" />
+  <arg name="telemetry_send_port" default="[49100, 49101]" />
+  <arg name="telemetry_send_port_default_index" default="0" />
+  <arg name="original_telemetry_message_size_threshold" default="1300" />
+  <node name="trans_communication" pkg="trans_communication" type="trans_communication.py" output="screen" >
+    <param name="config_path" value="$(arg config_path)" />
+    <param name="ocs_host" value="$(arg ocs_host)" />
+    <param name="ocs_port" value="$(arg ocs_port)" />
+    <param name="receive_port" value="$(arg receive_port)" />
+    <param name="lex_min_user_data_bytes" value="$(arg lex_min_user_data_bytes)" />
+    <param name="telemetry_rate" value="$(arg telemetry_rate)" />
+    <param name="wait_after_send_error" value="$(arg wait_after_send_error)" />
+    <param name="ros_wait_for_service_time" value="$(arg ros_wait_for_service_time)" />
+    <rosparam param="telemetry_send_port" subst_value="True">$(arg telemetry_send_port)</rosparam>
+    <param name="telemetry_send_port_default_index" value="$(arg telemetry_send_port_default_index)" />
+    <param name="original_telemetry_message_size_threshold" value="$(arg original_telemetry_message_size_threshold)" />
+  </node>
+</launch>

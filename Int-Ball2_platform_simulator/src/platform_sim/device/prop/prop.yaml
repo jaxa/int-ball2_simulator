@@ -1,0 +1,10 @@
+# Prop Parameter
+prop : 
+  fan_number              : 8
+  device_file_name        : "/dev/i2c-1"
+  device_address          : 0x58
+  pwm_frequency           : 1000
+  pub_fan_status_duration : 0.02
+  i2c_comm_duration       : 0.01
+
+  

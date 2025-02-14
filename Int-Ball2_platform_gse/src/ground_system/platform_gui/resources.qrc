@@ -1,0 +1,37 @@
+<RCC>
+    <qresource prefix="/ground_system">
+        <file>image/controller-play_fill_white.svg</file>
+        <file>image/controller-play_fill_green.svg</file>
+        <file>image/controller-stop_fill_white.svg</file>
+        <file>image/check_fill_white.svg</file>
+        <file>image/button_clockwise_normal.svg</file>
+        <file>image/button_clockwise_pressed.svg</file>
+        <file>image/button_cmd_clockwise_normal.svg</file>
+        <file>image/button_cmd_clockwise_pressed.svg</file>
+        <file>image/button_cmd_counterclockwise_normal.svg</file>
+        <file>image/button_cmd_counterclockwise_pressed.svg</file>
+        <file>image/button_cmd_down_normal.svg</file>
+        <file>image/button_cmd_down_pressed.svg</file>
+        <file>image/button_cmd_left_normal.svg</file>
+        <file>image/button_cmd_left_pressed.svg</file>
+        <file>image/button_cmd_right_normal.svg</file>
+        <file>image/button_cmd_right_pressed.svg</file>
+        <file>image/button_cmd_up_normal.svg</file>
+        <file>image/button_cmd_up_pressed.svg</file>
+        <file>image/button_counterclockwise_normal.svg</file>
+        <file>image/button_counterclockwise_pressed.svg</file>
+        <file>image/button_down_normal.svg</file>
+        <file>image/button_down_pressed.svg</file>
+        <file>image/button_left_normal.svg</file>
+        <file>image/button_left_pressed.svg</file>
+        <file>image/button_right_normal.svg</file>
+        <file>image/button_right_pressed.svg</file>
+        <file>image/button_up_normal.svg</file>
+        <file>image/button_up_pressed.svg</file>
+        <file>image/img_intball_back.svg</file>
+        <file>image/img_intball_side.svg</file>
+        <file>image/img_intball_top.svg</file>
+        <file>image/img_intball_top_flip_vertical.svg</file>
+        <file>image/triangle-down_fill_white.svg</file>
+    </qresource>
+</RCC>

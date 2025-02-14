@@ -1,0 +1,17 @@
+# Save movie in SD card service
+# request command type
+uint8 STOP = 0
+uint8 START = 1
+# request
+uint8 command
+---
+# response type
+uint8 SUCCESS_START = 0
+uint8 SUCCESS_STOP = 1
+uint8 DEVICE_NOT_STARTED = 2
+uint8 COMMAND_ERROR = 3
+uint8 FILE_ERROR = 4
+uint8 DEVICE_ERROR = 5
+uint8 UNKNOWN_ERROR = 6
+# response
+uint8 result

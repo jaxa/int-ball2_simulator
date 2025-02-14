@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find ctl_only)/ctl.yaml" />
+  <node name="fsm" pkg="fsm" type="fsm" />
+
+</launch>

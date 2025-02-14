@@ -1,0 +1,90 @@
+<?xml version="1.0" ?>
+<sdf version="1.5">
+  <!-- We use a custom world for the rrbot so that the camera angle is launched correctly -->
+
+  <world name="default">
+
+    <!-- gravity off -->
+    <gravity>0 0 0</gravity>
+
+    <!-- Camera Pose -->
+    <gui>
+      <camera name="user_default">
+        <pose>13.9358938 -2.8364698 4.8505872 3.14159265358979 0.0 -3.14159265358979</pose>
+      </camera>
+    </gui>
+
+    <!-- Global light source -->
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <!-- Light source in JPM -->
+    <light type="point" name="jpm_light1">
+      <pose>11 -3 5.5 0 0 0</pose>
+    </light>
+    <light type="point" name="jpm_light2">
+      <pose>11 -7 5.5 0 0 0</pose>
+    </light>
+    <light type="point" name="jpm_light3">
+      <pose>11 -10 5.5 0 0 0</pose>
+    </light>
+
+    <!-- Gazebo Plugin -->
+    <plugin name="airflow" filename="libairflow.so" />
+    <plugin name="nav"     filename="libnav.so"     />
+    <plugin name="hill"    filename="libhill.so"    />
+    <plugin name="mag"     filename="libmag.so"     />
+    <plugin name="custom_pose_spawn_plugin"     filename="libcustom_pose_spawn_plugin.so">
+
+      <!-- Int-Ball2 -->
+      <model>
+        <uri>model://ib2</uri>
+        <!-- See sim.yaml or custom.yaml for the actual values -->
+        <specify>
+          <key_x>/ib2/x</key_x>
+          <key_y>/ib2/y</key_y>
+          <key_z>/ib2/z</key_z>
+          <key_roll>/ib2/roll</key_roll>
+          <key_pitch>/ib2/pitch</key_pitch>
+          <key_yaw>/ib2/yaw</key_yaw>
+        </specify>
+      </model>
+
+      <!-- Custom object -->
+      <model>
+        <uri>model://custom_object_01</uri>
+        <!-- See sim.yaml or custom.yaml for the actual values -->
+
+        <!--
+        <specify>
+          <key_x>/custom_object_01/x</key_x>
+          <key_y>/custom_object_01/y</key_y>
+          <key_z>/custom_object_01/z</key_z>
+          <key_roll>/custom_object_01/roll</key_roll>
+          <key_pitch>/custom_object_01/pitch</key_pitch>
+          <key_yaw>/custom_object_01/yaw</key_yaw>
+        </specify>
+        -->
+        <random>
+          <key_min_x>/custom_object_01/min_x</key_min_x>
+          <key_min_y>/custom_object_01/min_y</key_min_y>
+          <key_min_z>/custom_object_01/min_z</key_min_z>
+          <key_max_x>/custom_object_01/max_x</key_max_x>
+          <key_max_y>/custom_object_01/max_y</key_max_y>
+          <key_max_z>/custom_object_01/max_z</key_max_z>
+          <key_min_roll>/custom_object_01/min_roll</key_min_roll>
+          <key_min_pitch>/custom_object_01/min_pitch</key_min_pitch>
+          <key_min_yaw>/custom_object_01/min_yaw</key_min_yaw>
+          <key_max_roll>/custom_object_01/max_roll</key_max_roll>
+          <key_max_pitch>/custom_object_01/max_pitch</key_max_pitch>
+          <key_max_yaw>/custom_object_01/max_yaw</key_max_yaw>
+        </random>
+      </model>
+
+    </plugin>
+    <plugin name="ib2_route_display_plugin"     filename="libib2_route_display_plugin.so"/>
+
+  </world>
+</sdf>
+

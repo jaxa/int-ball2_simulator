@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find sensor_fusion)/sensor_fusion.yaml" />
+  <node name="sensor_fusion" pkg="sensor_fusion" type="sensor_fusion" />
+
+</launch>

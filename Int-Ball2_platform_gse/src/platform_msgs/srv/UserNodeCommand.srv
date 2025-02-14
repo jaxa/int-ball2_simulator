@@ -1,0 +1,35 @@
+#
+# Request
+#
+
+uint8 STOP             = 0
+uint8 START            = 1
+uint8 command
+
+# Parameters for START command
+string user
+string launch
+string image
+
+---
+#
+# Response
+#
+
+# For all commands
+uint8 SUCCESS               = 0
+uint8 INVALID_COMMAND       = 1
+uint8 ERROR                 = 255
+
+# For START command
+uint8 NODE_ALREADY_RUNNING  = 32
+uint8 IMAGE_NOT_FOUND       = 33
+uint8 USER_NOT_FOUND        = 34
+uint8 LAUNCH_NOT_FOUND      = 35
+uint8 INVALID_LAUNCH        = 36
+uint8 OFF_NOMINAL           = 37
+
+# For STOP command
+uint8 NODE_NOT_STARTED      = 64
+
+uint8 result

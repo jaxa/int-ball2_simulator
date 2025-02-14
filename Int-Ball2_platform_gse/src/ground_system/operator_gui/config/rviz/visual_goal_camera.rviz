@@ -1,0 +1,67 @@
+Class: ""
+Displays:
+  - Alpha: 1
+    Class: rviz/RobotModel
+    Collision Enabled: false
+    Enabled: true
+    Links:
+      All Links Enabled: true
+      Expand Joint Details: false
+      Expand Link Details: false
+      Expand Tree: false
+      Link Tree Style: Links in Alphabetic Order
+      base:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+      body:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+        Value: true
+      camera:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+        Value: true
+      iss_body:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+        Value: true
+    Name: RobotModel
+    Robot Description: robot_description
+    TF Prefix: ""
+    Update Interval: 0
+    Value: true
+    Visual Enabled: true
+Enabled: true
+Global Options:
+  Background Color: 48; 48; 48
+  Default Light: true
+  Fixed Frame: base
+  Frame Rate: 30
+Name: root
+Tools:
+  - Class: rviz/SetTargetOrientation
+Views:
+  Current:
+    Class: rviz/MainCamera
+    Enable Stereo Rendering:
+      Stereo Eye Separation: 0.0599999987
+      Stereo Focal Distance: 1
+      Swap Stereo Eyes: false
+      Value: false
+    Invert Z Axis: false
+    Name: Current View
+    Near Clip Distance: 0.00999999978
+    Position:
+      X: 0
+      Y: 0
+      Z: 0
+    Target Frame: <Fixed Frame>
+    Value: FPS (rviz)
+    Yaw: 0
+    Pitch: 0
+  Saved: ~
+

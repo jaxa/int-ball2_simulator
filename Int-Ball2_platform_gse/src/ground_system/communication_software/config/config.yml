@@ -1,0 +1,601 @@
+telecommand:
+    # control ctl node
+    # update guidance control parameter
+    - id:               160
+      type:             "service/request"
+      name:             "/ctl/update_params"
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # cancel ctl action
+    - id:               161
+      type:             "topic"
+      name:             "/ctl/command/cancel"
+      data_class:       "actionlib_msgs/GoalID"
+      maintenance_mode: false
+    # control prop node
+    # fan
+    - id:               201
+      type:             "topic"
+      name:             "/ctl/duty" 
+      data_class:       "std_msgs/Float64MultiArray"
+      maintenance_mode: true
+    # switch propulsion
+    - id:               202
+      type:             "service/request"
+      name:             "/prop/switch_power"
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: false
+    # update propulsion parameter
+    - id:               260
+      type:             "service/request"
+      name:             "/prop/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control navigation function related nodes
+    # marker correction
+    - id:               301
+      type:             "service/request"
+      name:             "/sensor_fusion/marker_correction"
+      data_class:       "ib2_msgs/MarkerCorrection"
+      maintenance_mode: false
+    # switch sensor_fusion
+    - id:               302
+      type:             "topic"
+      name:             "/sensor_fusion/navigation_start_up/goal"
+      data_class:       "ib2_msgs/NavigationStartUpActionGoal"
+      maintenance_mode: false
+    # update navigation parameter
+    - id:               360
+      type:             "service/request"
+      name:             "/sensor_fusion/update_params"
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # update IMU parameter
+    - id:               460
+      type:             "service/request"
+      name:             "/imu/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # update SLAM parameter
+    - id:               560
+      type:             "service/request"
+      name:             "/slam_wrapper/update_params"
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control camera_and_microphone node
+    # streaming
+    - id:               2001
+      type:             "service/request"
+      name:             "/camera_and_microphone/switch_power"
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: false
+    # recording
+    - id:               2002
+      type:             "service/request"
+      name:             "/camera_and_microphone/record"
+      data_class:       "ib2_msgs/Record"
+      maintenance_mode: false
+    # camera
+    - id:               2003
+      type:             "service/request"
+      name:             "/camera_and_microphone/camera/switch_power"
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: false
+    # microphone
+    - id:               2004
+      type:             "service/request"
+      name:             "/camera_and_microphone/microphone/switch_power"
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: false
+    # update camera & microphone params
+    - id:               2060
+      type:             "service/request"
+      name:             "/camera_and_microphone/update_params"
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control left led
+    # LED color
+    - id:               2101
+      type:             "topic"
+      name:             "/led_display_left/led_colors"
+      data_class:       "ib2_msgs/LEDColors"
+      maintenance_mode: true
+    # update LED parameter
+    - id:               2160
+      type:             "service/request"
+      name:             "/led_display_left/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control right led
+    # LED color
+    - id:               2201
+      type:             "topic"
+      name:             "/led_display_right/led_colors"
+      data_class:       "ib2_msgs/LEDColors"
+      maintenance_mode: true
+    # update LED parameter
+    - id:               2260
+      type:             "service/request"
+      name:             "/led_display_right/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control display_manager node
+    # switch display management
+    - id:               5201
+      type:             "service/request"
+      name:             "/display_manager/switch_power"
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: true
+    # lighting control
+    - id:               5202
+      type:             "service/request"
+      name:             "/display_manager/switch_flash" 
+      data_class:       "ib2_msgs/SwitchPower"
+      maintenance_mode: false
+    - id:               5203
+      type:             "service/request"
+      name:             "/display_manager/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # control task_manager node
+    # guidance control
+    - id:               5001
+      type:             "topic"
+      name:             "/trans_communication/action_goal" 
+      data_class:       "ib2_msgs/CtlCommandGoal"
+      maintenance_mode: false
+    # reboot
+    - id:               5002
+      type:             "topic"
+      name:             "/trans_communication/reboot" 
+      data_class:       "std_msgs/Empty"
+      maintenance_mode: false
+    # exit docking mode
+    - id:               5003
+      type:             "service/request"
+      name:             "/task_manager/exit_docking_mode" 
+      data_class:       "ib2_msgs/ExitDockingMode"
+      maintenance_mode: false
+    # set maintenance mode
+    - id:               5004
+      type:             "service/request"
+      name:             "/task_manager/set_maintenance_mode" 
+      data_class:       "ib2_msgs/SetMaintenanceMode"
+      maintenance_mode: false
+    # forced release
+    - id:               5005
+      type:             "topic"
+      name:             "/task_manager/force_release" 
+      data_class:       "std_msgs/Empty"
+      maintenance_mode: false
+    # control parameter_manager node
+    # get rosparam
+    - id:               5101
+      type:             "service/request"
+      name:             "/parameter_manager/get_ros_param" 
+      data_class:       "ib2_msgs/GetRosParam"
+      maintenance_mode: false
+    # get rosparams
+    - id:               5102
+      type:             "service/request"
+      name:             "/parameter_manager/get_ros_params" 
+      data_class:       "ib2_msgs/GetRosParams"
+      maintenance_mode: false
+    # set rosparam
+    - id:               5103
+      type:             "service/request"
+      name:             "/parameter_manager/set_ros_param" 
+      data_class:       "ib2_msgs/SetRosParam"
+      maintenance_mode: false
+    # set rosparams
+    - id:               5104
+      type:             "service/request"
+      name:             "/parameter_manager/set_ros_params" 
+      data_class:       "ib2_msgs/SetRosParams"
+      maintenance_mode: false
+    # load rosparams
+    - id:               5105
+      type:             "service/request"
+      name:             "/parameter_manager/load_ros_params" 
+      data_class:       "ib2_msgs/LoadRosParams"
+      maintenance_mode: false
+    # dump rosparams
+    - id:               5106
+      type:             "service/request"
+      name:             "/parameter_manager/dump_ros_params" 
+      data_class:       "ib2_msgs/DumpRosParams"
+      maintenance_mode: false
+    # platform_manager
+    - id:               30001
+      type:             "service/request"
+      name:             "/platform_manager/user_node" 
+      data_class:       "platform_msgs/UserNodeCommand"
+      maintenance_mode: false
+    - id:               30002
+      type:             "service/request"
+      name:             "/platform_manager/user_logic" 
+      data_class:       "platform_msgs/UserLogicCommand"
+      maintenance_mode: false
+    - id:               30003
+      type:             "service/request"
+      name:             "/platform_manager/set_operation_type" 
+      data_class:       "platform_msgs/SetOperationType"
+      maintenance_mode: false
+    # camera main
+    - id:               30010
+      type:             "service/request"
+      name:             "/camera_main/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # camera left
+    - id:               30020
+      type:             "service/request"
+      name:             "/camera_left/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # camera right
+    - id:               30030
+      type:             "service/request"
+      name:             "/camera_right/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+    # microphone
+    - id:               30040
+      type:             "service/request"
+      name:             "/microphone/update_params" 
+      data_class:       "ib2_msgs/UpdateParameter"
+      maintenance_mode: false
+
+telemetry:
+    header:
+        id_timestamp:              0
+        id_last_executed_command:  1
+        id_split_number:           2
+        id_current_split_index:    3
+        id_sending_port_index:     4
+    normal:
+        # from ctl node
+        - id:               101
+          type:             "topic"
+          name:             "/ctl/status"
+          data_class:       "ib2_msgs/CtlStatus"
+          bind_port_index:  1
+        - id:               102
+          type:             "topic"
+          name:             "/ctl/command/feedback"
+          data_class:       "ib2_msgs/CtlCommandActionFeedback"
+          bind_port_index:  1
+        - id:               103
+          type:             "topic"
+          name:             "/ctl/command/result"
+          data_class:       "ib2_msgs/CtlCommandActionResult"
+          bind_port_index:  1
+        - id:               104
+          type:             "topic"
+          name:             "/ctl/wrench"
+          data_class:       "geometry_msgs/WrenchStamped"
+          bind_port_index:  1
+        - id:               160
+          type:             "service/response"
+          name:             "/ctl/update_params"
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from prop node
+        - id:               201
+          type:             "topic"
+          name:             "/prop/status"
+          data_class:       "ib2_msgs/FanStatus"
+          bind_port_index:  1
+        - id:               202
+          type:             "service/response"
+          name:             "/prop/switch_power"
+          data_class:       "ib2_msgs/SwitchPower"
+        - id:               260
+          type:             "service/response"
+          name:             "/prop/update_params" 
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from navigation function related nodes
+        - id:               301
+          type:             "service/response"
+          name:             "/sensor_fusion/marker_correction"
+          data_class:       "ib2_msgs/MarkerCorrection"
+          bind_port_index:  1
+        - id:               302
+          type:             "topic"
+          name:             "/sensor_fusion/navigation"
+          data_class:       "ib2_msgs/Navigation"
+          bind_port_index:  1
+        - id:               303
+          type:             "topic"
+          name:             "/sensor_fusion/navigation_debug"
+          data_class:       "ib2_msgs/NavigationDebug"
+          bind_port_index:  1
+        - id:               304
+          type:             "topic"
+          name:             "/sensor_fusion/navigation_start_up/feedback"
+          data_class:       "ib2_msgs/NavigationStartUpActionFeedback"
+          bind_port_index:  1
+        - id:               305
+          type:             "topic"
+          name:             "/sensor_fusion/navigation_start_up/result"
+          data_class:       "ib2_msgs/NavigationStartUpActionResult"
+          bind_port_index:  1
+        - id:               306
+          type:             "topic"
+          name:             "/sensor_fusion/navigation_status"
+          data_class:       "ib2_msgs/NavigationStatus"
+          bind_port_index:  1
+        - id:               360
+          type:             "service/response"
+          name:             "/sensor_fusion/update_params"
+          data_class:       "ib2_msgs/UpdateParameter"
+        - id:               460
+          type:             "service/response"
+          name:             "/imu/update_params" 
+          data_class:       "ib2_msgs/UpdateParameter"
+        - id:               461
+          type:             "topic"
+          name:             "/imu/imu"
+          data_class:       "ib2_msgs/IMU"
+        - id:               560
+          type:             "service/response"
+          name:             "/slam_wrapper/update_params"
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from camera_and_microphone node
+        - id:               2001
+          type:             "service/response"
+          name:             "/camera_and_microphone/switch_power"
+          data_class:       "ib2_msgs/SwitchPower"
+          bind_port_index:  1
+          add_timestamp:    true
+        - id:               2002
+          type:             "service/response"
+          name:             "/camera_and_microphone/camera/record"
+          data_class:       "ib2_msgs/Record"
+          bind_port_index:  1
+          add_timestamp:    true
+        - id:               2003
+          type:             "service/response"
+          name:             "/camera_and_microphone/camera/switch_power"
+          data_class:       "ib2_msgs/SwitchPower"
+          bind_port_index:  1
+          add_timestamp:    true
+        - id:               2004
+          type:             "service/response"
+          name:             "/camera_and_microphone/microphone/switch_power"
+          data_class:       "ib2_msgs/SwitchPower"
+          bind_port_index:  1
+          add_timestamp:    true
+        - id:               2005
+          type:             "topic"
+          name:             "/camera_and_microphone/status"
+          data_class:       "ib2_msgs/MainCameraStatus"
+          bind_port_index:  1
+        - id:               2060
+          type:             "service/response"
+          name:             "/camera_and_microphone/update_params"
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from led_display_left node
+        - id:               2160
+          type:             "service/response"
+          name:             "/led_display_left/update_params" 
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from led_display_right node
+        - id:               2260
+          type:             "service/response"
+          name:             "/led_display_right/update_params" 
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from dock node
+        # NOTE: BatteryChargeInfo is published by minimal_telemetry_publisher
+        - id:               2301
+          type:             "topic"
+          name:             "/dock/battery_charge_info" 
+          data_class:       "ib2_msgs/BatteryChargeInfo"
+          bind_port_index:  1
+        # from task_manager node
+        - id:               5001
+          type:             "topic"
+          name:             "/task_manager/mode"
+          data_class:       "ib2_msgs/Mode"
+          bind_port_index:  1
+        - id:               5002
+          type:             "service/response"
+          name:             "/task_manager/exit_docking_mode" 
+          data_class:       "ib2_msgs/ExitDockingMode"
+        - id:               5003
+          type:             "service/response"
+          name:             "/task_manager/set_maintenance_mode" 
+          data_class:       "ib2_msgs/SetMaintenanceMode"
+        # from parameter_manager node
+        - id:               5101
+          type:             "service/response"
+          name:             "/parameter_manager/get_ros_param" 
+          data_class:       "ib2_msgs/GetRosParam"
+          add_timestamp:    true
+        - id:               5103
+          type:             "service/response"
+          name:             "/parameter_manager/set_ros_param" 
+          data_class:       "ib2_msgs/SetRosParam"
+          add_timestamp:    true
+        - id:               5105
+          type:             "service/response"
+          name:             "/parameter_manager/load_ros_params" 
+          data_class:       "ib2_msgs/LoadRosParams"
+          add_timestamp:    true
+        - id:               5106
+          type:             "service/response"
+          name:             "/parameter_manager/dump_ros_params" 
+          data_class:       "ib2_msgs/DumpRosParams"
+          add_timestamp:    true
+        # from system_monitor node
+        - id:               5201
+          type:             "topic"
+          name:             "/system_monitor/status" 
+          data_class:       "ib2_msgs/SystemStatus"
+          bind_port_index:  1
+        # from display_manager node
+        - id:               5301
+          type:             "topic"
+          name:             "/display_manager/status" 
+          data_class:       "ib2_msgs/DisplayManagerStatus"
+          bind_port_index:  1
+        - id:               5302
+          type:             "service/response"
+          name:             "/display_manager/switch_power"
+          data_class:       "ib2_msgs/SwitchPower"
+        - id:               5303
+          type:             "service/response"
+          name:             "/display_manager/switch_flash"
+          data_class:       "ib2_msgs/SwitchPower"
+        - id:               5304
+          type:             "service/response"
+          name:             "/display_manager/update_params" 
+          data_class:       "ib2_msgs/UpdateParameter"
+        # from file_monitor node
+        - id:               5401
+          type:             "topic"
+          name:             "/file_monitor/status" 
+          data_class:       "ib2_msgs/FileMonitoringStatus"
+        # from platform_manager node
+        - id:               30001
+          type:             "topic"
+          name:             "/platform_manager/status" 
+          data_class:       "platform_msgs/ManagerStatus"
+        - id:               30002
+          type:             "service/response"
+          name:             "/platform_manager/user_node" 
+          data_class:       "platform_msgs/UserNodeCommand"
+        - id:               30003
+          type:             "service/response"
+          name:             "/platform_manager/user_logic" 
+          data_class:       "platform_msgs/UserLogicCommand"
+        # from camera_main node
+        - id:               30010
+          type:             "topic"
+          name:             "/camera_main/status" 
+          data_class:       "platform_msgs/CameraStatus"
+        # from camera_left node
+        - id:               30020
+          type:             "topic"
+          name:             "/camera_left/status" 
+          data_class:       "platform_msgs/CameraStatus"
+        # from camera_right node
+        - id:               30030
+          type:             "topic"
+          name:             "/camera_right/status" 
+          data_class:       "platform_msgs/CameraStatus"
+          # from microphone node
+        - id:               30040
+          type:             "topic"
+          name:             "/microphone/status" 
+          data_class:       "platform_msgs/MicrophoneStatus"
+        # from user node
+        - id:               31001
+          type:             "topic"
+          name:             "/ib2_user/status" 
+          data_class:       "platform_msgs/UserNodeStatus"
+        # from software other than ROS
+        # NOTE: published by minimal_telemetry_publisher
+        - id:               9001
+          type:             "topic"
+          name:             "/not_ros/normal_flight_software_status" 
+          data_class:       "std_msgs/Bool"
+        # NOTE: published by minimal_telemetry_publisher
+        - id:               9002
+          type:             "topic"
+          name:             "/not_ros/platform_flight_software_status" 
+          data_class:       "std_msgs/Bool"
+    split:
+        # from parameter_manager node
+        - name:                         "/parameter_manager/publishing_params"
+          type:                         "topic"
+          data_class:                   "ib2_msgs/RosParams"
+          split_config:
+              - value_to_split:               "params"
+                id_range:                     [10000, 10999]
+                split_value_key:              "id"
+                data_class_after_split:       "ib2_msgs/RosParam"
+        - name:                         "/parameter_manager/get_ros_params"
+          type:                         "service/response"
+          data_class:                   "ib2_msgs/GetRosParams"
+          split_config:
+              - value_to_split:               "params"
+                id_range:                     [11000, 11999]
+                split_value_key:              ""
+                data_class_after_split:       "ib2_msgs/RosParam"
+                add_timestamp:                true
+        - name:                         "/parameter_manager/set_ros_params" 
+          type:                         "service/response"
+          data_class:                   "ib2_msgs/SetRosParams"
+          value_config:
+              - id:                           12000
+                value:                        "success_all"
+                data_class:                   "std_msgs/Bool"
+                data_class_attribute:         "data"
+                add_timestamp:                true
+          split_config:
+              - value_to_split:               "success_params"
+                id_range:                     [12001, 12999]
+                split_value_key:              ""
+                data_class_after_split:       "ib2_msgs/RosParam"
+                add_timestamp:                true
+        # from alive_monitor node
+        - name:                         "/alive_monitor/statuses" 
+          type:                         "topic"
+          data_class:                   "ib2_msgs/MonitoredAliveStatuses"
+          split_config:
+              - value_to_split:               "topic_statuses"
+                id_range:                     [13000, 13099]
+                split_value_key:              "name"
+                data_class_after_split:       "ib2_msgs/AliveStatus"
+              - value_to_split:               "service_statuses"
+                id_range:                     [13100, 13199]
+                split_value_key:              "name"
+                data_class_after_split:       "ib2_msgs/AliveStatus"
+        # LED color
+        - name:             "/led_display_left/led_colors"
+          type:             "topic"
+          data_class:       "ib2_msgs/LEDColors"
+          split_config:
+              - value_to_split:               "colors"
+                id_range:                     [14000, 14007]
+                split_value_key:              ""
+                data_class_after_split:       "std_msgs/ColorRGBA"
+        - name:             "/led_display_right/led_colors"
+          type:             "topic"
+          data_class:       "ib2_msgs/LEDColors"
+          split_config:
+              - value_to_split:               "colors"
+                id_range:                     [14100, 14107]
+                split_value_key:              ""
+                data_class_after_split:       "std_msgs/ColorRGBA"
+        # from platform_monitor node
+        - name:             "/platform_monitor/status"
+          type:             "topic"
+          data_class:       "platform_msgs/MonitorStatus"
+          split_config:
+              - value_to_split:               "publications"
+                id_range:                     [14200, 14299]
+                split_value_key:              ""
+                data_class_after_split:       "platform_msgs/NodeStatusValue"
+                add_timestamp:                true
+              - value_to_split:               "subscriptions"
+                id_range:                     [14300, 14399]
+                split_value_key:              ""
+                data_class_after_split:       "platform_msgs/NodeStatusValue"
+                add_timestamp:                true
+              - value_to_split:               "services"
+                id_range:                     [14400, 14499]
+                split_value_key:              ""
+                data_class_after_split:       "platform_msgs/NodeStatusValue"
+                add_timestamp:                true
+              - value_to_split:               "containers"
+                id_range:                     [14500, 14599]
+                split_value_key:              ""
+                data_class_after_split:       "platform_msgs/ContainerStatus"
+                add_timestamp:                true
+          value_config:
+              - id:                           15000
+                value:                        "check_time"
+                data_class:                   "std_msgs/Time"
+                data_class_attribute:         "data"
+                add_timestamp:                false

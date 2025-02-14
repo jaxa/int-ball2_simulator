@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find trans_communication)/launch/bringup.launch" />
+
+  <!-- Overwrites the parameters set in trans_communication's bringup.launch -->
+  <group ns="trans_communication">
+    <param name="config_path" value="$(find platform_sim_tools)/config/trans_communication_config.yml" />
+  </group>
+</launch>

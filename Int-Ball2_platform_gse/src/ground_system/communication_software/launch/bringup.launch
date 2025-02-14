@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find communication_software)/config/params.yml" subst_value="True" />
+  <node name="telecommand_bridge" pkg="communication_software" type="telecommand_bridge.py" output="screen" />
+  <node name="telemetry_bridge" pkg="communication_software" type="telemetry_bridge.py" output="screen" />
+
+</launch>
+

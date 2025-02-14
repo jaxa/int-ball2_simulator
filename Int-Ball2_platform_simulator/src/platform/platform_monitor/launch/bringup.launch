@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="rate" default="1" />
+  <arg name="config_path" default="$(find platform_monitor)/config/config.yml" />
+
+  <node name="platform_monitor" pkg="platform_monitor" type="platform_monitor.py" output="screen">
+    <param name="rate" value="$(arg rate)" />
+    <param name="config_path" value="$(arg config_path)" />
+  </node>
+
+</launch>

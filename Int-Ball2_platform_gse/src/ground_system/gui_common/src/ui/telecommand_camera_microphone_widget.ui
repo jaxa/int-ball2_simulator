@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>intball::TelecommandCameraMicrophoneWidget</class>
+ <widget class="QWidget" name="intball::TelecommandCameraMicrophoneWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>400</width>
+    <height>199</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(53, 51, 53);</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0" colspan="2">
+    <widget class="QGroupBox" name="switchGroup">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>16777215</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+       <pointsize>-1</pointsize>
+      </font>
+     </property>
+     <property name="styleSheet">
+      <string notr="true">QGroupBox {
+  border: 0;
+  margin-top: 25px;
+  font-size: 20px;
+  background-color: rgb(29, 31, 34);
+}
+QLabel {
+    background-color: rgb(29, 31, 34);
+}</string>
+     </property>
+     <property name="title">
+      <string>Camera and microphone</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_3">
+      <property name="verticalSpacing">
+       <number>6</number>
+      </property>
+      <item row="3" column="2">
+       <widget class="intball::CommandButton" name="pushButtonMicrophoneOFF">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>OFF</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="intball::CommandButton" name="pushButtonMicrophoneON">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>ON</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelSwitchMicrophone">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="text">
+         <string>Microphone:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelSwitchStreaming">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="text">
+         <string>Streaming:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="intball::CommandButton" name="pushButtonStreamingOFF">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>OFF</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="intball::CommandButton" name="pushButtonCameraON">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>ON</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="intball::CommandButton" name="pushButtonStreamingON">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>ON</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="intball::CommandButton" name="pushButtonCameraOFF">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>OFF</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelSwitchMainCamera">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="minimumSize">
+         <size>
+          <width>120</width>
+          <height>0</height>
+         </size>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>16777215</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="text">
+         <string>Main Camera:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label">
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="text">
+         <string>Recording:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="intball::CommandButton" name="pushButtonRecordingON">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>ON</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="intball::CommandButton" name="pushButtonRecordingOFF">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>OFF</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>intball::CommandButton</class>
+   <extends>QPushButton</extends>
+   <header>command_button.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

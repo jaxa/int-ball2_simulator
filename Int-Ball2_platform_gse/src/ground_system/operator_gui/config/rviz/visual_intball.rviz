@@ -1,0 +1,87 @@
+Class: ""
+Displays:
+  - Alpha: 1
+    Class: rviz/RobotModel
+    Collision Enabled: false
+    Enabled: true
+    Links:
+      All Links Enabled: true
+      Expand Joint Details: false
+      Expand Link Details: false
+      Expand Tree: false
+      Link Tree Style: Links in Alphabetic Order
+      base:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+      body:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+        Value: true
+      iss_body:
+        Alpha: 1
+        Show Axes: false
+        Show Trail: false
+        Value: true
+    Name: RobotModel
+    Robot Description: robot_description
+    TF Prefix: ""
+    Update Interval: 0
+    Value: true
+    Visual Enabled: true
+  - Class: rviz/MarkerArray
+    Enabled: true
+    Marker Topic: marker_route
+    Name: RouteMarkerArray
+    Namespaces:
+      {}
+    Queue Size: 100
+    Value: true
+  - Class: rviz/Axes
+    Enabled: true
+    Length: 1
+    Name: AxesBody
+    Radius: 0.050000001
+    Reference Frame: body
+    Value: true
+  - Class: rviz/Axes
+    Enabled: true
+    Length: 0.5
+    Name: AxesIssBody
+    Radius: 0.050000001
+    Reference Frame: iss_body
+    Value: true
+Enabled: true
+Global Options:
+  Background Color: 48; 48; 48
+  Default Light: true
+  Fixed Frame: base
+  Frame Rate: 30
+Name: root
+Tools:
+  - Class: rviz/MoveCamera
+Views:
+  # Current settings are overwritten with the settings described in the gui_config file.
+  Current:
+    Class: rviz/Orbit
+    Distance: 10
+    Enable Stereo Rendering:
+      Stereo Eye Separation: 0.0599999987
+      Stereo Focal Distance: 1
+      Swap Stereo Eyes: false
+      Value: false
+    Focal Point:
+      X: 0
+      Y: 0
+      Z: 0
+    Focal Shape Fixed Size: true
+    Focal Shape Size: 0.0500000007
+    Invert Z Axis: false
+    Name: Current View
+    Near Clip Distance: 0.00999999978
+    Target Frame: iss_body
+    Value: Orbit (rviz)
+    Yaw: 0
+    Pitch: 0
+  Saved: ~

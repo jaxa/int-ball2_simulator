@@ -1,0 +1,540 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>intball::TelecommandControlSettingsWidget</class>
+ <widget class="QWidget" name="intball::TelecommandControlSettingsWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>556</width>
+    <height>706</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>0</width>
+    <height>0</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <property name="styleSheet">
+   <string notr="true">color: rgb(255, 255, 255);
+background-color: rgb(53, 51, 53);</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="2" column="0">
+    <widget class="QGroupBox" name="groupNavigation">
+     <property name="styleSheet">
+      <string notr="true">QGroupBox {
+  border: 0;
+  margin-top: 25px;
+  font-size: 20px;
+  background-color: rgb(29, 31, 34);
+}
+QLabel {
+    background-color: rgb(29, 31, 34);
+}</string>
+     </property>
+     <property name="title">
+      <string>Navigation (sensor_fusion) settings</string>
+     </property>
+     <layout class="QFormLayout" name="formLayout_2">
+      <property name="verticalSpacing">
+       <number>10</number>
+      </property>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelQ_position_diag_x">
+        <property name="text">
+         <string>/sensor_fusion/Q_position_diag_x:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLineEdit" name="lineEditQ_position_diag_x">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelQ_position_diag_v">
+        <property name="text">
+         <string>/sensor_fusion/Q_position_diag_v:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLineEdit" name="lineEditQ_position_diag_v">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelR_position_diag_x">
+        <property name="text">
+         <string>/sensor_fusion/R_position_diag_x:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLineEdit" name="lineEditR_position_diag_x">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelR_position_diag_v">
+        <property name="text">
+         <string>/sensor_fusion/R_position_diag_v:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLineEdit" name="lineEditR_position_diag_v">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelQ_angle_diag_q">
+        <property name="text">
+         <string>/sensor_fusion/Q_angle_diag_q:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLineEdit" name="lineEditQ_angle_diag_q">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelQ_angle_diag_b">
+        <property name="text">
+         <string>/sensor_fusion/Q_angle_diag_b:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLineEdit" name="lineEditQ_angle_diag_b">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="labelR_angle_diag">
+        <property name="text">
+         <string>/sensor_fusion/R_angle_diag:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLineEdit" name="lineEditR_angle_diag">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0" colspan="2">
+       <widget class="intball::CommandButton" name="navigationSendButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>Send and update</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="0">
+    <widget class="QGroupBox" name="groupGuidanceAndControl">
+     <property name="styleSheet">
+      <string notr="true">QGroupBox {
+  border: 0;
+  margin-top: 25px;
+  font-size: 20px;
+  background-color: rgb(29, 31, 34);
+}
+QLabel {
+    background-color: rgb(29, 31, 34);
+}</string>
+     </property>
+     <property name="title">
+      <string>Guidance control settings</string>
+     </property>
+     <layout class="QGridLayout" name="gridLayout_5">
+      <property name="verticalSpacing">
+       <number>10</number>
+      </property>
+      <item row="7" column="1">
+       <widget class="QLabel" name="labelToleranceAttRange">
+        <property name="text">
+         <string>0 &lt; x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QLineEdit" name="lineEditAttKd">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="2">
+       <widget class="QLineEdit" name="lineEditToleranceAtt">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="0">
+       <widget class="QLabel" name="labelAttKp">
+        <property name="text">
+         <string>/att_ctl/kp:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="1">
+       <widget class="QLabel" name="labelAttKdRange">
+        <property name="text">
+         <string>0 &lt;= x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="2">
+       <widget class="QLineEdit" name="lineEditPosKi">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QLabel" name="labelPosKiRange">
+        <property name="text">
+         <string>0 &lt;= x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="2">
+       <widget class="QLineEdit" name="lineEditTolerancePos">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="1">
+       <widget class="QLabel" name="labelTolerancePosRange">
+        <property name="text">
+         <string>0 &lt; x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="0">
+       <widget class="QLabel" name="labelDurationGoal">
+        <property name="text">
+         <string>/ctl/duration_goal [sec]:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QLabel" name="labelPosKdRange">
+        <property name="text">
+         <string>0 &lt;= x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="1">
+       <widget class="QLabel" name="labelDurationGoalRange">
+        <property name="text">
+         <string>0 &lt; x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="0" colspan="3">
+       <widget class="intball::CommandButton" name="guidanceAndControlSendButton">
+        <property name="minimumSize">
+         <size>
+          <width>0</width>
+          <height>30</height>
+         </size>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">QPushButton {
+  background-color: rgb(72, 80, 80);
+  color: rgb(229, 227, 226);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:pressed {
+  background-color: rgb(92, 100, 100);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(92, 100, 100);
+}
+QPushButton:disabled {
+  background-color: rgb(112, 120, 120);
+  color: rgb(255, 255, 255);
+  padding-bottom: 3px;
+  border-radius: 2px;
+  border: 1px outset rgb(112, 120, 120);
+}</string>
+        </property>
+        <property name="text">
+         <string>Send and update</string>
+        </property>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="labelPosKi">
+        <property name="text">
+         <string>/pos_ctl/ki:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="labelAttKd">
+        <property name="text">
+         <string>/att_ctl/kd:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="1">
+       <widget class="QLabel" name="labelAttKpRange">
+        <property name="text">
+         <string>0 &lt;= x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QLineEdit" name="lineEditPosKd">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="7" column="0">
+       <widget class="QLabel" name="labelToleranceAtt">
+        <property name="text">
+         <string>/ctl/tolerance_att [rad]:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="6" column="0">
+       <widget class="QLabel" name="labelTolerancePos">
+        <property name="text">
+         <string>/ctl/tolerance_pos [m]:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="2">
+       <widget class="QLineEdit" name="lineEditPosKp">
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="3" column="2">
+       <widget class="QLineEdit" name="lineEditAttKp">
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QLabel" name="labelPosKp">
+        <property name="text">
+         <string>/pos_ctl/kp:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QLabel" name="labelPosKpRange">
+        <property name="text">
+         <string>0 &lt;= x</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="labelPosKd">
+        <property name="text">
+         <string>/pos_ctl/kd:</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QLineEdit" name="lineEditDurationGoal">
+        <property name="styleSheet">
+         <string notr="true">background-color: rgb(94, 85, 82);
+color: rgb(255, 255, 255);</string>
+        </property>
+        <property name="clearButtonEnabled">
+         <bool>true</bool>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="3" column="0">
+    <spacer name="verticalSpacer">
+     <property name="orientation">
+      <enum>Qt::Vertical</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>20</width>
+       <height>40</height>
+      </size>
+     </property>
+    </spacer>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>intball::CommandButton</class>
+   <extends>QPushButton</extends>
+   <header>command_button.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

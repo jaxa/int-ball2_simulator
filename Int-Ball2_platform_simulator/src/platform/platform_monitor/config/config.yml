@@ -1,0 +1,39 @@
+ignore_nodes:
+  # ROS standard nodes
+  - "/rosout"
+  # Int-Ball2 normal flight software nodes
+  - "/alive_monitor"
+  - "/camera_and_microphone"
+  - "/ctl"
+  - "/dock"
+  - "/epsonG370"
+  - "/file_monitor"
+  - "/led_display_left"
+  - "/led_display_right"
+  - "/parameter_manager"
+  - "/prop"
+  - "/sensor_fusion"
+  - "/slam_wrapper"
+  - "/system_monitor"
+  - "/task_manager"
+  - "/trans_communication"
+  # Demonstration platform software nodes
+  - "/camera_left"
+  - "/camera_main"
+  - "/camera_right"
+  - "/ctl_only"
+  - "/fsm"
+  - "/microphone"
+  - "/platform_manager"
+  - "/platform_monitor"
+  # Simulator
+  - "gazebo"
+  - "gazebo_gui"
+  - "ib2_state_publisher"
+  - "iss_state_publisher"
+  - "rviz"
+  - "sim_minimal_telemetry_publisher"
+  - "trans_ib2"
+  - "trans_iss"
+# If you want to target nodes on all machines, set target_machine to null.
+target_machine: null

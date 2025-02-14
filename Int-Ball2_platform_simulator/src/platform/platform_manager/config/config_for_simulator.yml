@@ -1,0 +1,18 @@
+# bringup_packages contains following values:
+# - name (*required)
+# - package (optional, default value is same as name)
+# - launch_file (optional, default value is 'bringup.launch')
+# - pre_command (optional)
+# - post_command (optional)
+# - startup (optional, default value is true)
+bringup_packages:
+  - name: 'ctl_only'
+  - name: 'fsm'
+# ***** acceptable_packages can be set only when run_on_simulator is true. *****
+# If these acceptable_packages are specified in user\'s roslaunch file, 
+# it is not an error, but the nodes will not be activated.
+acceptable_packages:
+  - 'sensor_fusion'
+  - 'slam_wrapper'
+  - 'camera_left'
+  - 'camera_right'

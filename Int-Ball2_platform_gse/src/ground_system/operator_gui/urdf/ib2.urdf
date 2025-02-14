@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+<robot name="intball2">
+
+  <link name ="base">
+    <visual name="jpm">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/jpm.dae" />
+      </geometry>
+      <!--<origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />-->
+      <origin rpy="3.14159265358979 0 0" xyz="0 0 0" />
+    </visual>
+    <collision name="jpm">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/jpm.dae" />
+      </geometry>
+      <!--<origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />-->
+      <origin rpy="3.14159265358979 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+  <joint name="iss_body_joint" type="fixed">
+    <origin xyz="0 1 0.9" rpy="0 1.5708 0"/>
+    <parent link="base"/>
+    <child link="iss_body"/>
+  </joint>
+
+  <link name="iss_body"/>
+
+  <joint name="body_joint" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="iss_body"/>
+    <child link="body"/>
+  </joint>
+  <link name="body">
+    <visual>
+      <geometry>
+        <mesh filename="package://description/media/meshes/int-ball2/int-ball2.dae" />
+      </geometry>
+      <origin rpy="0 0 3.14159265358979" xyz="0 0 0" />
+    </visual>
+    <collision>
+      <geometry>
+        <mesh filename="package://description/media/meshes/int-ball2/int-ball2.dae" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="intball2_camera_joint" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="iss_body"/>
+    <child link="camera"/>
+  </joint>
+  <link name="camera"/>
+<!--
+  <joint name="intball2_goal_camera_joint" type="fixed">
+    <origin xyz="0 0 0"/>
+    <parent link="iss_body"/>
+    <child link="goal_camera"/>
+  </joint>
+  <link name="goal_camera"/>
+-->
+
+</robot>

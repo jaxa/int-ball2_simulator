@@ -1,0 +1,12 @@
+<launch>
+    <param name="robot_description"
+        textfile="$(find operator_gui)/urdf/ib2.urdf" />
+    <arg name="gui_only" default="false"/>
+
+    <include file="$(find communication_software)/launch/bringup.launch" unless="$(arg gui_only)" />
+
+    <node pkg="tf2_ros" type="static_transform_publisher" name="base_broadcaster" args="0 1 0.75 1.5708 0 0 base iss_body" />
+
+    <node name="operator_gui" pkg="operator_gui" type="operator_gui"
+        required="true"/>
+</launch>

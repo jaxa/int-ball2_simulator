@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find ctl_only)/ctl.yaml" />
+  <node name="ctl_only" pkg="ctl_only" type="ctl_only" />
+
+</launch>

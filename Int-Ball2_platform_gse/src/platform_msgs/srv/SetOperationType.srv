@@ -1,0 +1,17 @@
+#
+# Request
+#
+
+platform_msgs/OperationType type
+
+---
+#
+# Response
+#
+
+uint8 SUCCESS                 = 0
+uint8 NO_CHANGE               = 1
+uint8 USER_LOGIC_IN_PROGRESS  = 2
+uint8 ERROR                   = 255
+
+uint8 result

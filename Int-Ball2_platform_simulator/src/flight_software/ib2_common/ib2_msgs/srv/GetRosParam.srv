@@ -1,0 +1,6 @@
+# request
+string id
+---
+# response
+RosParam param      # param.type is Empty string: ''
+bool success

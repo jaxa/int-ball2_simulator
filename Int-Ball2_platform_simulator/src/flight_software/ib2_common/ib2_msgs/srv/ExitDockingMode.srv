@@ -1,0 +1,6 @@
+# request
+Mode mode           # Operation or Standby
+---
+# response type
+bool success
+Mode mode           # result

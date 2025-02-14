@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- launch Gazebo -->
+  <include file="$(find ib2_gazebo)/launch/sim.launch"/>
+
+  <!-- launch platform nodes -->
+  <include file="$(find platform_sim_tools)/launch/platform_manager_bringup.launch"/>
+  <include file="$(find platform_monitor)/launch/bringup.launch"/>
+
+  <!-- launch normal flight software nodes -->
+  <include file="$(find platform_sim_tools)/launch/trans_communication_bringup.launch"/>
+
+  <!-- parameters -->
+  <arg name="ocs_host" default="localhost" />
+  <arg name="ocs_port" default="34567" />
+
+  <!-- override trans_communication's parameters -->
+  <group ns="trans_communication">
+    <param name="ocs_host" value="$(arg ocs_host)" />
+    <param name="ocs_port" value="$(arg ocs_port)" />
+    <!-- 49100 and 49101 are also used in normal operations -->
+    <rosparam param="telemetry_send_port" subst_value="True">[49100, 49101, 49200, 49201]</rosparam>
+  </group>
+
+  <!-- launch other simulated node -->
+  <env name="PYTHONPATH" value="$(env PYTHONPATH):$(find trans_communication)/script" />
+  <node name="sim_minimal_telemetry_publisher" pkg="platform_sim_tools" type="sim_minimal_telemetry_publisher.py" output="screen">
+    <param name="transcommunication_config" value="$(find platform_sim_tools)/config/trans_communication_config.yml" />
+    <param name="ocs_host" value="$(arg ocs_host)" />
+    <param name="ocs_port" value="$(arg ocs_port)" />
+  </node>
+
+</launch>

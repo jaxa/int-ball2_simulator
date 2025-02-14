@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<launch>
+  <arg name="color_with_camera_mic" default="[0.0, 0.0, 1.0]"/>
+  <arg name="container_ros_master_uri" default="http://192.168.1.19:11311"/>
+  <arg name="default_time_to_go_secs_long"   default="10.0" />
+  <arg name="default_time_to_go_secs_short"   default="3.0" />
+  <arg name="enable_shutdown" default="false" />
+  <arg name="host_ib2_workspace" default="/home/nvidia/IB2"/>
+  <arg name="multipliers_for_action_cancellation_time_calculation"   default="2" />
+  <arg name="rate" default="1" />
+  <arg name="required_battery_remain"   default="20" />
+  <arg name="required_storage_ratio"   default="10.0" />
+  <arg name="run_on_simulator"   default="true" />
+  <arg name="shutdown_battery_remain"   default="5" />
+  <arg name="shutdown_storage_ratio"   default="5.0" />
+  <arg name="temperature_to_cool"     default="60.0" />
+  <arg name="temperature_to_revive"   default="50.0" />
+  <arg name="temperature_to_shutdown" default="70.0" />
+  <arg name="user_container_name" default="ib2_user" />
+  <arg name="waiting_time_for_action_server"   default="10.0" />
+  <arg name="waiting_time_for_topic"   default="3.0" />
+  <arg name="wifi_duration"   default="5.0" />
+
+  <node name="platform_manager" pkg="platform_manager" type="platform_manager.py" output="screen">
+    <rosparam command="load" file="$(find platform_manager)/config/config_for_simulator.yml" subst_value="True" />
+    <rosparam param="color_with_camera_mic" subst_value="True">$(arg color_with_camera_mic)</rosparam>
+
+    <param name="container_ros_master_uri" value="$(arg container_ros_master_uri)" />
+    <param name="default_time_to_go_secs_long" value="$(arg default_time_to_go_secs_long)" />
+    <param name="default_time_to_go_secs_short" value="$(arg default_time_to_go_secs_short)" />
+    <param name="enable_shutdown" value="$(arg enable_shutdown)" />
+    <param name="host_ib2_workspace" value="$(arg host_ib2_workspace)" />
+    <param name="multipliers_for_action_cancellation_time_calculation" value="$(arg multipliers_for_action_cancellation_time_calculation)" />
+    <param name="rate" value="$(arg rate)" />
+    <param name="run_on_simulator" value="$(arg run_on_simulator)" />
+    <param name="required_battery_remain" value="$(arg required_battery_remain)" />
+    <param name="required_storage_ratio" value="$(arg required_storage_ratio)" />
+    <param name="shutdown_battery_remain" value="$(arg shutdown_battery_remain)" />
+    <param name="shutdown_storage_ratio" value="$(arg shutdown_storage_ratio)" />
+    <param name="temperature_to_cool" value="$(arg temperature_to_cool)" />
+    <param name="temperature_to_revive" value="$(arg temperature_to_revive)" />
+    <param name="temperature_to_shutdown" value="$(arg temperature_to_shutdown)" />
+    <param name="user_container_name" value="$(arg user_container_name)" />
+    <param name="waiting_time_for_action_server" value="$(arg waiting_time_for_action_server)" />
+    <param name="waiting_time_for_topic" value="$(arg waiting_time_for_topic)" />
+    <param name="wifi_duration" value="$(arg wifi_duration)" />
+  </node>
+</launch>

@@ -1,0 +1,143 @@
+<?xml version="1.0"?>
+<robot name="iss">
+
+  <link name="base" />
+
+  <link name="iss_body">
+
+    <inertial>
+      <mass value="183353" />
+      <origin rpy="0 0 0" xyz="-6.03 0.31 3.59" />
+      <inertia ixx="10276978" ixy="-1084837" ixz="597098" iyy="31940398" iyz="-614081" izz="40019058" />
+    </inertial>
+
+    <visual name="cupola">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/cupola.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4586144 -6.8356992 6.8434244" />
+    </visual>
+    <collision name="cupola">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/cupola.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4586144 -6.8356992 6.8434244" />
+    </collision>
+
+    <visual name="eu_lab">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/eu_lab.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9325664  2.3509732 4.8505872" />
+    </visual>
+    <collision name="eu_lab">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/eu_lab.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9325664  2.3509732 4.8505872" />
+    </collision>
+
+    <visual name="jpm">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/jpm.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />
+    </visual>
+    <collision name="jpm">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/jpm.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />
+    </collision>
+
+    <visual name="node_1">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_1.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4630848 -0.0027432 4.8508666" />
+    </visual>
+    <collision name="node_1">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_1.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4630848 -0.0027432 4.8508666" />
+    </collision>
+
+    <visual name="node_2">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_2.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9344206  0.0107442 4.8558958" />
+    </visual>
+    <collision name="node_2">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_2.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="10.9344206  0.0107442 4.8558958" />
+    </collision>
+
+    <visual name="node_3">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_3.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4586144 -6.6356992 4.8434244" />
+    </visual>
+    <collision name="node_3">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/node_3.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="-4.4586144 -6.6356992 4.8434244" />
+    </collision>
+
+<!--
+    <visual name="us_lab">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/us_lab.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="6.3085472  0.0064770 4.8508920" />
+    </visual>
+    <collision name="us_lab">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/us_lab.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="6.3085472  0.0064770 4.8508920" />
+    </collision>
+-->
+  </link>
+  <joint name="iss_joint" type="fixed">
+    <parent link="base" />
+    <child link="iss_body" />
+  </joint>
+
+  <link name="dock_body">
+    <visual name="docking_station">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/docking_station.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </visual>
+    <collision name="docking_station">
+      <geometry>
+        <mesh filename="package://description/media/meshes/iss/docking_station.dae" />
+      </geometry>
+      <origin rpy="0 0 0" xyz="0 0 0" />
+    </collision>
+  </link>
+  <joint name="dock_joint" type="fixed">
+    <parent link="iss_body" />
+    <child link="dock_body" />
+    <!--
+      The origin in the JPM Ref. coordinate is the folowing origin values (in the iss_body coordinate).
+      <origin rpy="3.1415926535898 0 -1.5707963267949" xyz="10.9358938 -2.2364698 4.8505872" />
+
+      The position of the docking station is located relative to the above origin in the following direction
+       (xyz = "0 -1.15 0.73")
+    -->
+    <origin rpy="3.1415926535898 0 -1.5707963267949" xyz="10.9358938 -3.3864698 4.1205872" />
+  </joint>
+
+  <gazebo>
+    <plugin name="issdyn" filename="libissdyn.so" />
+  </gazebo>
+
+</robot>

@@ -1,0 +1,64 @@
+<launch>
+
+  <!-- 
+  <arg name="model" default="$(find description)/urdf/ib2.urdf" />
+  <arg name="gui" default="True" />
+
+  <param name="robot_description" textfile="$(arg model)" />
+  <param name="use_gui" value="$(arg gui)" />
+
+  <node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" /> 
+  -->
+
+  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find description)/rviz/urdf.rviz" required="True" />
+
+  <!-- 
+    Settings of robot_state_publisher to output tf_static messages.
+  -->
+  <param name="ib2_description"
+   command="sh $(find description)/script/load_gazebo_urdf_for_rviz.sh $(find description)/model/ib2/ib2.urdf" />
+  <node name="ib2_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">  
+    <remap from="robot_description" to="ib2_description" />
+    <param name="publish_frequency" value="50.0" />
+  </node>
+
+  <param name="custom_object_01_description"
+   command="sh $(find description)/script/load_gazebo_urdf_for_rviz.sh $(find description)/model/custom_object_01/custom_object_01.urdf" />
+  <node name="custom_object_01_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">  
+    <remap from="robot_description" to="custom_object_01_description" />
+    <param name="publish_frequency" value="50.0" />
+  </node>
+
+  <param name="iss_description" textfile="$(find description)/urdf/iss.urdf"/>
+  <node name="iss_state_publisher" pkg="robot_state_publisher" type="robot_state_publisher">  
+    <remap from="robot_description" to="iss_description" />
+    <param name="publish_frequency" value="50.0" />
+  </node>
+
+  <!--
+    For moving models,
+    trans plugin is applied to publish tf messages of
+    the model's current coordinates.
+  -->
+  <node name="trans_ib2" pkg="trans" type="trans"  output="screen">
+    <param name="model_name"  value="ib2" />
+    <param name="world_frame" value="base" />
+    <param name="base_frame"  value="body" />
+    <param name="updateFreqHz"  value="50" />
+  </node>
+
+  <node name="trans_iss" pkg="trans" type="trans"  output="screen">
+    <param name="model_name"  value="iss" />
+    <param name="world_frame" value="base" />
+    <param name="base_frame"  value="iss_body" />
+    <param name="updateFreqHz"  value="50" />
+  </node>
+
+  <node name="trans_custom_object_01" pkg="trans" type="trans"  output="screen">
+    <param name="model_name"  value="custom_object_01" />
+    <param name="world_frame" value="base" />
+    <param name="base_frame"  value="custom_object_01_body" />
+    <param name="updateFreqHz"  value="50" />
+  </node>
+
+</launch>

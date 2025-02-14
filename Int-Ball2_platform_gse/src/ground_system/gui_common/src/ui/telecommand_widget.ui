@@ -1,0 +1,417 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>intball::TelecommandWidget</class>
+ <widget class="QWidget" name="intball::TelecommandWidget">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1820</width>
+    <height>1040</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1820</width>
+    <height>900</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>16777215</width>
+    <height>16777215</height>
+   </size>
+  </property>
+  <property name="font">
+   <font>
+    <family>Roboto</family>
+   </font>
+  </property>
+  <property name="windowTitle">
+   <string>Form</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <property name="leftMargin">
+    <number>0</number>
+   </property>
+   <property name="topMargin">
+    <number>0</number>
+   </property>
+   <property name="rightMargin">
+    <number>30</number>
+   </property>
+   <property name="bottomMargin">
+    <number>10</number>
+   </property>
+   <property name="spacing">
+    <number>0</number>
+   </property>
+   <item row="0" column="0" rowspan="5">
+    <widget class="QWidget" name="column001" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>500</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>500</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+      </font>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,0">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="intball::TelecommandManagerWidget" name="widgetManager" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>290</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="intball::TelecommandTargetWidget" name="widgetTarget" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>350</height>
+         </size>
+        </property>
+        <property name="font">
+         <font>
+          <family>Roboto</family>
+         </font>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="intball::TelecommandNavigationWidget" name="widgetNavigation" native="true">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>200</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="2" rowspan="6">
+    <widget class="QWidget" name="column003" native="true">
+     <property name="minimumSize">
+      <size>
+       <width>1000</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>1000</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+      </font>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_3">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="QScrollArea" name="scrollArea">
+        <property name="widgetResizable">
+         <bool>true</bool>
+        </property>
+        <widget class="QWidget" name="scrollAreaWidgetContents">
+         <property name="geometry">
+          <rect>
+           <x>0</x>
+           <y>0</y>
+           <width>998</width>
+           <height>1028</height>
+          </rect>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_4">
+          <item>
+           <widget class="intball::TelecommandCameraMicrophoneSettingsWidget" name="widgetCameraMicrophoneSettings" native="true"/>
+          </item>
+          <item>
+           <widget class="intball::TelecommandLedSettingsWidget" name="widgetLedDisplaySettings" native="true">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <family>Roboto</family>
+             </font>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="intball::TelecommandRosparamWidget" name="widgetRosparams" native="true">
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>16777215</height>
+             </size>
+            </property>
+            <property name="font">
+             <font>
+              <family>Roboto</family>
+             </font>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="3" rowspan="6">
+    <widget class="QWidget" name="logArea" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Fixed" vsizetype="Expanding">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>800</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>800</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_5">
+      <item>
+       <widget class="QLabel" name="labelLogArea">
+        <property name="text">
+         <string>Telecommand logs</string>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="0" column="1" rowspan="5">
+    <widget class="QWidget" name="column002" native="true">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>500</width>
+       <height>0</height>
+      </size>
+     </property>
+     <property name="maximumSize">
+      <size>
+       <width>500</width>
+       <height>16777215</height>
+      </size>
+     </property>
+     <property name="font">
+      <font>
+       <family>Roboto</family>
+      </font>
+     </property>
+     <layout class="QVBoxLayout" name="verticalLayout_2">
+      <property name="spacing">
+       <number>0</number>
+      </property>
+      <property name="sizeConstraint">
+       <enum>QLayout::SetMinimumSize</enum>
+      </property>
+      <property name="leftMargin">
+       <number>0</number>
+      </property>
+      <property name="topMargin">
+       <number>0</number>
+      </property>
+      <property name="rightMargin">
+       <number>0</number>
+      </property>
+      <property name="bottomMargin">
+       <number>0</number>
+      </property>
+      <item>
+       <widget class="intball::TelecommandCameraMicrophoneWidget" name="widgetCameraMicrophone" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>200</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="intball::TelecommandPropWidget" name="widgetProp" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>250</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="intball::TelecommandLedWidget" name="widgetLedDisplay" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>150</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="intball::TelecommandDockWidget" name="widgetDock" native="true">
+        <property name="maximumSize">
+         <size>
+          <width>16777215</width>
+          <height>250</height>
+         </size>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>intball::TelecommandCameraMicrophoneSettingsWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_camera_microphone_settings_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandLedWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_led_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandCameraMicrophoneWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_camera_microphone_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandTargetWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_target_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandDockWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_dock_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandManagerWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_manager_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandRosparamWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_rosparam_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandPropWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_prop_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandNavigationWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_navigation_widget.h</header>
+   <container>1</container>
+  </customwidget>
+  <customwidget>
+   <class>intball::TelecommandLedSettingsWidget</class>
+   <extends>QWidget</extends>
+   <header>ui/telecommand_led_settings_widget.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>

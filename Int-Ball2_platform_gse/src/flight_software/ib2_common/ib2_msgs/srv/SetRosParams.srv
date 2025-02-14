@@ -1,0 +1,6 @@
+# request
+RosParam[] params
+---
+# response
+RosParam[] success_params
+bool success_all

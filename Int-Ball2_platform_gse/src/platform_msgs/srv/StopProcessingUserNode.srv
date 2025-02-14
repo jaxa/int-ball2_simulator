@@ -1,0 +1,13 @@
+#
+# There are no request parameters
+#
+
+---
+#
+# Response
+#
+
+uint8 SUCCESS                 = 0
+uint8 ERROR                   = 255
+
+uint8 result

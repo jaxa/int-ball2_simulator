@@ -1,0 +1,137 @@
+# Ctl Parameter
+ctl:
+  interval_status    :  0.1
+  interval_feedback  :  0.5
+  duration_goal      :  3.0 #1.0
+  tolerance_pos      :  0.10 #0.03
+  tolerance_att      :  0.5 #0.00872664625997165 # [rad] ->0.5 deg
+  tolerance_pos_stop :  0.30 #0.1
+  tolerance_att_stop :  1 #0.00872664625997165 # [rad] ->0.5 deg
+  wait_cancel        :  10.0 #2.0
+  wait_release       :  0
+  wait_calibration   : 15.0
+  wait_docking       : 10.0
+
+navigation_check:
+  nc : 400 #  200
+  dr : 5 #  500.0 # [m/s]
+  dv : 900 #  500.0 # [m/s2]
+  da : 20000 #10000.0 # [m/s3]
+  dq : 400 #  200.0 # [rad/s]
+  dw : 400 #  200.0 # [rad/s2]
+
+# Ctl Body Parameter
+ctl_body:
+  mass : 3.216
+  Is : {
+    xx : 0.0136, yy : 0.0136, zz : 0.0136,
+    xy : 0.0,    yz : 0.0,    zx : 0.0
+  }
+
+#Pos Controller Parameter
+pos_ctl: 
+  kp              : 0.6219
+  ki              : 0.0
+  kd              : 1.1152
+  fi_max          : 0.020
+
+#Att Controller Parameter
+att_ctl: 
+  kp              : 2.6181
+  kd              : 3.2361
+
+#Pos Profiler Parameter
+pos_profile: 
+  f_max           : 181.0032e-3
+  v_max           : 0.20
+  x_threshold     : 0.05
+  eta             : 0.4
+  eta_max         : 0.4
+  eps_rm          : 0.001
+  aip : {x : 0.300, y : 0.0, z : 0.0} #{x : 0.920, y : 0.0, z : 0.0} # [m]
+  rdp_: {x : 0.095, y : 0.0, z : 0.0} # [m]
+
+#Att Profiler Parameter
+att_profile: 
+  t_max           : 8.1904e-3
+  w_max           : 0.436332312998582
+  theta_threshold : 0.017453292519943
+  eps_qm          : 1.0e-9
+  aia : {x : 0.0, y : 0.0, z : 0.707106781186547524401, w : 0.707106781186547524401}
+  rda : {x : 0.0, y : 0.0, z : 0.0, w : 1.0}
+  scan : {
+    axis1 : { x : 1.0, y : 0.0, z : 0.0},
+    axis2 : { x : 0.0, y : 0.0, z : 1.0},
+    axis3 : { x : 0.0, y : 1.0, z : 0.0}
+  }
+
+#Fan Allocation Parameter
+fan:
+  number       : 8
+  Fmax         : 60.e-3
+  PWMmax       : 1.0
+  n_saturation : 4
+  fj0 : {
+    fan01  : 0.0,
+    fan02  : 0.0,
+    fan03  : 0.0,
+    fan04  : 0.0,
+    fan05  : 0.0,
+    fan06  : 0.0,
+    fan07  : 0.0,
+    fan08  : 0.0
+  }
+  kj : {
+    fan01  : 4.082482905,
+    fan02  : 4.082482905,
+    fan03  : 4.082482905,
+    fan04  : 4.082482905,
+    fan05  : 4.082482905,
+    fan06  : 4.082482905,
+    fan07  : 4.082482905,
+    fan08  : 4.082482905
+  }
+  Wp : {
+    fan01 : { Fx : 0.0,    Fy : 0.0,    Fz : 0.0,    Tx :  0.0,    Ty :  0.0,    Tz : 7.3257},
+    fan02 : { Fx : 0.0,    Fy : 0.6027, Fz : 0.0,    Tx : 19.8198, Ty :  0.0,    Tz : 0.0},
+    fan03 : { Fx : 0.0,    Fy : 0.6027, Fz : 0.4911, Tx :  0.0,    Ty : 13.1935, Tz : 0.0},
+    fan04 : { Fx : 0.0,    Fy : 0.0,    Fz : 0.4911, Tx : 19.8198, Ty : 13.1935, Tz : 7.3257},
+    fan05 : { Fx : 0.3315, Fy : 0.0,    Fz : 0.4911, Tx : 19.8198, Ty :  0.0,    Tz : 0.0},
+    fan06 : { Fx : 0.3315, Fy : 0.0,    Fz : 0.0,    Tx :  0.0,    Ty : 13.1935, Tz : 0.0},
+    fan07 : { Fx : 0.3315, Fy : 0.6027, Fz : 0.0,    Tx : 19.8198, Ty : 13.1935, Tz : 7.3257},
+    fan08 : { Fx : 0.3315, Fy : 0.6027, Fz : 0.4911, Tx :  0.0,    Ty :  0.0,    Tz : 7.3257}
+  }
+  Wm : {
+    fan01 : { Fx : 0.3315, Fy : 0.6027, Fz : 0.4911, Tx : 19.8198, Ty : 13.1935, Tz : 0.0},
+    fan02 : { Fx : 0.3315, Fy : 0.0,    Fz : 0.4911, Tx :  0.0,    Ty : 13.1935, Tz : 7.3257},
+    fan03 : { Fx : 0.3315, Fy : 0.0,    Fz : 0.0,    Tx : 19.8198, Ty :  0.0,    Tz : 7.3257},
+    fan04 : { Fx : 0.3315, Fy : 0.6027, Fz : 0.0,    Tx :  0.0,    Ty :  0.0,    Tz : 0.0},
+    fan05 : { Fx : 0.0,    Fy : 0.6027, Fz : 0.0,    Tx :  0.0,    Ty : 13.1935, Tz : 7.3257},
+    fan06 : { Fx : 0.0,    Fy : 0.6027, Fz : 0.4911, Tx : 19.8198, Ty :  0.0,    Tz : 7.3257},
+    fan07 : { Fx : 0.0,    Fy : 0.0,    Fz : 0.4911, Tx :  0.0,    Ty :  0.0,    Tz : 0.0},
+    fan08 : { Fx : 0.0,    Fy : 0.0,    Fz : 0.0,    Tx : 19.8198, Ty : 13.1935, Tz : 0.0}
+  }
+
+#Navigation Data Que Size
+nav_que:
+  size       : 50
+
+#Docking Check Parameter
+docking_chk:
+  tolerance_pos       : 0.5 #0.03   # [m]
+  tolerance_att       : 1 #0.175  # [rad] 
+  docking_pos         : {x : 0.0, y : 0.0, z : 0.0} # [m]
+  keep_state_num      : 50     #[-]  
+  sigma_start_jud_num : 10     # [-]
+  sigma_start_dacc    : 0.3    # [m/s2]
+  sigma_start_drate   : 0.02   # [rad/s]
+
+#Collision ,Crew Capture/Relese Parameter
+colcaprel_chk:
+  colcap_id_jud_num   : 400    # [-]
+  sigma_start_jud_num : 10     # [-]
+  sigma_end_jud_num   : 100    # [-]
+  sigma_start_dacc    : 2 #1 #1000000 #0.3    # [m/s2]
+  sigma_end_dacc      : 1 #0.5 #0.000001 #0.15   # [m/s2]
+  sigma_start_drate   : 0.2 #0.1 #1000000 #0.02   # [rad/s]
+  sigma_end_drate     : 0.1 #0.05 #0.000001 #0.01   # [rad/s]

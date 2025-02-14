@@ -1,0 +1,8 @@
+# request
+uint8 intball_index
+---------------
+# result
+uint8 SUCCESS = 0
+uint8 FAILED = 1
+
+uint8 result

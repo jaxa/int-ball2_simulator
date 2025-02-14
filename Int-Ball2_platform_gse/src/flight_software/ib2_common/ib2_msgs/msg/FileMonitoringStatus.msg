@@ -1,0 +1,2 @@
+time check_time
+string timesync_log

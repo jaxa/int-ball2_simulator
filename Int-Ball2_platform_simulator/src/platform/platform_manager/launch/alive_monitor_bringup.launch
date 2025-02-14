@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find alive_monitor)/launch/bringup.launch" />
+
+  <!-- Overwrites the parameters set in alive_monitor's bringup.launch -->
+  <group ns="alive_monitor">
+    <param name="config_path" value="$(find platform_manager)/config/alive_monitor_config.yml" />
+  </group>
+</launch>

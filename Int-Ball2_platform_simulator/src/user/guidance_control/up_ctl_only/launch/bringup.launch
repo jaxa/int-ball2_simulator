@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find up_ctl_only)/ctl.yaml" />
+  <node name="up_ctl_only" pkg="up_ctl_only" type="up_ctl_only" />
+
+  <include file="$(find user_program_interface)/launch/user_program_interface.launch">
+  </include>
+</launch>

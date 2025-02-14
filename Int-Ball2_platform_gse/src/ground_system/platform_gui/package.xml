@@ -1,0 +1,33 @@
+<package format="2">
+  <name>platform_gui</name>
+  <version>0.0.0</version>
+  <description> The platform_gui package.
+  </description>
+  <maintainer email="aaa@aaa.org">aaa</maintainer>
+  <license>GPL</license>
+
+  <url>TODO</url>
+  <author>TODO</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>qtbase5-dev</build_depend>
+  <build_depend>roscpp</build_depend>
+  <build_depend>ib2_msgs</build_depend>
+  <build_depend>platform_msgs</build_depend>
+  <build_depend>communication_software</build_depend>
+  <build_depend>gui_common</build_depend>
+
+  <exec_depend>libqt5-core</exec_depend>
+  <exec_depend>libqt5-gui</exec_depend>
+  <exec_depend>libqt5-widgets</exec_depend>
+  <exec_depend>roscpp</exec_depend>
+  <exec_depend>ib2_msgs</exec_depend>
+  <exec_depend>platform_msgs</exec_depend>
+  <exec_depend>communication_software</exec_depend>
+  <exec_depend>gui_common</exec_depend>
+
+  <export>
+      <rosdoc config="${prefix}/rosdoc.yaml"/>
+  </export>
+</package>

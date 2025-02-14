@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/ground_system_common">
+        <file>image/information-solid.svg</file>
+    </qresource>
+</RCC>

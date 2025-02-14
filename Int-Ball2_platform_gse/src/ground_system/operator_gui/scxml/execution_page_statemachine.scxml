@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scxml xmlns="http://www.w3.org/2005/07/scxml" version="1.0" binding="early" xmlns:qt="http://www.qt.io/2015/02/scxml-ext" name="ExecutionPageStateMachine" qt:editorversion="4.9.1" initial="InitialState">
+    <qt:editorinfo initialGeometry="-112.66;-115.01;-20;-20;40;40"/>
+    <state id="InitialState">
+        <qt:editorinfo geometry="-112.66;85.45;-61.08;-50;122.16;100" scenegeometry="-112.66;85.45;-173.74;35.45;122.16;100"/>
+        <transition type="external" event="NormalOperation.Start" target="NormalOperation">
+            <qt:editorinfo endTargetFactors="16.34;15.58"/>
+        </transition>
+    </state>
+    <state id="NormalOperation" initial="NormalOperation.InPreparation">
+        <qt:editorinfo geometry="516.65;-225.17;-446.90;-531.56;1439.65;1226.76" scenegeometry="516.65;-225.17;69.75;-756.73;1439.65;1226.76"/>
+        <state id="Pause" initial="Pause.Waiting">
+            <qt:editorinfo geometry="336.71;195.97;-78.66;-105.59;237.75;343.70" scenegeometry="853.36;-29.20;774.70;-134.79;237.75;343.70"/>
+            <state id="Pause.Completed">
+                <qt:editorinfo geometry="-60.35;168.11;13.25;-50;186.19;100" scenegeometry="793.01;138.91;806.26;88.91;186.19;100"/>
+                <transition type="external" event="TargetGuidanceControl.Restart" target="History_2">
+                    <qt:editorinfo localGeometry="-182.69;-107.07"/>
+                </transition>
+            </state>
+            <state id="Pause.Waiting">
+                <qt:editorinfo geometry="-77.13;17.79;33;-50.41;177.84;100" scenegeometry="776.23;-11.41;809.23;-61.82;177.84;100"/>
+                <transition type="external" event="Pause.Stopped" target="Pause.Completed"/>
+            </state>
+            <transition type="external" event="EmergencyStop.Clicked" target="EmergencyStop">
+                <qt:editorinfo startTargetFactors="6.87;87.48" endTargetFactors="87.83;18.99"/>
+            </transition>
+            <transition type="external" event="Cancel.Clicked" target="Cancel">
+                <qt:editorinfo startTargetFactors="93.81;35.53" movePoint="2.85;-47.06"/>
+            </transition>
+        </state>
+        <state id="TargetGuidanceControl">
+            <qt:editorinfo removedInitial="State_18" geometry="54.07;-170.92;-351.70;-82.80;1098.54;300.40" scenegeometry="570.72;-396.09;219.02;-478.89;1098.54;300.40"/>
+            <state id="TargetGuidanceControl.Processing">
+                <qt:editorinfo geometry="448.95;27.82;-38.38;-50;316.27;100" scenegeometry="1019.67;-368.27;981.29;-418.27;316.27;100"/>
+                <transition type="external" event="TargetGuidanceControl.Arrived" target="TargetGuidanceControl.Waiting">
+                    <qt:editorinfo startTargetFactors="52.87;73" endTargetFactors="70.65;33.40"/>
+                </transition>
+            </state>
+            <state id="TargetGuidanceControl.Goal">
+                <qt:editorinfo geometry="-282.54;68.60;-28.45;-50;245.27;100" scenegeometry="288.18;-327.49;259.73;-377.49;245.27;100"/>
+                <transition type="external" event="NormalOperation.Finish" target="NormalOperation.PostProcess">
+                    <qt:editorinfo movePoint="-79.26;47.35" localGeometry="-296.43;279.61"/>
+                </transition>
+            </state>
+            <transition type="external" event="TargetGuidanceControl.PauseClicked" target="Pause.Waiting">
+                <qt:editorinfo startTargetFactors="57.90;94.42" movePoint="26.87;-38.24" endTargetFactors="23.56;50"/>
+            </transition>
+            <history type="shallow" id="History_2">
+                <qt:editorinfo geometry="145.96;151.93;-20;-20;40;40" scenegeometry="716.68;-244.16;696.68;-264.16;40;40"/>
+            </history>
+            <transition type="external" event="Cancel.Clicked" target="Cancel">
+                <qt:editorinfo startTargetFactors="76.56;93.21" localGeometry="185.04;206" endTargetFactors="54.90;13.27"/>
+            </transition>
+            <transition type="external" event="EmergencyStop.Clicked" target="EmergencyStop">
+                <qt:editorinfo startTargetFactors="6.71;72.96"/>
+            </transition>
+            <state id="TargetGuidanceControl.Waiting">
+                <qt:editorinfo geometry="56.83;69.45;-92.18;-50;271.31;100" scenegeometry="627.55;-326.64;535.37;-376.64;271.31;100"/>
+                <transition type="external" event="TargetGuidanceControl.CheckNext" target="NormalOperation.InPreparation">
+                    <qt:editorinfo startTargetFactors="11.23;49.17" movePoint="96.19;-36.82"/>
+                </transition>
+            </state>
+        </state>
+        <transition type="external" event="Error.Detected" target="ErrorState">
+            <qt:editorinfo startTargetFactors="2.45;82.73"/>
+        </transition>
+        <state id="Cancel">
+            <qt:editorinfo geometry="627.36;517.30;-217.19;-34.28;532.82;183.58" scenegeometry="1144.01;292.13;926.82;257.85;532.82;183.58"/>
+            <state id="Cancel.Waiting">
+                <qt:editorinfo geometry="179.49;76.24;-118.35;-50;189.04;100" scenegeometry="1323.50;368.37;1205.15;318.37;189.04;100"/>
+                <transition type="external" event="Cancel.Stopped" target="Cancel.Completed"/>
+            </state>
+            <state id="Cancel.Completed">
+                <qt:editorinfo geometry="-120.81;79.30;-60;-50;158.86;100" scenegeometry="1023.20;371.43;963.20;321.43;158.86;100"/>
+                <transition type="external" event="NormalOperation.Finish" target="NormalOperation.PostProcess">
+                    <qt:editorinfo startTargetFactors="29.38;56.54" movePoint="-15.85;23.77" endTargetFactors="44.70;70.25"/>
+                </transition>
+            </state>
+        </state>
+        <state id="NormalOperation.InPreparation">
+            <qt:editorinfo geometry="298.25;-367.95;-174.50;-50;304.79;100" scenegeometry="814.90;-593.12;640.40;-643.12;304.79;100"/>
+            <transition type="external" event="TargetGuidanceControl.GoNext" target="TargetGuidanceControl.Processing">
+                <qt:editorinfo movePoint="-62.16;44.20" localGeometry="338.43;104.65" endTargetFactors="81.87;35.40"/>
+            </transition>
+            <transition type="external" event="TargetGuidanceControl.ReachTheGoal" target="TargetGuidanceControl.Goal">
+                <qt:editorinfo startTargetFactors="19.16;80.37" movePoint="-45.89;-28.45" localGeometry="-181.52;18.04"/>
+            </transition>
+        </state>
+        <state id="NormalOperation.PostProcess">
+            <qt:editorinfo geometry="-360.75;622.92;-66.15;-50;263.34;100" scenegeometry="155.90;397.75;89.75;347.75;263.34;100"/>
+            <transition type="external" event="SwitchPage" target="InitialState"/>
+        </state>
+        <state id="EmergencyStop">
+            <qt:editorinfo geometry="-276.17;294.58;-42.13;-150.98;236.02;100" scenegeometry="240.48;69.41;198.35;-81.57;236.02;100"/>
+            <transition type="external" event="NormalOperation.Finish" target="NormalOperation.PostProcess">
+                <qt:editorinfo startTargetFactors="50.57;96.10" movePoint="21.13;-34.34" endTargetFactors="72.33;48.64"/>
+            </transition>
+        </state>
+    </state>
+    <state id="ErrorState">
+        <qt:editorinfo geometry="-112.66;573.81;-60;-50;120;100" scenegeometry="-112.66;573.81;-172.66;523.81;120;100"/>
+        <transition type="external" event="SwitchPage" target="InitialState"/>
+    </state>
+</scxml>

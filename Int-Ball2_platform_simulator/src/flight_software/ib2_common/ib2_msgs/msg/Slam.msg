@@ -1,0 +1,16 @@
+time stamp
+int32 slam_status
+float32 x_s
+float32 y_s
+float32 z_s
+float32 v_x
+float32 v_y
+float32 v_z
+float32 qx
+float32 qy
+float32 qz
+float32 qw
+float32 w_x
+float32 w_y
+float32 w_z
+uint32 point

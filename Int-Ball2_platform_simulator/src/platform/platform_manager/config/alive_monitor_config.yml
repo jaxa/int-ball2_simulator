@@ -1,0 +1,64 @@
+topics:
+  - name:         "/ctl/status"
+    data_class:   "ib2_msgs/CtlStatus"
+    timeout:      3
+  - name:         "/prop/status"
+    data_class:   "ib2_msgs/FanStatus"
+    timeout:      3
+  - name:         "/sensor_fusion/navigation_status"
+    data_class:   "ib2_msgs/NavigationStatus"
+    timeout:      3
+  - name:         "/slam_wrapper/slam"
+    data_class:   "ib2_msgs/Slam"
+    timeout:      3
+  - name:         "/imu/imu"
+    data_class:   "ib2_msgs/IMU"
+    timeout:      3
+  - name:         "/camera_and_microphone/status"
+    data_class:   "ib2_msgs/MainCameraStatus"
+    timeout:      3
+  - name:         "/display_manager/status"
+    data_class:   "ib2_msgs/DisplayManagerStatus"
+    timeout:      3
+  - name:         "/task_manager/mode"
+    data_class:   "ib2_msgs/Mode"
+    timeout:      3
+  - name:         "/system_monitor/status"
+    data_class:   "ib2_msgs/SystemStatus"
+    timeout:      3
+  - name:         "/file_monitor/status"
+    data_class:   "ib2_msgs/FileMonitoringStatus"
+    timeout:      180
+  - name:         "/parameter_manager/publishing_params"
+    data_class:   "ib2_msgs/RosParams"
+    timeout:      3
+  - name:         "/platform_manager/status"
+    data_class:   "platform_msgs/ManagerStatus"
+    timeout:      3
+  - name:         "/platform_monitor/status"
+    data_class:   "platform_msgs/MonitorStatus"
+    timeout:      3
+  - name:         "/ctl/duty"
+    data_class:   "std_msgs/Float64MultiArray"
+    timeout:      3
+  - name:         "/camera_main/status"
+    data_class:   "platform_msgs/CameraStatus"
+    timeout:      3
+  - name:         "/camera_left/status"
+    data_class:   "platform_msgs/CameraStatus"
+    timeout:      3
+  - name:         "/camera_right/status"
+    data_class:   "platform_msgs/CameraStatus"
+    timeout:      3
+  - name:         "/microphone/status"
+    data_class:   "platform_msgs/MicrophoneStatus"
+    timeout:      3
+services:
+  - name:         "/led_display_left/switch_power"
+    timeout:      10
+  - name:         "/led_display_right/switch_power"
+    timeout:      10
+  - name:         "/ctl_only/get_loggers"
+    timeout:      10
+  - name:         "/fsm/get_loggers"
+    timeout:      10

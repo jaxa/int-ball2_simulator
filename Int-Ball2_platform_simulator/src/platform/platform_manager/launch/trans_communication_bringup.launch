@@ -1,0 +1,11 @@
+<?xml version="1.0"?>
+<launch>
+  <include file="$(find trans_communication)/launch/bringup.launch" />
+
+  <!-- Overwrites the parameters set in trans_communication's bringup.launch -->
+  <group ns="trans_communication">
+    <param name="config_path" value="$(find platform_manager)/config/trans_communication_config.yml" />
+    <!-- 49100 and 49101 are also used in normal operations -->
+    <rosparam param="telemetry_send_port" subst_value="True">[49100, 49101, 49200, 49201]</rosparam>
+  </group>
+</launch>

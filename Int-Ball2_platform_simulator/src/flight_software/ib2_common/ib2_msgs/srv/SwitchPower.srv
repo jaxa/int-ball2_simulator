@@ -1,0 +1,5 @@
+# Device Power cotrol service
+PowerStatus power
+---
+# response
+PowerStatus current_power

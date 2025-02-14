@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+
+  <rosparam command="load" file="$(find imu)/epsonG370.yaml" />
+  <node name="epsonG370" pkg="imu" type="epsonG370" />
+
+</launch>
