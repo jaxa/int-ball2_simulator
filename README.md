@@ -18,7 +18,7 @@
 <img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_pic.jpg" width="300" align="right" style="display: inline"/>
 **Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimetal Module (JEM) by remote control from the ground to take video images, supporting astronauts. Additionally, Int-Ball2 can run user-developed software as its extended functionality and can be used as a platform for demonstrating robotic technology in space.
 
-<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" width="300"/></div>
+<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2.png" width="300"/></div>
 
 
 **This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2 behaviour in the ISS/JEM enviornment with user developed programs. 
