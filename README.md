@@ -15,25 +15,22 @@
 ---
 
 ## Overview
-(※日本語のREADMEはこちらをご覧ください→README_JP.md)
-
+<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_pic.jpg" width="300" align="right" style="display: inline"/>
 **Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimetal Module (JEM) by remote control from the ground to take video images, supporting astronauts. Additionally, Int-Ball2 can run user-developed software as its extended functionality and can be used as a platform for demonstrating robotic technology in space.
 
-**This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**:
-- Allows testing and validation of drone-like robot behavior and algorithms.
-- Provides a user platform to integrate custom functionalities and plugins.
-- Offers Docker support for streamlined setup (planned or partially implemented).
+<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" width="300"/></div>
 
+
+**This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2 behaviour in the ISS/JEM enviornment with user developed programs. 
 
 
 
 
 ## Key Features
-- **Realistic ROS-Based Flight Software** : Provides sensor data acquisition and actuator control interfaces for Int-Ball2 as individual ROS nodes, enabling selective activation or deactivation of existing functions (e.g., Visual SLAM, sensor fusion).
-- **Docker-Powered Flexible User Program Integration** : Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers, without modifying the core flight software. Existing modules can be combined with or replaced by user-developed features.
-- **Seamless Integration with Ground Support Equipment (GSE)** : Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE, safely coexisting with the existing flight software.
-- **Docker-Powered Development and Execution** : Isolates user programs from the host system, simplifying dependency management for software like nasm, ffmpeg, x264, VLC, and Qt.
-- **Comprehensive Simulation Environment** : Utilizes Gazebo to provide a near-realistic Int-Ball2 model and an optional ISS environment. The GUI allows easy start and stop of simulations.
+- **ROS/Gazebo Simulator** : Simulates Int-Ball2 behaviour in the ISS/JEM environment. It includes plugin simulating the airflow. Int-Ball2 sensor data acquisition and actuator control interfaces for Int-Ball2 could be obtained. (SLAM is not simulated)
+- **User Program Interface** : Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers. 
+- **User Program Ground Support Equipment (GSE)** : Smulates the GUI of the GSE for user program deployment in the acutal operation. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: this is not the GSE for nominal Int-Ball2 video-taking operation)
+
 
 
 ## Requirements
