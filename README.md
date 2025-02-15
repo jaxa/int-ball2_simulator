@@ -17,7 +17,7 @@
 ## Overview
 (※日本語のREADMEはこちらをご覧ください→README_JP.md)
 
-**Int-Ball2** (JEM Internal Ball Camera 2 System) is a camera robot operating inside the Japanese Experiment Module (JEM) on the ISS. It can be remotely controlled from the ground and also supports user-developed software for extended functionalities. This platform is often used in the [Kibo Robot Programming Challenge (K-RPC)](https://jaxa.krpc.jp/) to demonstrate and develop robotic technologies in space.
+**Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimetal Module (JEM) by remote control from the ground to take video images, supporting astronauts. Additionally, Int-Ball2 can run user-developed software as its extended functionality and can be used as a platform for demonstrating robotic technology in space.
 
 **This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**:
 - Allows testing and validation of drone-like robot behavior and algorithms.
@@ -34,7 +34,6 @@
 - **Seamless Integration with Ground Support Equipment (GSE)** : Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE, safely coexisting with the existing flight software.
 - **Docker-Powered Development and Execution** : Isolates user programs from the host system, simplifying dependency management for software like nasm, ffmpeg, x264, VLC, and Qt.
 - **Comprehensive Simulation Environment** : Utilizes Gazebo to provide a near-realistic Int-Ball2 model and an optional ISS environment. The GUI allows easy start and stop of simulations.
-- **Detailed Setup Instructions and Examples** : Covers everything from OS/ROS/Python installation to building GSE and simulator. Includes sample ROS package structures and roslaunch templates for user programs.
 
 
 ## Requirements
@@ -103,15 +102,15 @@ This Repository is provided by Japan Aerospace Exploration Agency.
 
 
 
+
+
+
 ## Referencess
-* [Wikipedia] [Int-Ball](https://en.wikipedia.org/wiki/Int-Ball)
 * [NewsRelease] [Int-Ball2が宇宙に旅立ちました！, 2023](https://humans-in-space.jaxa.jp/news/detail/003155.html)
-* [Paper] [Int-Ball2: On-Orbit Demonstration of Autonomous Intravehicular Flight and Docking for Image Capturing and Recharging, 2024](https://ieeexplore.ieee.org/document/10813456)
 * [Paper] [Int-Ball2: ISS JEM Internal Camera Robot with Increased Degree of Autonomy – Design and Initial Checkout, 2024](https://ieeexplore.ieee.org/document/10688008)
+*  [Paper] [Int-Ball2: On-Orbit Demonstration of Autonomous Intravehicular Flight and Docking for Image Capturing and Recharging, 2024](https://ieeexplore.ieee.org/document/10813456)
 * [Paer] [GNC Design and Orbital Performance Evaluation of ISS Onboard Autonomous Free-Flying Robot Int-Ball2, 2024](https://ieeexplore.ieee.org/document/10802183)
 * [Paper] [Complementary Ground Testing Method for Autonomous Flight System of Space Free-Flying Robot, 2024](https://ieeexplore.ieee.org/document/10521401)
-* [Paper] [Hardware-in-the-Loop Simulator with Low-Thrust Actuator for Free-Flying Robot's Omni-Directional Control, 2023](https://ieeexplore.ieee.org/document/10161499)
-* [Paper] [Int-Ball2: ISS JEM Internal Camera Robot with Increased Degree of Autonomy – Design and Initial Checkout, 2024](https://ieeexplore.ieee.org/document/10688008)
 * [Paper] [JEM船内可搬型ビデオカメラシステム実証2号機(Int-Ball2)による撮影作業の自動化, 2022](https://www.jstage.jst.go.jp/article/jsmermd/2022/0/2022_1P1-H07/_article/-char/ja/)
 * [Web] [ROS Melodic](https://wiki.ros.org/melodic)
 * [Web] [Gazebo 9.0.0 Release](https://classic.gazebosim.org/blog/gazebo9)
