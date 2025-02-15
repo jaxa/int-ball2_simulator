@@ -16,18 +16,16 @@
 
 ## Overview
 <img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2.png" width="300" align="right" style="display: inline"/>
-**Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimetal Module (JEM) by remote control from the ground to take video images, supporting astronauts. Additionally, Int-Ball2 can run user-developed software as its extended functionality and can be used as a platform for demonstrating robotic technology in space.
+**Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimental Module (JEM). It is remotely controlled from the ground to capture video images and support astronauts. Additionally, Int-Ball2 can run user-developed software as an extended functionality and can be used as a platform for demonstrating robotic technology in space.
 
-
-**This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2 behaviour in the ISS/JEM enviornment with user developed programs. 
-
-
+**This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2's behavior in the ISS/JEM environment with user-developed programs.
 
 
 ## Key Features
-- **ROS/Gazebo Simulator** : Simulates Int-Ball2 behaviour in the ISS/JEM environment. It includes plugin simulating the airflow. Int-Ball2 sensor data acquisition and actuator control interfaces for Int-Ball2 could be obtained. (SLAM is not simulated)
-- **User Program Interface** : Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers. 
-- **User Program Ground Support Equipment (GSE)** : Smulates the GUI of the GSE for user program deployment in the acutal operation. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: this is not the GSE for nominal Int-Ball2 video-taking operation)
+- **ROS/Gazebo Simulator**: Simulates Int-Ball2's behavior in the ISS/JEM environment. It includes a plugin simulating the airflow, sensor data acquisition, and actuator control interfaces for Int-Ball2 (SLAM is not simulated).
+- **User Program Interface**: Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers.
+- **User Program Ground Support Equipment (GSE)**: Simulates the GUI of the GSE for user program deployment in actual operations. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: This is not the GSE for nominal Int-Ball2 video-taking operations.)
+
 
 
 
@@ -48,9 +46,8 @@ Additional libraries:
 |Qt|5.12.3|
 
 
-
 ## Installation
-See [INSTALL.md](https://github.com/jaxa/int-ball2_simulator/blob/main/INSTALL.md) for installation. 
+See [INSTALL.md](https://github.com/jaxa/int-ball2_simulator/blob/main/INSTALL.md) for installation instructions.
 Additional information can be found in the [Int-Ball2 Technology Demonstration Platform User's Manual](https://github.com/jaxa/int-ball2_simulator/blob/main/docs/manual/Int-Ball2%20Technology%20Demonstration%20Platform%20User's%20Manual.pdf).
 
 
@@ -102,20 +99,19 @@ This Repository is provided by Japan Aerospace Exploration Agency.
 
 
 ## Referencess
-* [NewsRelease] [Int-Ball2が宇宙に旅立ちました！, 2023](https://humans-in-space.jaxa.jp/news/detail/003155.html)
+About Int-Ball2
 * [Paper] [Int-Ball2: ISS JEM Internal Camera Robot with Increased Degree of Autonomy – Design and Initial Checkout, 2024](https://ieeexplore.ieee.org/document/10688008)
 *  [Paper] [Int-Ball2: On-Orbit Demonstration of Autonomous Intravehicular Flight and Docking for Image Capturing and Recharging, 2024](https://ieeexplore.ieee.org/document/10813456)
-* [Paer] [GNC Design and Orbital Performance Evaluation of ISS Onboard Autonomous Free-Flying Robot Int-Ball2, 2024](https://ieeexplore.ieee.org/document/10802183)
-* [Paper] [Complementary Ground Testing Method for Autonomous Flight System of Space Free-Flying Robot, 2024](https://ieeexplore.ieee.org/document/10521401)
 * [Paper] [JEM船内可搬型ビデオカメラシステム実証2号機(Int-Ball2)による撮影作業の自動化, 2022](https://www.jstage.jst.go.jp/article/jsmermd/2022/0/2022_1P1-H07/_article/-char/ja/)
+* [Paper] [GNC Design and Orbital Performance Evaluation of ISS Onboard Autonomous Free-Flying Robot Int-Ball2, 2024](https://ieeexplore.ieee.org/document/10802183)
+* [Paper] [Complementary Ground Testing Method for Autonomous Flight System of Space Free-Flying Robot, 2024](https://ieeexplore.ieee.org/document/10521401)
+Others
 * [Web] [ROS Melodic](https://wiki.ros.org/melodic)
 * [Web] [Gazebo 9.0.0 Release](https://classic.gazebosim.org/blog/gazebo9)
 
 
 
 ## Future Plans
-TBD
-
 Stay tuned for updates!
 
 
