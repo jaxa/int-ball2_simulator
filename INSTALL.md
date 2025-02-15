@@ -205,7 +205,7 @@ Install "Qt" using the following procedure:
     ```
 
 ### 1.4.5 Font File
-Since the Int-Ball2 GSE uses the Roboto font, copy the font files to the following path and install them:
+- Since the Int-Ball2 GSE uses the Roboto font, copy the font files to the following path and install them:
     ```sh
     sudo cp Roboto*.ttf /usr/local/share/fonts/.
     fc-cache -f -v
@@ -232,19 +232,19 @@ Install “Docker” by following the procedure on the following website:
 Follow steps 1 and 2 of “Install using the apt repository”.
 
 ### 1.5.2 Python
-Install Docker-related packages on Python3:
+- Install Docker-related packages on Python3:
     ```sh
     pip3 install docker defusedxml netifaces
     ```
 
 ### 1.5.3 Container Activation Settings
-Ensure the services for containers are always active:
+- Ensure the services for containers are always active:
     ```sh
     sudo systemctl enable docker docker.socket 
     sudo systemctl start docker.socket 
     ```
 
-Grant the authority to activate containers to the user running this system. Assuming the target user is "nvidia":
+- Grant the authority to activate containers to the user running this system. Assuming the target user is "nvidia":
     ```sh
     # Authority setting
     sudo gpasswd -a nvidia docker 
@@ -253,7 +253,7 @@ Grant the authority to activate containers to the user running this system. Assu
     sudo service docker restart 
     ```
 
-Run the following command as the user executing this system to confirm no errors (e.g., "permission denied") occur. If operating via SSH, disconnect and reconnect the SSH session before proceeding.
+- Run the following command as the user executing this system to confirm no errors (e.g., "permission denied") occur. If operating via SSH, disconnect and reconnect the SSH session before proceeding.
     ```sh
     docker ps
     ```
@@ -281,25 +281,25 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
    Set the path to `Int-Ball2_platform_simulator` as `platform works` at `host_ib2_workspace` in `Int-Ball2_platform_simulator/src/platform_sim/platform_sim_tools/launch/platform_manager_bringup.launch`.
 
 ### 2.3 Setting up Containers
-Since the Technology Demonstration Platform executes the user program in a container, it is necessary to build the container for executing the User Demonstration Platform. The tag name (`ib2_user`) can be set arbitrarily but must have the prefix "ib2" for containers handled by the flight software.
+- Since the Technology Demonstration Platform executes the user program in a container, it is necessary to build the container for executing the User Demonstration Platform. The tag name (`ib2_user`) can be set arbitrarily but must have the prefix "ib2" for containers handled by the flight software.
    ```sh
    cd ~/platform_works/platform_docker/template
    docker build . -t ib2_user:0.1
    ```
 
 
-Docker images are not cross-platform compatible and cannot be used on different CPU architectures (e.g., images prepared on Intel/AMD for normal computers cannot be used on ARM for Int-Ball2). To prepare images to run on the actual Int-Ball2, use the extended plug-in Docker buildx as shown in the following command:
+- Docker images are not cross-platform compatible and cannot be used on different CPU architectures (e.g., images prepared on Intel/AMD for normal computers cannot be used on ARM for Int-Ball2). To prepare images to run on the actual Int-Ball2, use the extended plug-in Docker buildx as shown in the following command:
    ```sh
    docker buildx build --platform linux/arm64/v8 -t ib2_user:(version) --load
    ```
 
-After the building is completed, execute the following command and confirm that "ib2_user" appears in the “REPOSITORY”:
+- After the building is completed, execute the following command and confirm that "ib2_user" appears in the “REPOSITORY”:
    ```sh
    docker images ib2_user
    ```
 
 ## 3. User Program Deployment
-The following outlines the deployment method for the user program used in the Technology Demonstration Platform. Deploy the user program in the following directory:
+- The following outlines the deployment method for the user program used in the Technology Demonstration Platform. Deploy the user program in the following directory:
    ```sh
    [Int-Ball2_platform_simulator_deployment_folder]/Int-Ball2_platform_simulator/src/user/
    ```
@@ -331,7 +331,7 @@ The following is an example of the ROS package configuration for the Technology 
 
 ## 3.1 `roslaunch` for User Programs
 
-A template (example definition) of the `roslaunch` file for the Technology Demonstration Platform is shown below. The `<group ns="platform_launch">` is a mandatory item; other items can be set arbitrarily.
+- A template (example definition) of the `roslaunch` file for the Technology Demonstration Platform is shown below. The `<group ns="platform_launch">` is a mandatory item; other items can be set arbitrarily.
 
     ```xml
     <?xml version="1.0"?>
@@ -358,7 +358,7 @@ A template (example definition) of the `roslaunch` file for the Technology Demon
 
     </launch>
     ```
-Specify whether to use the existing functions on the flight software side in `<group ns="platform_launch">`. The ROS node corresponding to the function defined as "not used" (value="false") is stopped immediately before the start of the user implementation logic.
+- Specify whether to use the existing functions on the flight software side in `<group ns="platform_launch">`. The ROS node corresponding to the function defined as "not used" (value="false") is stopped immediately before the start of the user implementation logic.
 
 The correspondence between the item names in `<group ns="platform_launch">` and the flight software functions is as follows:
 - `sensor_fusion`: Sensor fusion
@@ -371,13 +371,13 @@ To call the newly prepared program while using GSE, add the necessary informatio
 ## 4. Building Procedure
 
 ### 4.1 Int-Ball2 GSE
-Execute `catkin_make` in the directory where `Int-Ball2_platform_gse` is deployed.
+- Execute `catkin_make` in the directory where `Int-Ball2_platform_gse` is deployed.
     ```sh
     source /opt/ros/melodic/setup.bash
     catkin_make
     ```
 ### 4.2 Int-Ball2 Technology Demonstration Platform
-Execute `catkin_make -DWITH_PCA9685=OFF` in the directory where `Int-Ball2_platform_simulator` is deployed. Note that `-DWITH_PCA9685=OFF` is an option to build the thrust function as a simulated node to operate the inductive control function in an environment where the PWM control board is not connected.
+- Execute `catkin_make -DWITH_PCA9685=OFF` in the directory where `Int-Ball2_platform_simulator` is deployed. Note that `-DWITH_PCA9685=OFF` is an option to build the thrust function as a simulated node to operate the inductive control function in an environment where the PWM control board is not connected.
 
 ## 5. Operation Procedure
 The procedure to execute this system is shown below:
