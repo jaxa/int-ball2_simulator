@@ -50,7 +50,8 @@ Additional libraries:
 
 
 ## Installation
-See section ”4. Environment building procedure” in the “Int-Ball2 Technology Demonstration Platform User's Manual”.
+See [INSTALL.md](https://github.com/jaxa/int-ball2_simulator/blob/main/INSTALL.md) for installation. 
+Additional information can be found in the [Int-Ball2 Technology Demonstration Platform User's Manual](https://github.com/jaxa/int-ball2_simulator/blob/main/docs/manual/Int-Ball2%20Technology%20Demonstration%20Platform%20User's%20Manual.pdf).
 
 
 ## Project Structure
