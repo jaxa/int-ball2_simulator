@@ -27,7 +27,7 @@
 - **User Program Interface**: Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers.
 - **User Program Ground Support Equipment (GSE)**: Simulates the GUI of the GSE for user program deployment in actual operations. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: This is not the GSE for nominal Int-Ball2 video-taking operations.)
 
-<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" width="500" align="center"/>
+<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" align="center"/>
 
 
 
