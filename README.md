@@ -15,7 +15,7 @@
 ---
 
 ## Overview
-<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2.png" width="300" align="right" style="display: inline"/>
+<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2.png" title="Int-Ball2 on the ISS" width="300" align="right" style="display: inline"/>
 **Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimental Module (JEM). It is remotely controlled from the ground to capture video images and support astronauts. Additionally, Int-Ball2 can run user-developed software as an extended functionality and can be used as a platform for demonstrating robotic technology in space.
 
 **This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2's behavior in the ISS/JEM environment with user-developed programs.
@@ -82,21 +82,16 @@ Additional information can be found in the [Int-Ball2 Technology Demonstration P
 
 ## Contributing
 We welcome and appreciate your contributions!
-
-* Issues: Report bugs, request features, or ask questions.
 * Pull Requests: Submit fixes or new features. Please open an Issue first if it’s a major change.
-
-For any contribution guidelines or coding standards, see CONTRIBUTING.md (TBD).
+<!-- For any contribution guidelines or coding standards, see CONTRIBUTING.md (TBD). -->
 
 
 
 ## License
-This project is distributed under the Apache 2.0 license. Please see the LICENSE file for details.
-
-This Repository is provided by Japan Aerospace Exploration Agency.
-
-
-
+Copyright (c) 2023, Japan Aerospace Exploration Agency. All rights reserved.
+The Int-Ball2 simulator and user programming platform is licensed under the Apache License, Version 2.0. 
+Software  is distributed on an "AS IS" basis, withouth warranties.
+See the [license](https://github.com/jaxa/int-ball2_simulator/blob/main/LICENSE) for details. 
 
 
 
