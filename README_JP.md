@@ -43,7 +43,8 @@
 
 
 ## インストール
-INSTALL.md 
+[INSTALL.md](https://github.com/jaxa/int-ball2_simulator/blob/main/INSTALL.md)
+
 日本語版は「Int-Ball2技術実証プラットフォームユーザーマニュアル」の「4. 環境構築手順」を参照してください。
 
 ## プロジェクト構造
