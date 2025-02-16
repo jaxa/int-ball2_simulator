@@ -1,3 +1,3 @@
 # platform_sim
 
-技術実証プラットフォーム向けROS/Gazeboシミュレータ
+Int-Ball2 ROS/Gazebo simulator for user programming platform
