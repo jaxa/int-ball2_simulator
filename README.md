@@ -99,10 +99,11 @@ See the [license](https://github.com/jaxa/int-ball2_simulator/blob/main/LICENSE)
 ## Referencess
 About Int-Ball2
 * [Paper] [Int-Ball2: ISS JEM Internal Camera Robot with Increased Degree of Autonomy – Design and Initial Checkout, 2024](https://ieeexplore.ieee.org/document/10688008)
-*  [Paper] [Int-Ball2: On-Orbit Demonstration of Autonomous Intravehicular Flight and Docking for Image Capturing and Recharging, 2024](https://ieeexplore.ieee.org/document/10813456)
+* [Paper] [Int-Ball2: On-Orbit Demonstration of Autonomous Intravehicular Flight and Docking for Image Capturing and Recharging, 2024](https://ieeexplore.ieee.org/document/10813456)
 * [Paper] [JEM船内可搬型ビデオカメラシステム実証2号機(Int-Ball2)による撮影作業の自動化, 2022](https://www.jstage.jst.go.jp/article/jsmermd/2022/0/2022_1P1-H07/_article/-char/ja/)
 * [Paper] [GNC Design and Orbital Performance Evaluation of ISS Onboard Autonomous Free-Flying Robot Int-Ball2, 2024](https://ieeexplore.ieee.org/document/10802183)
 * [Paper] [Complementary Ground Testing Method for Autonomous Flight System of Space Free-Flying Robot, 2024](https://ieeexplore.ieee.org/document/10521401)
+* [Paper] [Int-Ball2: Compact High-torque Propulsion System Actively Utilizes Propeller Air Drag Polarity, 2023](https://jaxa.repo.nii.ac.jp/record/2000520/files/SA6000193042.pdf)
 
 Others
 * [Web] [ROS Melodic](https://wiki.ros.org/melodic)
