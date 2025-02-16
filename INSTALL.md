@@ -260,7 +260,7 @@ Follow steps 1 and 2 of “Install using the apt repository”.
 
 ### 2 Source Code Deployment
 Deploy “Int-Ball2_platform_simulator” to an arbitrary directory.
-Also, deploy “platform_works” under the home directory of the user executing this system.
+Also, deploy [platform_works](https://github.com/jaxa/int-ball2_platform_works) under the home directory of the user executing this system.
 
 ### 2.1 Parameter Settings
 To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters as follows:
