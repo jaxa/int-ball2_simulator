@@ -306,13 +306,13 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
 
 The files to be deployed should follow the format described below:
 
-user001/
-├── launch/
-│   ├── program001.launch
-│   ├── program002.launch
-├── package.xml
-├── CMakeLists.txt
-├── (Others)
+user001/  
+├── launch/  
+│   ├── program001.launch  
+│   ├── program002.launch  
+├── package.xml  
+├── CMakeLists.txt  
+├── (Others)  
 
 User programs are defined as ROS packages. Refer to the official procedure for preparing a new package:
 - [Creating a ROS Package](https://wiki.ros.org/ROS/Tutorials/CreatingPackage)
