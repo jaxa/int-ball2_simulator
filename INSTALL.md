@@ -16,13 +16,13 @@ Additional libraries:
 |VLC|3.0.7.1|
 |Qt|5.12.3|
 
-## 1. Installation 
-## 1.1 Installing OS
+## 4. Installation 
+## 4.2 Installing OS
 The Int-Ball2 Technology Demonstration Platform runs on Ubuntu 18.04. 
 To install Ubuntu 18.04 in your environment, refer to the following website:
 - [Ubuntu 18.04.6 LTS (Bionic Beaver)](https://releases.ubuntu.com/18.04.6/)
 
-## 1.2 Installing ROS
+## 4.3 Installing ROS
 The Int-Ball2 Technology Demonstration Platform and its simulator require ROS/Gazebo. Since a Gazebo version higher than 9.0.0 is needed, follow these steps:
 
 1. **Preparation to acquire the latest version, Gazebo 9:** To get the latest version of Gazebo 9, execute steps 1 and 2 of the “Alternative installation: step-by-step” on the following website:
@@ -40,7 +40,7 @@ The Int-Ball2 Technology Demonstration Platform and its simulator require ROS/Ga
     sudo apt install ros-melodic-gazebo-*
     ```
 
-## 1.3 Installing Python3
+## 4.4 Installing Python3
 This system uses Python3 and its related packages. Follow these steps to install the necessary packages and adjust the settings file:
 
 1. **Install Python3:**
@@ -65,11 +65,11 @@ This system uses Python3 and its related packages. Follow these steps to install
     export ROS_PYTHON_VERSION=3
     ```
 
-## 1.4 Ground Support Equipment
+## 4.5 Ground Support Equipment
 The software for the Technology Demonstration Platform is executed using the Ground Support Equipment (GSE) of Int-Ball2.
 Prepare the Int-Ball2 GSE operating environment with the following steps:
 
-### 1.4.1 Netwide Assembler (NASM)
+### 4.5.1 Netwide Assembler (NASM)
 Build and install the assembler called “NASM” from the source file using the following procedure:
 
 1. **Decompress and place the NASM source files under “/usr/local/src”:**
@@ -92,13 +92,21 @@ Build and install the assembler called “NASM” from the source file using the
 
     **Note:** As mentioned in the reference description [here](https://trans-it.net/centos7-ffmpeg43-h264-fdkaac/), it is necessary to install “nasm” beforehand to install ffmpeg.
 
-### 1.4.2 Video Reception Environment
+### 4.5.2 Video Reception Environment
 Build “x264” from the source file using the following steps:
 
 1. **Decompress and place the source file under “/usr/local/src”:**
+   
+    (Option1)
     ```sh
     sudo tar jxvf x264-master.tar.bz2 -C /usr/local/src/
     ```
+
+    (Option2)
+    ```sh
+    sudo git clone https://code.videolan.org/videolan/x264.git /usr/local/src/x264-master
+    ```
+
 
 2. **Move to the directory where the source file is placed and configure the build:**
     ```sh
@@ -114,8 +122,14 @@ Build “x264” from the source file using the following steps:
 To build `ffmpeg` from the source file, follow these steps:
 
 4. **Decompress and place the `ffmpeg` source file under “/usr/local/src”:**
+    (Option1)
     ```sh
     sudo tar xvzf ffmpeg-4.1.3.tar.gz -C /usr/local/src/
+    ```
+
+    (Option2)
+    ```sh
+    sudo git clone https://github.com/FFmpeg/FFmpeg.git -b n4.1.3 /usr/local/src/ffmpeg-4.1.3
     ```
 
 5. **Move to the directory where the source file is placed and configure the build:**
@@ -138,19 +152,26 @@ To build `ffmpeg` from the source file, follow these steps:
     sudo make install
     ```
 
-### 1.4.3 Installing VLC Media Player
+### 4.5.3 Installing VLC Media Player
 Install and build the VLC media player using the following procedure:
 
 1. **Install the dependency packages:**
     ```sh
     sudo apt install libasound2-dev libxcb-shm0-dev libxcb-xv0-dev \
                      libxcb-keysyms1-dev libxcb-randr0-dev libxcb-composite0-dev \
-                     lua5.2 lua5.2-dev protobuf-compiler bison libdvbpsi-dev
+                     lua5.2 lua5.2-dev protobuf-compiler bison libdvbpsi-dev libpulse-dev
     ```
 
 2. **Decompress and place the downloaded source file under “/usr/local/src”:**
+
+    (Option1)
     ```sh
     sudo tar Jxvf vlc-3.0.7.1.tar.xz -C /usr/local/src/
+    ```
+
+    (Option2)
+    ```sh
+    sudo git clone https://github.com/videolan/vlc.git -b 3.0.7.1 /usr/local/src/vlc-3.0.7.1
     ```
 
 3. **Move to the directory where the source file is placed and configure the build settings:**
@@ -183,7 +204,7 @@ Install and build the VLC media player using the following procedure:
     sudo ln -s /usr/local/src/vlc-3.0.7.1 /usr/local/src/vlc
     ```
 
-### 1.4.4 Qt
+### 4.5.4 Qt
 Install "Qt" using the following procedure:
 
 1. **Prepare the installation directory:**
@@ -192,6 +213,11 @@ Install "Qt" using the following procedure:
     ```
 
 2. **Activate the downloaded installer for Linux:** (Account registration is required.)
+    ```sh
+    wget https://download.qt.io/archive/qt/5.12/5.12.3/qt-opensource-linux-x64-5.12.3.run
+    chmod +x qt-opensource-linux-x64-5.12.3.run
+    ./qt-opensource-linux-x64-5.12.3.run
+    ```
 
 3. **Check the box for “Using Open Source Qt”.**
 
@@ -204,17 +230,24 @@ Install "Qt" using the following procedure:
     sudo ln -s /opt/Qt/5.12.3 /opt/Qt/5
     ```
 
-### 1.4.5 Font File
+### 4.5.5 Font File
 - Since the Int-Ball2 GSE uses the Roboto font, copy the font files to the following path and install them:
+
+    (Option1)
     ```sh
     sudo cp Roboto*.ttf /usr/local/share/fonts/.
     fc-cache -f -v
     ```
 
-#### 1.4.6 Source Code Deployment
+    (Option2)
+    ```sh
+    sudo apt install fonts-roboto
+    ```
+
+#### 4.5.6 Source Code Deployment
 Deploy “Int-Ball2_platform_gse” to an arbitrary directory.
 
-### 1.4.7 Parameter Settings
+### 4.5.7 Parameter Settings
 To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters as follows:
 
 - **Command Transmission Settings:**
@@ -223,21 +256,21 @@ To exchange telemetry and commands between the Int-Ball2 Technology Demonstratio
 - **Telemetry Receiving Settings:**
   Set an arbitrary telemetry receiving port at `intball2_telemetry_receive_port` in `IntBall2_platform_gse/src/ground_system/communication_software/config/params.yml`.
 
-## 1.5 Int-Ball2 Technology Demonstration Platform Simulator
+## 4.6 Int-Ball2 Technology Demonstration Platform Simulator
 Prepare the operating environment for using the Int-Ball2 Technology Demonstration Platform Simulator.
 
-### 1.5.1 Docker
+### 4.6.1 Docker
 Install “Docker” by following the procedure on the following website:
 - [Install Docker Engine on Ubuntu | Docker Docs](https://docs.docker.com/engine/install/ubuntu/) (as of Mar. 28, 2024)
 Follow steps 1 and 2 of “Install using the apt repository”.
 
-### 1.5.2 Python
+### 4.6.2 Python
 - Install Docker-related packages on Python3:
     ```sh
     pip3 install docker defusedxml netifaces
     ```
 
-### 1.5.3 Container Activation Settings
+### 4.6.3 Container Activation Settings
 - Ensure the services for containers are always active:
     ```sh
     sudo systemctl enable docker docker.socket 
@@ -258,11 +291,11 @@ Follow steps 1 and 2 of “Install using the apt repository”.
     docker ps
     ```
 
-### 2 Source Code Deployment
+### 4.6.4 Source Code Deployment
 Deploy “Int-Ball2_platform_simulator” to an arbitrary directory.
 Also, deploy [platform_works](https://github.com/jaxa/int-ball2_platform_works) under the home directory of the user executing this system.
 
-### 2.1 Parameter Settings
+### 4.6.5 Parameter Settings
 To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters as follows:
 
 - **Command Transmission Settings:**
@@ -271,7 +304,7 @@ To exchange telemetry and commands between the Int-Ball2 Technology Demonstratio
 - **Telemetry Receiving Settings:**
   Set the IP address of the computer running this system at `ocs_host` in `Int-Ball2_platform_simulator/src/flight_software/trans_communication/launch/bringup.launch`. Set the same value for `intball2_telemetry_receive_port` as in section 
 
-### 2.2 Docker Settings
+### 4.6.6 Docker Settings
 The Int-Ball2 Technology Demonstration Platform executes the user program using Docker. Configure the following settings related to the exchange between the host and the container:
 
 1. **IP of the Host Computer:**
@@ -280,7 +313,7 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
 2. **Container Workspace in the Host Computer:**
    Set the path to `Int-Ball2_platform_simulator` as `platform works` at `host_ib2_workspace` in `Int-Ball2_platform_simulator/src/platform_sim/platform_sim_tools/launch/platform_manager_bringup.launch`.
 
-### 2.3 Setting up Containers
+### 4.6.7 Setting up Containers
 - Since the Technology Demonstration Platform executes the user program in a container, it is necessary to build the container for executing the User Demonstration Platform. The tag name (`ib2_user`) can be set arbitrarily but must have the prefix "ib2" for containers handled by the flight software.
    ```sh
    cd ~/platform_works/platform_docker/template
@@ -298,7 +331,7 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
    docker images ib2_user
    ```
 
-## 3. User Program Deployment
+## 4.7 User Program Deployment
 - The following outlines the deployment method for the user program used in the Technology Demonstration Platform. Deploy the user program in the following directory:
    ```sh
    [Int-Ball2_platform_simulator_deployment_folder]/Int-Ball2_platform_simulator/src/user/
@@ -329,7 +362,7 @@ The following is an example of the ROS package configuration for the Technology 
 | **CMakeLists.txt** | ROS package building settings file. See the official procedure for how to define it: [CMakeLists.txt](http://wiki.ros.org/catkin/CMakeLists.txt).      |
 | **(Others)**     | Arbitrary source code and various configuration files can be deployed.                                             |
 
-## 3.1 `roslaunch` for User Programs
+## 4.8 `roslaunch` for User Programs
 
 - A template (example definition) of the `roslaunch` file for the Technology Demonstration Platform is shown below. The `<group ns="platform_launch">` is a mandatory item; other items can be set arbitrarily.
 
@@ -368,15 +401,21 @@ The correspondence between the item names in `<group ns="platform_launch">` and 
 
 To call the newly prepared program while using GSE, add the necessary information to the `user_package_list.json` in the folder `Int-Ball2_platform_gse/src/ground_system/platform_gui/config` where the GSE configuration files are stored. (It does not search for the user program automatically, so it is necessary to write the user program in the list beforehand.)
 
-## 4. Building Procedure
+## 4.9 Building Procedure
 
-### 4.1 Int-Ball2 GSE
+### 4.9.1 Int-Ball2 GSE
 - Execute `catkin_make` in the directory where `Int-Ball2_platform_gse` is deployed.
     ```sh
     source /opt/ros/melodic/setup.bash
     catkin_make
+    sudo mkdir /var/log/ground_system && sudo chown $USER:$USER /var/log/ground_system
     ```
-### 4.2 Int-Ball2 Technology Demonstration Platform
+### 4.9.2 Int-Ball2 Technology Demonstration Platform
+    ```sh
+    sudo apt install libpcl-dev ros-melodic-pcl-ros
+    catkin_make –DWITH_PCA9685=OFF
+    ```
+
 - Execute `catkin_make -DWITH_PCA9685=OFF` in the directory where `Int-Ball2_platform_simulator` is deployed. Note that `-DWITH_PCA9685=OFF` is an option to build the thrust function as a simulated node to operate the inductive control function in an environment where the PWM control board is not connected.
 
 ## 5. Operation Procedure
