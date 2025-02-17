@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
   <arg name="color_with_camera_mic" default="[0.0, 0.0, 1.0]"/>
-  <arg name="container_ros_master_uri" default="http://192.168.1.19:11311"/>
+  <arg name="container_ros_master_uri" default="http://localhost:11311"/>
   <arg name="default_time_to_go_secs_long"   default="10.0" />
   <arg name="default_time_to_go_secs_short"   default="3.0" />
   <arg name="enable_shutdown" default="false" />
