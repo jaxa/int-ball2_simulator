@@ -19,17 +19,16 @@
 **Int-Ball2** (JEM Internal Ball Camera 2 System) is a free-flying camera robot deployed in the ISS Japan Experimental Module (JEM). It is remotely controlled from the ground to capture video images and support astronauts. Additionally, Int-Ball2 can run user-developed software as an extended functionality and can be used as a platform for demonstrating robotic technology in space.  
 
 **This Repository** provides a ROS + Gazebo-based simulator for **Int-Ball2**. It simulates Int-Ball2's behavior in the ISS/JEM environment with user-developed programs.
-
+  
 
 
 ## Key Features
 - **ROS/Gazebo Simulator**: Simulates Int-Ball2's behavior in the ISS/JEM environment. It includes a plugin simulating the airflow, sensor data acquisition, and actuator control interfaces for Int-Ball2 (SLAM is not simulated).
 - **User Program Interface**: Allows users to add new functionalities (e.g., navigation or control algorithms) within Docker containers.
-- **User Program Ground Support Equipment (GSE)**: Simulates the GUI of the GSE for user program deployment in actual operations. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: This is not the GSE for nominal Int-Ball2 video-taking operations.)
+- **User Program Ground Support Equipment (GSE)**: Simulates the GUI of the GSE for user program deployment in actual operations. Enables telemetry reception and command transmission for realistic operational workflows. User programs can be started or stopped from the GSE. (Note: This is not the GSE for nominal Int-Ball2 video-taking operations.)  
 
-<!-- <img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" align="center"/> -->
-
-
+  
+<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sim.gif" align="center"/></div>
 
 ## Requirements
 - **Operating System**: Ubuntu 18.04 Bionic  
@@ -109,7 +108,8 @@ Others
 * [Web] [ROS Melodic](https://wiki.ros.org/melodic)
 * [Web] [Gazebo 9.0.0 Release](https://classic.gazebosim.org/blog/gazebo9)
 
-
+<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_hw.png" height="200" align="center"/>  
+<img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" height="200" align="center"/></div>
 
 ## Future Plans
 Stay tuned for updates!
