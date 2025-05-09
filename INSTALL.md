@@ -25,14 +25,30 @@ To install Ubuntu 18.04 in your environment, refer to the following website:
 ## 4.3 Installing ROS
 The Int-Ball2 Technology Demonstration Platform and its simulator require ROS/Gazebo. Since a Gazebo version higher than 9.0.0 is needed, follow these steps:
 
+```sh
+sudo apt update
+sudo apt upgrade
+sudo apt install -y wget git vim curl gnupg2 lsb-release iproute2
+```
+
 1. **Preparation to acquire the latest version, Gazebo 9:** To get the latest version of Gazebo 9, execute steps 1 and 2 of the “Alternative installation: step-by-step” on the following website:
-    - [Gazebo: Tutorial: Ubuntu](http://gazebosim.org/tutorials?tut=install_ubuntu&cat=install) (as of Mar. 28, 2024)
+    - [Gazebo: Tutorial: Ubuntu](https://classic.gazebosim.org/tutorials?tut=install_ubuntu) (as of Mar. 28, 2024)
+
+    ```sh
+    sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
+    wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
+    sudo apt-get update
+    ```
 
 2. **Installing ROS:** Install ROS by following steps 1.1 to 1.6 on the following website:
     - [melodic/Installation/Ubuntu - ROS Wiki](http://wiki.ros.org/melodic/Installation/Ubuntu) (as of Mar. 28, 2024)
-    - In step 1.4 “Installation,” execute the command:
     ```sh
+    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
+    sudo apt install curl
+    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
+    sudo apt update
     sudo apt install ros-melodic-desktop
+    sudo apt-get install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
     ```
 
 3. **Installing the ROS-related package:** Install the ROS-Gazebo collaboration package by executing the following command:
@@ -164,14 +180,9 @@ Install and build the VLC media player using the following procedure:
 
 2. **Decompress and place the downloaded source file under “/usr/local/src”:**
 
-    (Option1)
     ```sh
+    sudo wget https://download.videolan.org/vlc/3.0.7.1/vlc-3.0.7.1.tar.xz
     sudo tar Jxvf vlc-3.0.7.1.tar.xz -C /usr/local/src/
-    ```
-
-    (Option2)
-    ```sh
-    sudo git clone https://github.com/videolan/vlc.git -b 3.0.7.1 /usr/local/src/vlc-3.0.7.1
     ```
 
 3. **Move to the directory where the source file is placed and configure the build settings:**
@@ -214,9 +225,9 @@ Install "Qt" using the following procedure:
 
 2. **Activate the downloaded installer for Linux:** (Account registration is required.)
     ```sh
-    wget https://download.qt.io/archive/qt/5.12/5.12.3/qt-opensource-linux-x64-5.12.3.run
-    chmod +x qt-opensource-linux-x64-5.12.3.run
-    ./qt-opensource-linux-x64-5.12.3.run
+    sudo wget https://download.qt.io/archive/qt/5.12/5.12.3/qt-opensource-linux-x64-5.12.3.run
+    sudo chmod +x qt-opensource-linux-x64-5.12.3.run
+    sudo ./qt-opensource-linux-x64-5.12.3.run
     ```
 
 3. **Check the box for “Using Open Source Qt”.**
@@ -423,15 +434,15 @@ The procedure to execute this system is shown below:
 
 1. Execute the following command in the terminal to activate the Int-Ball2 GSE:
     ```sh
-    cd [Int-Ball2 GSE deployment path]
-    source devel/setup.bash
+    source /opt/ros/melodic/setup.bash
+    source /home/nvidia/IB2/Int-Ball2_platform_gse/devel/setup.bash
     roslaunch platform_gui bringup.launch
     ```
 
 2. Execute the following command in a different terminal from step 1 to activate the Int-Ball2 Technology Demonstration Platform Simulator:
     ```sh
-    cd [Int-Ball2 Technology Demonstration Platform Simulator deployment path]
-    source devel/setup.bash
+    source /opt/ros/melodic/setup.bash
+    source /home/nvidia/IB2/Int-Ball2_platform_simulator/devel/setup.bash
     rosrun platform_sim_tools simulator_bringup.sh
     ```
 
