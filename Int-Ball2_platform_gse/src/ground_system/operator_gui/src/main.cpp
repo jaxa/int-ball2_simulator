@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QDesktopWidget>
+#include <QTimer>
 #include <ros/ros.h>
 #include "ground_system_main_window.h"
 #include "gui_color.h"
@@ -104,14 +105,18 @@ int main(int argc, char *argv[])
                   availableGeometry.width(),
                   availableGeometry.height());
 
-    ros::Rate rate(60);
-    while(ros::ok())
-    {
-        ros::spinOnce();
-        a.processEvents();
-        rate.sleep();
-    }
-    spdlog::shutdown();
+    QTimer ros_timer;
+    QObject::connect(&ros_timer, &QTimer::timeout, []() {
+        if (ros::ok()) {
+            ros::spinOnce();
+        } else {
+            QApplication::quit();
+        }
+    });
+    ros_timer.start(16);  // ~60 Hz
 
-    return 0;
+    int ret = a.exec();
+
+    spdlog::shutdown();
+    return ret;
 }
