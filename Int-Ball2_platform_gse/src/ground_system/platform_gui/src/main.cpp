@@ -1,5 +1,6 @@
 #include <QApplication>
 #include <QPushButton>
+#include <QTimer>
 #include <ros/ros.h>
 #include "platform_main_window.h"
 #include "platform_gui_config.h"
@@ -96,14 +97,15 @@ int main(int argc, char *argv[])
     w.setWindowFlags(Qt::WindowType::CustomizeWindowHint | Qt::WindowType::WindowCloseButtonHint | Qt::WindowType::WindowMaximizeButtonHint);
     w.showMaximized();
 
-    ros::Rate rate(30);
-    while(ros::ok())
-    {
-        ros::spinOnce();
-        a.processEvents();
-        rate.sleep();
-    }
-    //spdlog::shutdown();
+    QTimer ros_timer;
+    QObject::connect(&ros_timer, &QTimer::timeout, []() {
+        if (ros::ok()) {
+            ros::spinOnce();
+        } else {
+            QApplication::quit();
+        }
+    });
+    ros_timer.start(33); // ~30 Hz
 
-    return 0;
+    return a.exec();
 }
