@@ -1,6 +1,6 @@
 
 #include "ctl/ctl_elements.h"
-#include "ib2_msgs/Navigation.h"
+#include "ib2_msgs/msg/navigation.hpp"
 
 
 namespace
@@ -11,7 +11,7 @@ namespace
 //------------------------------------------------------------------------------
 // デフォルトコンストラクタ
 CtlElements::CtlElements() :
-	t_(ros::Time(0.0)),
+	t_(0, 0),
 	r_(Eigen::Vector3d::Zero()), v_(Eigen::Vector3d::Zero()),
 	a_(Eigen::Vector3d::Zero()), q_(Eigen::Quaterniond::Identity()),
 	w_(Eigen::Vector3d::Zero())
@@ -21,7 +21,7 @@ CtlElements::CtlElements() :
 //------------------------------------------------------------------------------
 // 値によるコンストラクタ
 CtlElements::CtlElements
-(const ros::Time& t,
+(const rclcpp::Time& t,
  const Eigen::Vector3d& r, const Eigen::Vector3d& v, const Eigen::Vector3d& a,
  const Eigen::Quaterniond& q, const Eigen::Vector3d& w) :
 	t_(t), r_(r), v_(v), a_(a), q_(q), w_(w)
@@ -50,7 +50,7 @@ CtlElements& CtlElements::operator=(CtlElements&&) = default;
 
 //------------------------------------------------------------------------------
 // ROS時刻の参照
-const ros::Time& CtlElements::t() const
+const rclcpp::Time& CtlElements::t() const
 {
 	return t_;
 }
@@ -92,9 +92,9 @@ const Eigen::Vector3d& CtlElements::w() const
 
 //------------------------------------------------------------------------------
 // 航法メッセージ形式での取得
-ib2_msgs::CtlStatus CtlElements::status(int32_t s) const
+ib2_msgs::msg::CtlStatus CtlElements::status(int32_t s) const
 {
-	ib2_msgs::CtlStatus o;
+	ib2_msgs::msg::CtlStatus o;
 
 	o.pose.header.stamp = t_;
 	o.pose.header.frame_id = FRAME_ISS;

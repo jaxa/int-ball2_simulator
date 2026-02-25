@@ -25,23 +25,31 @@ kp_(1.), kd_(1.)
 }
 
 //------------------------------------------------------------------------------
-// rosparamによるコンストラクタ
-ib2::AttController::AttController(const ros::NodeHandle& nh)
+// パラメータによるコンストラクタ
+ib2::AttController::AttController(rclcpp::Node* node)
 {
 	using namespace ib2_mss;
-	
+
+	auto get_param = [node](const std::string& name, auto& value) {
+		using T = std::decay_t<decltype(value)>;
+		if (!node->has_parameter(name)) {
+			node->declare_parameter<T>(name, value);
+		}
+		node->get_parameter(name, value);
+	};
+
 	double kp(-1.);
 	double kd(-1.);
-	nh.getParam("/att_ctl/kp"   , kp);
-	nh.getParam("/att_ctl/kd"   , kd);
+	get_param("att_ctl.kp", kp);
+	get_param("att_ctl.kd", kd);
 	RangeCheckerD::notNegative(kp, true, "kp");
 	RangeCheckerD::notNegative(kd, true, "kd");
 	kp_ = kp;
 	kd_ = kd;
 
-	ROS_INFO("******** Set Parameters in att_controller.cpp");
-	ROS_INFO("/att_ctl/kp   : %f", kp_);
-	ROS_INFO("/att_ctl/kd   : %f", kd_);
+	RCLCPP_INFO(node->get_logger(), "******** Set Parameters in att_controller.cpp");
+	RCLCPP_INFO(node->get_logger(), "att_ctl.kp   : %f", kp_);
+	RCLCPP_INFO(node->get_logger(), "att_ctl.kd   : %f", kd_);
 }
 
 //------------------------------------------------------------------------------

@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
 
 namespace ib2
@@ -17,10 +17,10 @@ namespace ib2
 		/** デフォルトコンストラクタ */
 		CtlBody();
 
-		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+		/** パラメータによるコンストラクタ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit CtlBody(const ros::NodeHandle& nh);
+		explicit CtlBody(rclcpp::Node* node);
 
 		/** デストラクタ. */
 		~CtlBody();
@@ -47,18 +47,18 @@ namespace ib2
 		 * @return 機体質量[kg]
 		 */
 		double m() const;
-		
+
 		/** 質量特性行列の参照
 		 * @return 質量特性行列[kgm2]の参照
 		 */
 		const Eigen::Matrix3d& Is() const;
-		
+
 		//----------------------------------------------------------------------
 		// メンバー変数
 	private:
 		/** 機体質量[kg] */
 		double m_;
-		
+
 		/** 質量特性行列[kgm2] */
 		Eigen::Matrix3d Is_;
 	};

@@ -1,0 +1,136 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <!-- Int-Ball2 ISS simulation world for Gazebo Harmonic (gz-sim) -->
+
+  <world name="ib2_world">
+
+    <!-- Zero gravity (ISS microgravity environment) -->
+    <gravity>0 0 0</gravity>
+
+    <!-- ======================================= -->
+    <!-- Required gz-sim system plugins           -->
+    <!-- ======================================= -->
+
+    <!-- Physics engine -->
+    <plugin filename="gz-sim-physics-system"
+            name="gz::sim::systems::Physics">
+      <engine>
+        <filename>gz-physics-dartsim-plugin</filename>
+      </engine>
+    </plugin>
+
+    <!-- Scene broadcaster (required for visualization) -->
+    <plugin filename="gz-sim-scene-broadcaster-system"
+            name="gz::sim::systems::SceneBroadcaster"/>
+
+    <!-- User commands (pause, step, etc.) -->
+    <plugin filename="gz-sim-user-commands-system"
+            name="gz::sim::systems::UserCommands"/>
+
+    <!-- Sensor rendering -->
+    <plugin filename="gz-sim-sensors-system"
+            name="gz::sim::systems::Sensors">
+      <render_engine>ogre2</render_engine>
+    </plugin>
+
+    <!-- IMU sensor system -->
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu"/>
+
+    <!-- Pose publisher (publishes model poses for ros_gz_bridge / trans node) -->
+    <plugin filename="gz-sim-pose-publisher-system"
+            name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <update_frequency>50.0</update_frequency>
+    </plugin>
+
+    <!-- ======================================= -->
+    <!-- Custom simulation plugins (require porting) -->
+    <!-- ======================================= -->
+
+    <!-- TODO: Port these Gazebo Classic world plugins to gz-sim system plugins.
+         Each plugin needs to be rewritten as a gz::sim::System implementation.
+         Original Gazebo Classic plugins:
+           - libairflow.so     → airflow (gz-sim system plugin)
+           - libnav.so         → nav (gz-sim system plugin)
+           - libhill.so        → hill (gz-sim system plugin)
+           - libmag.so         → mag (gz-sim system plugin)
+           - libcustom_pose_spawn_plugin.so → custom_pose_spawn (gz-sim system plugin)
+           - libib2_route_display_plugin.so → ib2_route_display (gz-sim system plugin)
+    -->
+
+    <!-- Camera Pose (GUI default view) -->
+    <gui fullscreen="false">
+      <plugin filename="GzScene3D" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <camera_pose>13.9358938 -2.8364698 4.8505872 0 0 -3.14159265358979</camera_pose>
+      </plugin>
+      <plugin filename="WorldControl" name="World Control">
+        <gz-gui>
+          <title>World Control</title>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+        <play_pause>true</play_pause>
+        <step>true</step>
+        <start_paused>true</start_paused>
+      </plugin>
+      <plugin filename="WorldStats" name="World Stats">
+        <gz-gui>
+          <title>World Stats</title>
+          <property type="bool" key="showTitleBar">false</property>
+        </gz-gui>
+      </plugin>
+    </gui>
+
+    <!-- Global light source (sun) -->
+    <light type="directional" name="sun">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <!-- Point light sources in JPM -->
+    <light type="point" name="jpm_light1">
+      <pose>11 -3 5.5 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation>
+        <range>20</range>
+        <constant>0.5</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="jpm_light2">
+      <pose>11 -7 5.5 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation>
+        <range>20</range>
+        <constant>0.5</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+    <light type="point" name="jpm_light3">
+      <pose>11 -10 5.5 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>0.1 0.1 0.1 1</specular>
+      <attenuation>
+        <range>20</range>
+        <constant>0.5</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+  </world>
+</sdf>

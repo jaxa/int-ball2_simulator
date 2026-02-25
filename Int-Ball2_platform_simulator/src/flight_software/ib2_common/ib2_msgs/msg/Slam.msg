@@ -1,4 +1,4 @@
-time stamp
+builtin_interfaces/Time stamp
 int32 slam_status
 float32 x_s
 float32 y_s

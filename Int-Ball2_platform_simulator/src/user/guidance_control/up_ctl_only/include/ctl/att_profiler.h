@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Dense>
 
 namespace ib2
@@ -16,30 +16,30 @@ namespace ib2
 	public:
 		/** デフォルトコンストラクタ */
 		AttProfiler();
-		
-		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+
+		/** パラメータによるコンストラクタ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit AttProfiler(const ros::NodeHandle& nh);
-		
+		explicit AttProfiler(rclcpp::Node* node);
+
 		/** デストラクタ. */
 		~AttProfiler();
-		
+
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
 	public:
 		/** コピーコンストラクタ. */
 		AttProfiler(const AttProfiler&);
-		
+
 		/** コピー代入演算子. */
 		AttProfiler& operator=(const AttProfiler&);
-		
+
 		/** ムーブコンストラクタ. */
 		AttProfiler(AttProfiler&&);
-		
+
 		/** ムーブ代入演算子. */
 		AttProfiler& operator=(AttProfiler&&);
-		
+
 		//----------------------------------------------------------------------
 		// 属性(Getter)
 	public:
@@ -72,33 +72,33 @@ namespace ib2
 		 * @return RDAクォータニオン[rad]
 		 */
 		const Eigen::Quaterniond& rda() const;
-		
+
 		/** スキャン軸の参照
 		 * @return スキャン軸
 		 */
 		const std::vector<Eigen::Vector3d>& scanAxes() const;
-		
+
 		//----------------------------------------------------------------------
 		// メンバー変数
 	private:
 		/** 姿勢プロファイル最大トルク[Nm] */
 		double Tmax_;
-		
+
 		/** 姿勢プロファイル最大角速度[rad/s] */
 		double wmax_;
 
 		/** 角速度制御を切る閾値[rad] */
 		double qthr_;
-		
+
 		/** 回転角微小数 */
 		double epsQm_;
-		
+
 		/** AIA(Approach Insertion Attitude) */
 		Eigen::Quaterniond aia_;
-		
+
 		/** RDA(Ready to Dock Attitude) */
 		Eigen::Quaterniond rda_;
-		
+
 		/** スキャンモード回転軸 */
 		std::vector<Eigen::Vector3d> scanAxes_;
 	};

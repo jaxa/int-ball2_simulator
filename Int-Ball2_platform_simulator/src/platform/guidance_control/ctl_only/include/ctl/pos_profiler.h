@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
 
 namespace ib2
@@ -17,10 +17,10 @@ namespace ib2
 		/** デフォルトコンストラクタ */
 		PosProfiler();
 
-		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+		/** パラメータによるコンストラクタ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit PosProfiler(const ros::NodeHandle& nh);
+		explicit PosProfiler(rclcpp::Node* node);
 
 		/** デストラクタ. */
 		~PosProfiler();
@@ -72,7 +72,7 @@ namespace ib2
 		 * @return 移動量微小数[m]
 		 */
 		double epsRm() const;
-		
+
 		/** AIPの参照
 		 * @return AIP位置[m]
 		 */
@@ -82,7 +82,7 @@ namespace ib2
 		 * @return RD位置[m]
 		 */
 		const Eigen::Vector3d& rdp() const;
-		
+
 		//----------------------------------------------------------------------
 		// メンバー変数
 	private:
@@ -100,10 +100,10 @@ namespace ib2
 
 		/** プロファイル作成用スラスタ最大能率 */
 		double etamax_;
-		
+
 		/** 移動量微小数 */
 		double epsRm_;
-		
+
 		/** AIP(Approach Insertion Point)位置[m] */
 		Eigen::Vector3d aip_;
 

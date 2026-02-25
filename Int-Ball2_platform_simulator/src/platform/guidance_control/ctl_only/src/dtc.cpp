@@ -1,5 +1,6 @@
 
 #include "ctl/dtc.h"
+#include "ib2_msgs/msg/ctl_status_type.hpp"
 #include "guidance_control_common/RangeChecker.h"
 
 #include <cassert>
@@ -11,23 +12,31 @@ namespace
 }
 
 //------------------------------------------------------------------------------
-// デフォルトコンストラクタ
-Dtc::Dtc(const ros::NodeHandle& nh) :
-    nh_(nh), status_(DETECT::NONE),dtc_sigmaup_started_(false),
+// コンストラクタ
+Dtc::Dtc(rclcpp::Node* node) :
+    node_(node), status_(DETECT::NONE),dtc_sigmaup_started_(false),
     sigma_start_counter_(0),sigma_end_counter_(0),from_sigup_counter_(0),
     keep_state_counter_(0)
 {
     using namespace ib2_mss;
 
+    auto get_param = [this](const std::string& name, auto& value) {
+        using T = std::decay_t<decltype(value)>;
+        if (!node_->has_parameter(name)) {
+            node_->declare_parameter<T>(name, value);
+        }
+        node_->get_parameter(name, value);
+    };
+
     /** 航法キューサイズ */
-    static const std::string ROSPARAM_QUE_SIZE             ("/nav_que/size");
-    int que_size       (0);
-    nh_.getParam(ROSPARAM_QUE_SIZE             , que_size);
+    static const std::string PARAM_QUE_SIZE("nav_que.size");
+    int que_size(0);
+    get_param(PARAM_QUE_SIZE, que_size);
     static const RangeCheckerUI32 QUE_SIZE_RANGE
     (RangeCheckerUI32::TYPE::GE, 2, true);
-    QUE_SIZE_RANGE.valid(que_size, ROSPARAM_QUE_SIZE);
+    QUE_SIZE_RANGE.valid(que_size, PARAM_QUE_SIZE);
     que_size_  = que_size;
-    ROS_INFO("/nav_que/que_size                  : %d",que_size_);
+    RCLCPP_INFO(node_->get_logger(), "nav_que.size                  : %d",que_size_);
 
     /** メンバ設定 */
     setMember();
@@ -36,9 +45,9 @@ Dtc::Dtc(const ros::NodeHandle& nh) :
 	moave_daccx_.reset(new ib2_mss::MovingAverage(que_size_));
 	moave_daccy_.reset(new ib2_mss::MovingAverage(que_size_));
 	moave_daccz_.reset(new ib2_mss::MovingAverage(que_size_));
-	moave_dwx_.reset(new ib2_mss::MovingAverage(que_size_));    
-	moave_dwy_.reset(new ib2_mss::MovingAverage(que_size_));    
-	moave_dwz_.reset(new ib2_mss::MovingAverage(que_size_));    
+	moave_dwx_.reset(new ib2_mss::MovingAverage(que_size_));
+	moave_dwy_.reset(new ib2_mss::MovingAverage(que_size_));
+	moave_dwz_.reset(new ib2_mss::MovingAverage(que_size_));
 }
 
 //------------------------------------------------------------------------------
@@ -51,91 +60,99 @@ bool Dtc::setMember()
 {
     using namespace ib2_mss;
 
+    auto get_param = [this](const std::string& name, auto& value) {
+        using T = std::decay_t<decltype(value)>;
+        if (!node_->has_parameter(name)) {
+            node_->declare_parameter<T>(name, value);
+        }
+        node_->get_parameter(name, value);
+    };
+
     bool ret = true;
 
     // ドッキング検知パラメータ
-    ret = ret && nh_.getParam("/docking_chk/tolerance_pos"   , tolerance_pos_);
-    ret = ret && nh_.getParam("/docking_chk/tolerance_att"   , tolerance_att_);
-    ret = ret && nh_.getParam("/docking_chk/docking_pos/x"   , docking_pos_.x());
-    ret = ret && nh_.getParam("/docking_chk/docking_pos/y"   , docking_pos_.y());
-    ret = ret && nh_.getParam("/docking_chk/docking_pos/z"   , docking_pos_.z());
-    ret = ret && nh_.getParam("/docking_chk/keep_state_num"  , keep_state_num_);
-    ret = ret && nh_.getParam("/docking_chk/sigma_start_jud_num", dc_sigma_start_jud_num_);
-    ret = ret && nh_.getParam("/docking_chk/sigma_start_dacc"   , dc_sigma_start_dacc_);
-    ret = ret && nh_.getParam("/docking_chk/sigma_start_drate"  , dc_sigma_start_drate_);
-    ret = ret && nh_.getParam("/att_profile/rda/x"           , docking_q_.x());
-    ret = ret && nh_.getParam("/att_profile/rda/y"           , docking_q_.y());
-    ret = ret && nh_.getParam("/att_profile/rda/z"           , docking_q_.z());
-    ret = ret && nh_.getParam("/att_profile/rda/w"           , docking_q_.w());
-    
-    ret = ret && RangeCheckerD::positive(tolerance_pos_    , true, "/docking_chk/tolerance_pos");
-    ret = ret && RangeCheckerD::positive(tolerance_att_    , true, "/docking_chk/tolerance_att");
+    get_param("docking_chk.tolerance_pos", tolerance_pos_);
+    get_param("docking_chk.tolerance_att", tolerance_att_);
+    get_param("docking_chk.docking_pos.x", docking_pos_.x());
+    get_param("docking_chk.docking_pos.y", docking_pos_.y());
+    get_param("docking_chk.docking_pos.z", docking_pos_.z());
+    get_param("docking_chk.keep_state_num", keep_state_num_);
+    get_param("docking_chk.sigma_start_jud_num", dc_sigma_start_jud_num_);
+    get_param("docking_chk.sigma_start_dacc", dc_sigma_start_dacc_);
+    get_param("docking_chk.sigma_start_drate", dc_sigma_start_drate_);
+    get_param("att_profile.rda.x", docking_q_.x());
+    get_param("att_profile.rda.y", docking_q_.y());
+    get_param("att_profile.rda.z", docking_q_.z());
+    get_param("att_profile.rda.w", docking_q_.w());
+
+    ret = ret && RangeCheckerD::positive(tolerance_pos_    , true, "docking_chk.tolerance_pos");
+    ret = ret && RangeCheckerD::positive(tolerance_att_    , true, "docking_chk.tolerance_att");
     ret = ret && RangeCheckerD::positive(docking_q_.norm() , true, "docking attitude quaternion magnitude");
 
     static const RangeCheckerUI32 JUD_NUM_RANGE
     (RangeCheckerUI32::TYPE::GE, 1, true);
 
-    ret = ret && JUD_NUM_RANGE.valid(keep_state_num_,                  "/docking_chk/keep_state_num_");
-    ret = ret && JUD_NUM_RANGE.valid(dc_sigma_start_jud_num_ ,         "/docking_chk/sigma_start_jud_num");
-    ret = ret && RangeCheckerD::positive(dc_sigma_start_dacc_ , true,  "/docking_chk/sigma_start_dacc");
-    ret = ret && RangeCheckerD::positive(dc_sigma_start_drate_, true,  "/docking_chk/sigma_start_drate");
+    ret = ret && JUD_NUM_RANGE.valid(keep_state_num_,                  "docking_chk.keep_state_num");
+    ret = ret && JUD_NUM_RANGE.valid(dc_sigma_start_jud_num_ ,         "docking_chk.sigma_start_jud_num");
+    ret = ret && RangeCheckerD::positive(dc_sigma_start_dacc_ , true,  "docking_chk.sigma_start_dacc");
+    ret = ret && RangeCheckerD::positive(dc_sigma_start_drate_, true,  "docking_chk.sigma_start_drate");
 
-    ROS_INFO("******** Set Parameters in dtc.cpp");
-    ROS_INFO("/docking_chk/tolerance_pos         : %f",tolerance_pos_);
-    ROS_INFO("/docking_chk/tolerance_att         : %f",tolerance_att_);
-    ROS_INFO("/docking_chk/docking_pos/x         : %f",docking_pos_.x());
-    ROS_INFO("/docking_chk/docking_pos/y         : %f",docking_pos_.y());
-    ROS_INFO("/docking_chk/docking_pos/z         : %f",docking_pos_.z());
-    ROS_INFO("/docking_chk/keep_state_num        : %d",keep_state_num_);
-    ROS_INFO("/docking_chk/sigma_start_jud_num   : %d",dc_sigma_start_jud_num_);
-    ROS_INFO("/docking_chk/sigma_start_dacc      : %f",dc_sigma_start_dacc_);
-    ROS_INFO("/docking_chk/sigma_start_drate     : %f",dc_sigma_start_drate_);
-    ROS_INFO("/att_profile/rda/x                 : %f",docking_q_.x());
-    ROS_INFO("/att_profile/rda/y                 : %f",docking_q_.y());
-    ROS_INFO("/att_profile/rda/z                 : %f",docking_q_.z());
-    ROS_INFO("/att_profile/rda/w                 : %f",docking_q_.w());
+    RCLCPP_INFO(node_->get_logger(), "******** Set Parameters in dtc.cpp");
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.tolerance_pos         : %f",tolerance_pos_);
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.tolerance_att         : %f",tolerance_att_);
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.docking_pos.x         : %f",docking_pos_.x());
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.docking_pos.y         : %f",docking_pos_.y());
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.docking_pos.z         : %f",docking_pos_.z());
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.keep_state_num        : %d",keep_state_num_);
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.sigma_start_jud_num   : %d",dc_sigma_start_jud_num_);
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.sigma_start_dacc      : %f",dc_sigma_start_dacc_);
+    RCLCPP_INFO(node_->get_logger(), "docking_chk.sigma_start_drate     : %f",dc_sigma_start_drate_);
+    RCLCPP_INFO(node_->get_logger(), "att_profile.rda.x                 : %f",docking_q_.x());
+    RCLCPP_INFO(node_->get_logger(), "att_profile.rda.y                 : %f",docking_q_.y());
+    RCLCPP_INFO(node_->get_logger(), "att_profile.rda.z                 : %f",docking_q_.z());
+    RCLCPP_INFO(node_->get_logger(), "att_profile.rda.w                 : %f",docking_q_.w());
 
     // 衝突・クルーキャプチャリリースパラメータ
-    ret = ret && nh_.getParam("/colcaprel_chk/colcap_id_jud_num"  , colcap_id_jud_num_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_start_jud_num", sigma_start_jud_num_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_end_jud_num"  , sigma_end_jud_num_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_start_dacc"   , sigma_start_dacc_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_end_dacc"     , sigma_end_dacc_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_start_drate"  , sigma_start_drate_);
-    ret = ret && nh_.getParam("/colcaprel_chk/sigma_end_drate"    , sigma_end_drate_);
+    get_param("colcaprel_chk.colcap_id_jud_num", colcap_id_jud_num_);
+    get_param("colcaprel_chk.sigma_start_jud_num", sigma_start_jud_num_);
+    get_param("colcaprel_chk.sigma_end_jud_num", sigma_end_jud_num_);
+    get_param("colcaprel_chk.sigma_start_dacc", sigma_start_dacc_);
+    get_param("colcaprel_chk.sigma_end_dacc", sigma_end_dacc_);
+    get_param("colcaprel_chk.sigma_start_drate", sigma_start_drate_);
+    get_param("colcaprel_chk.sigma_end_drate", sigma_end_drate_);
 
-    ret = ret && JUD_NUM_RANGE.valid(colcap_id_jud_num_   , "/colcaprel_chk/colcap_id_jud_num");
-    ret = ret && JUD_NUM_RANGE.valid(sigma_start_jud_num_ , "/colcaprel_chk/sigma_start_jud_num");
-    ret = ret && JUD_NUM_RANGE.valid(sigma_end_jud_num_   , "/colcaprel_chk/sigma_end_jud_num");
+    ret = ret && JUD_NUM_RANGE.valid(colcap_id_jud_num_   , "colcaprel_chk.colcap_id_jud_num");
+    ret = ret && JUD_NUM_RANGE.valid(sigma_start_jud_num_ , "colcaprel_chk.sigma_start_jud_num");
+    ret = ret && JUD_NUM_RANGE.valid(sigma_end_jud_num_   , "colcaprel_chk.sigma_end_jud_num");
 
-    ret = ret && RangeCheckerD::positive(sigma_start_dacc_    , true, "/colcaprel_chk/sigma_start_dacc");
-    ret = ret && RangeCheckerD::positive(sigma_end_dacc_      , true, "/colcaprel_chk/sigma_end_dacc");
-    ret = ret && RangeCheckerD::positive(sigma_start_drate_   , true, "/colcaprel_chk/sigma_start_drate");
-    ret = ret && RangeCheckerD::positive(sigma_end_drate_     , true, "/colcaprel_chk/sigma_end_drate");
+    ret = ret && RangeCheckerD::positive(sigma_start_dacc_    , true, "colcaprel_chk.sigma_start_dacc");
+    ret = ret && RangeCheckerD::positive(sigma_end_dacc_      , true, "colcaprel_chk.sigma_end_dacc");
+    ret = ret && RangeCheckerD::positive(sigma_start_drate_   , true, "colcaprel_chk.sigma_start_drate");
+    ret = ret && RangeCheckerD::positive(sigma_end_drate_     , true, "colcaprel_chk.sigma_end_drate");
 
-    ROS_INFO("/colcaprel_chk/colcap_id_jud_num   : %d",colcap_id_jud_num_);
-    ROS_INFO("/colcaprel_chk/sigma_start_jud_num : %d",sigma_start_jud_num_);
-    ROS_INFO("/colcaprel_chk/sigma_end_jud_num   : %d",sigma_end_jud_num_);
-    ROS_INFO("/colcaprel_chk/sigma_start_dacc    : %f",sigma_start_dacc_);
-    ROS_INFO("/colcaprel_chk/sigma_end_dacc      : %f",sigma_end_dacc_);
-    ROS_INFO("/colcaprel_chk/sigma_start_drate   : %f",sigma_start_drate_);
-    ROS_INFO("/colcaprel_chk/sigma_end_drate     : %f",sigma_end_drate_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.colcap_id_jud_num   : %d",colcap_id_jud_num_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_start_jud_num : %d",sigma_start_jud_num_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_end_jud_num   : %d",sigma_end_jud_num_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_start_dacc    : %f",sigma_start_dacc_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_end_dacc      : %f",sigma_end_dacc_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_start_drate   : %f",sigma_start_drate_);
+    RCLCPP_INFO(node_->get_logger(), "colcaprel_chk.sigma_end_drate     : %f",sigma_end_drate_);
 
     if(!ret)
-        ROS_ERROR("Parameter Setting Error in dtc.cpp");
+        RCLCPP_ERROR(node_->get_logger(), "Parameter Setting Error in dtc.cpp");
 
     return ret;
 }
 
 //------------------------------------------------------------------------------
 // 検知処理
-Dtc::DETECT Dtc::detection(const ib2_msgs::Navigation nav_stamp,
- const int32_t ctl_status) 
+Dtc::DETECT Dtc::detection(const ib2_msgs::msg::Navigation nav_stamp,
+ const int32_t ctl_status)
 {
     // 航法値をキューに格納
     history(nav_stamp);
 
-    // 判定 
+    // 判定
     check(ctl_status);
 
     return status_;
@@ -143,9 +160,9 @@ Dtc::DETECT Dtc::detection(const ib2_msgs::Navigation nav_stamp,
 
 //------------------------------------------------------------------------------
 // ドッキング目標値の取得
-ib2_msgs::Navigation Dtc::dockingTarget(const ros::Time& t) const
+ib2_msgs::msg::Navigation Dtc::dockingTarget(const rclcpp::Time& t) const
 {
-    ib2_msgs::Navigation o;
+    ib2_msgs::msg::Navigation o;
     o.pose.header.stamp = t;
     o.pose.pose.position.x = docking_pos_.x();
     o.pose.pose.position.y = docking_pos_.y();
@@ -159,11 +176,11 @@ ib2_msgs::Navigation Dtc::dockingTarget(const ros::Time& t) const
 
 //------------------------------------------------------------------------------
 // 検知ステータスのクリア
-void Dtc::clearStatus() 
+void Dtc::clearStatus()
 {
     // ステータスクリア
-    status_= DETECT::NONE; 
-    
+    status_= DETECT::NONE;
+
     // 判定処理の初期化
     dtc_sigmaup_started_  = false;
     sigma_start_counter_  = 0;
@@ -186,18 +203,18 @@ void Dtc::check(const int32_t ctl_status)
     auto std_wy(moave_dwy_->s(moave_unbaiased));
     auto std_wz(moave_dwz_->s(moave_unbaiased));
     auto std_wv = Eigen::Vector3d (std_wx, std_wy, std_wz);
-    
+
     std_a_ = std_av.norm();
     std_w_ = std_wv.norm();
 
-    if(ctl_status==ib2_msgs::CtlStatusType::MOVING_TO_RDP ||
-       ctl_status==ib2_msgs::CtlStatusType::DOCKING_STAND_BY)
+    if(ctl_status==ib2_msgs::msg::CtlStatusType::MOVING_TO_RDP ||
+       ctl_status==ib2_msgs::msg::CtlStatusType::DOCKING_STAND_BY)
     {
         // ドッキングステーションとの接触判定
         if(!dtc_sigmaup_started_)
         {
             dtc_sigmaup_started_ = sigmaAscent(dc_sigma_start_jud_num_,
-                                               dc_sigma_start_drate_, 
+                                               dc_sigma_start_drate_,
                                                dc_sigma_start_jud_num_);
         }
         else
@@ -222,7 +239,7 @@ void Dtc::check(const int32_t ctl_status)
             {
                 if(crewCapCheck()) return;
             }
-            
+
             // 衝突・クルーリリース判定
             colrelCheck();
         }
@@ -232,18 +249,18 @@ void Dtc::check(const int32_t ctl_status)
 
 //------------------------------------------------------------------------------
 // 航法暦
-void Dtc::history(const ib2_msgs::Navigation nav_stamp)
+void Dtc::history(const ib2_msgs::msg::Navigation nav_stamp)
 {
 	static bool init = true;
 
     // 航法前回値
-    if(init) 
+    if(init)
     {
         last_nav_stamp_ = nav_stamp;
         init = false;
     }
     auto pre_nav (last_nav_stamp_);
- 
+
     // 加速度差分
     auto ac = Eigen::Vector3d (nav_stamp.a.x, nav_stamp.a.y, nav_stamp.a.z);
     auto ap = Eigen::Vector3d (pre_nav.a.x, pre_nav.a.y, pre_nav.a.z);
@@ -268,7 +285,7 @@ void Dtc::history(const ib2_msgs::Navigation nav_stamp)
 
     // 最新の姿勢
     auto qc(nav_stamp.pose.pose.orientation);
-    qc_=  Eigen::Quaterniond (qc.w, qc.x, qc.y, qc.z); 
+    qc_=  Eigen::Quaterniond (qc.w, qc.x, qc.y, qc.z);
 
     // 航法値を保存
     last_nav_stamp_ = nav_stamp;
@@ -280,7 +297,7 @@ bool Dtc::sigmaAscent(const double sigma_dacc,const double sigma_drate,
   const int sigma_jud_num)
 {
     // 標準偏差 > 閾値　判定
-    if(std_a_ > sigma_dacc || std_w_ > sigma_drate) 
+    if(std_a_ > sigma_dacc || std_w_ > sigma_drate)
     {
         sigma_start_counter_++;
     }
@@ -294,7 +311,7 @@ bool Dtc::sigmaAscent(const double sigma_dacc,const double sigma_drate,
     {
         sigma_start_counter_ = 0;
         status_  = DETECT::DISTURBED;
-        ROS_INFO("DISTURBED");
+        RCLCPP_INFO(node_->get_logger(), "DISTURBED");
         return true;
     }
     return false;
@@ -305,7 +322,7 @@ bool Dtc::sigmaAscent(const double sigma_dacc,const double sigma_drate,
 void Dtc::colrelCheck()
 {
     // 標準偏差の下降チェック
-    if(std_a_ < sigma_end_dacc_ && std_w_ < sigma_end_drate_) 
+    if(std_a_ < sigma_end_dacc_ && std_w_ < sigma_end_drate_)
     {
         sigma_end_counter_++;
     }
@@ -313,7 +330,7 @@ void Dtc::colrelCheck()
     {
         sigma_end_counter_ = 0;
     }
- 
+
     // 衝突・クルーリリース判定
     if(sigma_end_counter_ >= sigma_end_jud_num_)
     {
@@ -321,17 +338,17 @@ void Dtc::colrelCheck()
         {
             // クルーリリース判定
             status_  = DETECT::CREW_RELEASE;
-            ROS_INFO("RELEASED");
+            RCLCPP_INFO(node_->get_logger(), "RELEASED");
             sigma_end_counter_ = 0;
         }
         if(status_ == DETECT::DISTURBED)
         {
             // 衝突判定
             status_  = DETECT::COLLISION;
-            ROS_INFO("COLLISION");
+            RCLCPP_INFO(node_->get_logger(), "COLLISION");
             sigma_end_counter_ = 0;
         }
-    } 
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -342,7 +359,7 @@ bool Dtc::crewCapCheck()
     if(from_sigup_counter_ + sigma_start_jud_num_ >= colcap_id_jud_num_)
     {
         status_  = DETECT::CREW_CAPTURE;
-        ROS_INFO("CAPTURED");
+        RCLCPP_INFO(node_->get_logger(), "CAPTURED");
         from_sigup_counter_ = 0;
         return true;
     }
@@ -360,12 +377,12 @@ void Dtc::dockingCheck()
     double dq(2. * acos(qe.w())); //rad
 
     // ドッキング位置保持判定
-    if(keep_state_counter_ < keep_state_num_) 
+    if(keep_state_counter_ < keep_state_num_)
     {
         // 位置・姿勢による判定
         if(dr.norm() > tolerance_pos_ || fabs(dq) > tolerance_att_ )
         {
-            ROS_INFO("DOCKING NG: dr:%f,  dq:%f, counter:%d",dr.norm(),dq,keep_state_counter_); 
+            RCLCPP_INFO(node_->get_logger(), "DOCKING NG: dr:%f,  dq:%f, counter:%d",dr.norm(),dq,keep_state_counter_);
             keep_state_counter_ = 0;
             // 検知リセット
             dtc_sigmaup_started_ = false;
@@ -379,7 +396,7 @@ void Dtc::dockingCheck()
     {
         keep_state_counter_ = 0;
         status_ = DETECT::DOCKING;
-        ROS_INFO("DOCKING OK");     
+        RCLCPP_INFO(node_->get_logger(), "DOCKING OK");
     }
 }
 

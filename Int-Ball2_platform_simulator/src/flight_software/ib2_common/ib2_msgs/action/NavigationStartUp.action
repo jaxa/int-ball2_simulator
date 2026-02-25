@@ -13,7 +13,7 @@ uint8 OFF = 3
 
 # result
 uint8 type
-time stamp
+builtin_interfaces/Time stamp
 ---
 # feedback
-duration time
+builtin_interfaces/Duration time

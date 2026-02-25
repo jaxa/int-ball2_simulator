@@ -1,24 +1,20 @@
 
 #pragma once
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <iostream>
 #include "prop/prop_tlmcmd.h"
 #include "prop/prop_pca9685.h"
-#include "ib2_msgs/UpdateParameter.h"
+#include "ib2_msgs/srv/update_parameter.hpp"
 
 #define   SERVICE_UPDATE_PARAMS       "/prop/update_params"
 
-class PropManager
+class PropManager : public rclcpp::Node
 {
 	//----------------------------------------------------------------------
 	// コンストラクタ/デストラクタ
-private:
-	/** デフォルトコンストラクタ */
-	PropManager() = delete;
-
 public:
 	/** コンストラクタ */
-	explicit PropManager(const ros::NodeHandle& nh);
+	PropManager();
 
 	/** デストラクタ */
 	~PropManager();
@@ -37,12 +33,6 @@ private:
 
 	/** ムーブ代入演算子. */
 	PropManager& operator=(PropManager&&)      = delete;
-    
-	//----------------------------------------------------------------------
-	// 実装
-public:
-	/** 管理機能実行 */
-	void start();
 
 	//--------------------------------------------------------------------------
 	// 実装
@@ -59,38 +49,31 @@ private:
 	 */
     int getParameter();
 
-	/** PWM制御ボード(PCA9685)にPWM信号を送信
-	 * @param [in]                 ev       ROS Timer Event
-	 */
-	void sendPWM(const ros::TimerEvent& ev);
+	/** PWM制御ボード(PCA9685)にPWM信号を送信 */
+	void sendPWM();
 
 	/** 推進機能ノード停止 */
 	void shutdown();
 
 	/** パラメータ更新サービス受信時の処理
-	 * @param [in]                                       パラメータ更新サービスリクエスト
-	 * @param [in]                 res                   パラメータ更新サービス実行結果
-	 * @retval                     true                  更新成功
-	 * @retval                     false                 更新失敗
+	 * @param [in] request                                パラメータ更新サービスリクエスト
+	 * @param [in] response                               パラメータ更新サービス実行結果
 	 */
-	bool updateParams
-	(ib2_msgs::UpdateParameter::Request&,
-	 ib2_msgs::UpdateParameter::Response& res);
+	void updateParams(
+		const std::shared_ptr<ib2_msgs::srv::UpdateParameter::Request> request,
+		std::shared_ptr<ib2_msgs::srv::UpdateParameter::Response> response);
 
 	//----------------------------------------------------------------------
 	// メンバ変数
 private:
-	/** ROSノードハンドラ */
-	ros::NodeHandle                  nh_;
-
 	/** ファン駆動状態パブリッシュ用　ROS Timer */
-	ros::Timer                       fan_status_timer_;
+	rclcpp::TimerBase::SharedPtr     fan_status_timer_;
 
 	/** PWM制御信号送信用　ROS Timer */
-	ros::Timer                       pwm_control_timer_;
+	rclcpp::TimerBase::SharedPtr     pwm_control_timer_;
 
 	/** パラメータ更新サービスサーバ */
-	ros::ServiceServer               update_params_server_;
+	rclcpp::Service<ib2_msgs::srv::UpdateParameter>::SharedPtr update_params_server_;
 
     /* ファン数 */
     int32_t                          fan_num_;

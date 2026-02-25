@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
 #include "ctl/ctl_elements.h"
 
@@ -18,10 +18,10 @@ namespace ib2
 		/** デフォルトコンストラクタ */
 		PosController();
 
-		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+		/** パラメータによるコンストラクタ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit PosController(const ros::NodeHandle& nh);
+		explicit PosController(rclcpp::Node* node);
 
 		/** デストラクタ. */
 		~PosController();
@@ -83,7 +83,7 @@ namespace ib2
 		 * @retval     力コマンド
 		 */
 		Eigen::Vector3d forceCommand
-		(const ros::Time& t, const Eigen::Vector3d &r, const Eigen::Vector3d &v,
+		(const rclcpp::Time& t, const Eigen::Vector3d &r, const Eigen::Vector3d &v,
 		 const Eigen::Quaterniond& q, const CtlElements &p, double m);
 
 		//----------------------------------------------------------------------
@@ -105,7 +105,7 @@ namespace ib2
 		Eigen::Vector3d s_;
 
 		/** 積分値s_のタイムタグ */
-		ros::Time ts_;//
+		rclcpp::Time ts_;
 	};
 }
 

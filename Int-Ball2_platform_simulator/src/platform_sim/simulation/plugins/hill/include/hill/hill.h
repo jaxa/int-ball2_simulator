@@ -1,18 +1,24 @@
 
 #pragma once
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <geometry_msgs/WrenchStamped.h>
-#include <ros/ros.h>
+#include <gz/sim/System.hh>
+#include <gz/sim/Entity.hh>
+#include <gz/math/Vector3.hh>
+
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
+
+#include <string>
 #include <cassert>
 
-namespace gazebo
+namespace hill_plugin
 {
 	/**
 	 * @brief ISSの軌道レート、重心位置を取得し、HILL方程式による相対加速度を印加するプラグイン.
 	 */
-	class Hill : public WorldPlugin
+	class Hill : public gz::sim::System,
+	             public gz::sim::ISystemConfigure,
+	             public gz::sim::ISystemPreUpdate
 	{
 		//----------------------------------------------------------------------
 		// コンストラクタ/デストラクタ
@@ -21,7 +27,7 @@ namespace gazebo
 		Hill();
 
 		/** デストラクタ. */
-		~Hill();
+		~Hill() override;
 
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
@@ -41,11 +47,23 @@ namespace gazebo
 		//----------------------------------------------------------------------
 		// 実装
 	public:
-		/** プラグインのロード
-		 * @param [in, out] _world Worldへのポインタ
-		 * @param [in, out] _sdf SDF要素へのポインタ
+		/** プラグインの初期設定 (gz-sim ISystemConfigure)
+		 * @param [in] _entity ワールドエンティティ
+		 * @param [in] _sdf SDF要素へのポインタ
+		 * @param [in, out] _ecm Entity-Component Manager
+		 * @param [in, out] _eventMgr Event Manager
 		 */
-		virtual void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf);
+		void Configure(const gz::sim::Entity &_entity,
+		               const std::shared_ptr<const sdf::Element> &_sdf,
+		               gz::sim::EntityComponentManager &_ecm,
+		               gz::sim::EventManager &_eventMgr) override;
+
+		/** 物理ステップ前の更新 (gz-sim ISystemPreUpdate)
+		 * @param [in] _info シミュレーション更新情報
+		 * @param [in, out] _ecm Entity-Component Manager
+		 */
+		void PreUpdate(const gz::sim::UpdateInfo &_info,
+		               gz::sim::EntityComponentManager &_ecm) override;
 
 	private:
 		/** ROS Parameter Serverからパラメータ取得
@@ -54,26 +72,24 @@ namespace gazebo
 
 		/** ISS/IB2モデルを取得
 		 */
-		void getModels();
+		void getModels(gz::sim::EntityComponentManager &_ecm);
 
-		/** 相対加速度(Hill方程式)のGazeboへの設定（Gazeboのコールバック関数）
+		/** 相対加速度(Hill方程式)のGazeboへの設定
 		 */
-		void addHillForce();
+		void addHillForce(const gz::sim::UpdateInfo &_info,
+		                  gz::sim::EntityComponentManager &_ecm);
 
 		//----------------------------------------------------------------------
 		// メンバ変数
 	private:
-		/** ROSノードハンドラ */
-		ros::NodeHandle                nh_;
-
-		/** Worldポインタ */
-		physics::WorldPtr              world_;
+		/** ROSノード */
+		std::shared_ptr<rclcpp::Node>  ros_node_;
 
 		/** 相対加速度(力)のパブリッシャ */
-		ros::Publisher                 pub_hill_force_;
+		rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr pub_hill_force_;
 
 		/** 相対加速度(力)のパブリッシュ周期 */
-		double                         pub_cycle_;
+		double                         pub_cycle_{0.0};
 
 		/** ISSモデル名 */
 		std::string                    iss_name_;
@@ -81,27 +97,29 @@ namespace gazebo
 		/** IB2モデル名 */
 		std::string                    ib2_name_;
 
-		/** ISSモデルへのポインタ */
-		physics::ModelPtr              iss_model_;
+		/** ISSモデルエンティティ */
+		gz::sim::Entity                iss_model_{gz::sim::kNullEntity};
 
-		/** ロボットモデルへのポインタ */
-		physics::ModelPtr              ib2_model_;
+		/** IB2モデルエンティティ */
+		gz::sim::Entity                ib2_model_{gz::sim::kNullEntity};
 
-		/** ISSモデルのリンクへのポインタ */
-		std::vector<physics::LinkPtr>  iss_link_;
+		/** ISSリンクエンティティ */
+		gz::sim::Entity                iss_link_{gz::sim::kNullEntity};
 
-		/** IB2モデルのリンクへのポインタ */
-		std::vector<physics::LinkPtr>  ib2_link_;
-
-		/** Gazeboへの接続のためのポインタ */
-		event::ConnectionPtr           update_;
+		/** IB2リンクエンティティ */
+		gz::sim::Entity                ib2_link_{gz::sim::kNullEntity};
 
 		/** ISS軌道レート[rad/s] */
-		double                         iss_w_;
+		double                         iss_w_{0.0};
 
 		/** 相対加速度(力)[N] */
-		ignition::math::Vector3d       hill_force_;
+		gz::math::Vector3d             hill_force_;
+
+		/** 速度チェック有効化フラグ */
+		bool                           velocity_checks_enabled_{false};
+
+		/** Publishカウンタ */
+		int                            pub_cnt_{0};
 	};
 }
 // End Of File -----------------------------------------------------------------
-

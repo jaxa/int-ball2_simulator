@@ -1,18 +1,20 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <actionlib/client/simple_action_client.h>
-#include <actionlib/client/terminal_state.h>
-#include "ib2_msgs/CtlCommandAction.h"
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
+#include "ib2_msgs/action/ctl_command.hpp"
 
 #include <string>
 
 /**
  * @brief プログラムの実行を管理する.
  */
-class CtlCommandClient
+class CtlCommandClient : public rclcpp::Node
 {
+	using CtlCommandAction = ib2_msgs::action::CtlCommand;
+	using GoalHandle = rclcpp_action::ClientGoalHandle<CtlCommandAction>;
+
 	//----------------------------------------------------------------------
 	// コンストラクタ/デストラクタ
 public:
@@ -71,30 +73,35 @@ private:
 
 	//----------------------------------------------------------------------
 	// 実装（コールバック関数）
-public:
-	/** アクション終了時の処理
-	 * @param [in] state 終了時の状態
-	 * @param [in] result アクション実行結果
+private:
+	/** ゴール応答時の処理
+	 * @param [in] goal_handle ゴールハンドル
 	 */
-	void doneCb(const actionlib::SimpleClientGoalState& state,
-				const ib2_msgs::CtlCommandResultConstPtr& result);
-
-	/** アクション有効時の処理 */
-	void activeCb();
+	void goalResponseCb(GoalHandle::SharedPtr goal_handle);
 
 	/** アクションのフィードバック受信時の処理
+	 * @param [in] goal_handle ゴールハンドル
 	 * @param [in] feedback アクションのフィードバック
 	 */
-	void feedbackCb(const ib2_msgs::CtlCommandFeedbackConstPtr& feedback);
+	void feedbackCb(GoalHandle::SharedPtr goal_handle,
+					const std::shared_ptr<const CtlCommandAction::Feedback> feedback);
+
+	/** アクション結果受信時の処理
+	 * @param [in] result アクション実行結果
+	 */
+	void resultCb(const GoalHandle::WrappedResult& result);
 
 	//----------------------------------------------------------------------
 	// メンバー変数
-protected:
-	/** ノードハンドラ */
-	ros::NodeHandle nh_;
-
+private:
 	/** アクションクライアント */
-	actionlib::SimpleActionClient<ib2_msgs::CtlCommandAction> ac_;
+	rclcpp_action::Client<CtlCommandAction>::SharedPtr ac_;
+
+	/** ゴールハンドル */
+	GoalHandle::SharedPtr goal_handle_;
+
+	/** 完了フラグ */
+	bool done_;
 
 	/** コマンド種別 */
 	uint8_t type_;
@@ -122,7 +129,7 @@ protected:
 
 	/** 姿勢制御クォータニオンx成分 */
 	double dqx_;
-	
+
 	/** 姿勢制御クォータニオンy成分 */
 	double dqy_;
 

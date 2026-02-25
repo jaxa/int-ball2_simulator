@@ -6,11 +6,8 @@
 #include "guidance_control_common/Mjd.h"
 #include "guidance_control_common/Log.h"
 
-#include "ib2_msgs/CtlStatusType.h"
-#include "ib2_msgs/Navigation.h"
-
-
-#include "boost/date_time/posix_time/posix_time.hpp"
+#include "ib2_msgs/msg/ctl_status_type.hpp"
+#include "ib2_msgs/msg/navigation.hpp"
 
 #include <Eigen/Dense>
 
@@ -37,7 +34,7 @@ namespace
 	/** コマンド種別文字列 */
 	const std::vector<std::string> COMMAND_TYPE
 	{
-		"STAND_BY",	
+		"STAND_BY",
 		"KEEP_POSE",
 		"STOPPING_TARGET",
 		"RELATIVE_TARGET",
@@ -58,7 +55,7 @@ namespace
 		if (ptr == COMMAND_TYPE.end())
 		{
 			std::string what("invalid command type string");
-			LOG_ERROR(what + " : " + str); 
+			LOG_ERROR(what + " : " + str);
 			throw std::domain_error(what);
 		}
 		auto index(std::distance(COMMAND_TYPE.begin(), ptr));
@@ -92,7 +89,7 @@ namespace
 		Eigen::AngleAxisd rotx(droll  * DEG, Eigen::Vector3d::UnitX());
 		Eigen::Quaterniond dq(rotz * roty * rotx);
 
-		bool longer(isLongerPath(dyaw, dpitch, droll));	
+		bool longer(isLongerPath(dyaw, dpitch, droll));
 		if (( longer && dq.w() > 0.) ||
 			(!longer && dq.w() < 0.))
 		{
@@ -136,16 +133,20 @@ int kbhit(void)
 //------------------------------------------------------------------------------
 // デフォルトコンストラクタ
 CtlCommandClient::CtlCommandClient() :
-	nh_("~"), ac_(ACTION_NAME, true)
+	rclcpp::Node("target_node"), done_(false)
 {
+	ac_ = rclcpp_action::create_client<CtlCommandAction>(this, ACTION_NAME);
+
+	this->declare_parameter<std::string>("paramfile", "");
 	std::string paramfile;
-	nh_.getParam("paramfile", paramfile);
+	this->get_parameter("paramfile", paramfile);
+
 	std::ifstream f(paramfile);
 	if (f.good())
 		setFromFile(paramfile);
 	else
 	{
-		ROS_INFO("set from rosparam, there is no paramfile : %s",
+		RCLCPP_INFO(this->get_logger(), "set from rosparam, there is no paramfile : %s",
 				 paramfile.c_str());
 		setFromParam();
 	}
@@ -155,15 +156,15 @@ CtlCommandClient::CtlCommandClient() :
 	dqz_ = dq.z();
 	dqw_ = dq.w();
 
-	ROS_INFO("cmdtype : %s", COMMAND_TYPE.at(type_).c_str());
-	ROS_INFO("timeout : %lf", timeout_);
-	ROS_INFO("position drx,  dry,    drz   : %lf, %lf, %lf",
+	RCLCPP_INFO(this->get_logger(), "cmdtype : %s", COMMAND_TYPE.at(type_).c_str());
+	RCLCPP_INFO(this->get_logger(), "timeout : %lf", timeout_);
+	RCLCPP_INFO(this->get_logger(), "position drx,  dry,    drz   : %lf, %lf, %lf",
 			 drx_, dry_, drz_);
-	ROS_INFO("attitude dyaw, dpitch, droll : %lf, %lf, %lf",
+	RCLCPP_INFO(this->get_logger(), "attitude dyaw, dpitch, droll : %lf, %lf, %lf",
 			 dyaw_, dpitch_, droll_);
-	ROS_INFO("attitude dqx, dqy, dqz, dqw : %lf, %lf, %lf, %lf",
+	RCLCPP_INFO(this->get_logger(), "attitude dqx, dqy, dqz, dqw : %lf, %lf, %lf, %lf",
 			 dqx_, dqy_, dqz_, dqw_);
-	ROS_INFO("hit key \"x\" to cancel action.");
+	RCLCPP_INFO(this->get_logger(), "hit key \"x\" to cancel action.");
 }
 
 //------------------------------------------------------------------------------
@@ -178,7 +179,7 @@ void CtlCommandClient::setFromFile(const std::string& filename)
 	size_t lineno(0);
 	try
 	{
-		ROS_INFO("read paramfile : %s", filename.c_str());
+		RCLCPP_INFO(this->get_logger(), "read paramfile : %s", filename.c_str());
 		FileReader f(filename);
 		type_    = commandType(f.string(lineno++));
 		timeout_ = f.value(lineno++);
@@ -195,7 +196,7 @@ void CtlCommandClient::setFromFile(const std::string& filename)
 	{
 		std::string type("CtlCommandClient::setFromFile");
 		auto msg(Log::errorFileLine(e.what(), type, filename, lineno));
-		ROS_INFO_STREAM(msg);
+		RCLCPP_INFO(this->get_logger(), "%s", msg.c_str());
 		LOG_ERROR(msg);
 		throw;
 	}
@@ -205,16 +206,23 @@ void CtlCommandClient::setFromFile(const std::string& filename)
 // rosparamによる設定
 void CtlCommandClient::setFromParam()
 {
-	// 事前にrosparam set /ctl_command/timeout XX などを設定すること
+	auto get_param = [this](const std::string& name, auto& value) {
+		using T = std::decay_t<decltype(value)>;
+		if (!this->has_parameter(name)) {
+			this->declare_parameter<T>(name, value);
+		}
+		this->get_parameter(name, value);
+	};
+
 	int type(0);
-	nh_.getParam("/ctl_command/type", type);
-	nh_.getParam("/ctl_command/timeout", timeout_);
-	nh_.getParam("/ctl_command/drx"    , drx_);
-	nh_.getParam("/ctl_command/dry"    , dry_);
-	nh_.getParam("/ctl_command/drz"    , drz_);
-	nh_.getParam("/ctl_command/dyaw"   , dyaw_);
-	nh_.getParam("/ctl_command/dpitch" , dpitch_);
-	nh_.getParam("/ctl_command/droll"  , droll_);
+	get_param("ctl_command.type"   , type);
+	get_param("ctl_command.timeout", timeout_);
+	get_param("ctl_command.drx"    , drx_);
+	get_param("ctl_command.dry"    , dry_);
+	get_param("ctl_command.drz"    , drz_);
+	get_param("ctl_command.dyaw"   , dyaw_);
+	get_param("ctl_command.dpitch" , dpitch_);
+	get_param("ctl_command.droll"  , droll_);
 	type_ = static_cast<uint8_t>(type);
 }
 
@@ -231,30 +239,28 @@ void CtlCommandClient::execute()
 // アクションサーバー起動待ち
 void CtlCommandClient::waitServer()
 {
-	ROS_INFO("Waiting for action server start");
-	ac_.waitForServer();
-	ROS_INFO("action server started");
+	RCLCPP_INFO(this->get_logger(), "Waiting for action server start");
+	ac_->wait_for_action_server();
+	RCLCPP_INFO(this->get_logger(), "action server started");
 }
 
 //------------------------------------------------------------------------------
 // 制御目標の送信
 void CtlCommandClient::sendGoal()
 {
-	static uint32_t seq(0);
 	Eigen::Quaterniond dq(att_maneuver(dyaw_, dpitch_, droll_));
 
-	int32_t type(type_ == 8 ? ib2_msgs::CtlStatusType::DOCK_WITHOUT_CORRECTION : 
+	int32_t type(type_ == 8 ? ib2_msgs::msg::CtlStatusType::DOCK_WITHOUT_CORRECTION :
 		static_cast<int32_t>(type_ * 10));
-	ib2_msgs::CtlCommandGoal goal;
+	auto goal = CtlCommandAction::Goal();
 
-	goal.target.header.seq = ++seq;
-	goal.target.header.stamp = ros::Time::now();
-	goal.target.header.frame_id = 
-	(type == ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET ? FRAME_ISS : FRAME_IB2);
+	goal.target.header.stamp = this->now();
+	goal.target.header.frame_id =
+	(type == ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET ? FRAME_ISS : FRAME_IB2);
 
 
-	if (type == ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET || 
-		type == ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
+	if (type == ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET ||
+		type == ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
 	{
 		goal.target.pose.position.x = drx_;
 		goal.target.pose.position.y = dry_;
@@ -279,37 +285,38 @@ void CtlCommandClient::sendGoal()
 
 	goal.type.type = type;
 
-	ac_.sendGoal(goal,
-				 boost::bind(&CtlCommandClient::doneCb, this, _1, _2),
-				 boost::bind(&CtlCommandClient::activeCb, this),
-				 boost::bind(&CtlCommandClient::feedbackCb, this, _1));
+	auto send_goal_options = rclcpp_action::Client<CtlCommandAction>::SendGoalOptions();
+	send_goal_options.goal_response_callback =
+		std::bind(&CtlCommandClient::goalResponseCb, this, std::placeholders::_1);
+	send_goal_options.feedback_callback =
+		std::bind(&CtlCommandClient::feedbackCb, this, std::placeholders::_1, std::placeholders::_2);
+	send_goal_options.result_callback =
+		std::bind(&CtlCommandClient::resultCb, this, std::placeholders::_1);
+
+	ac_->async_send_goal(goal, send_goal_options);
 }
 
 //------------------------------------------------------------------------------
 // アクション結果の待機
 void CtlCommandClient::waitForResult()
 {
-	ros::Duration timeout(timeout_);
-	ros::Time begin(ros::Time::now());
-	while (true)
+	auto timeout = rclcpp::Duration::from_seconds(timeout_);
+	auto begin = this->now();
+	rclcpp::Rate rate(10);
+	while (rclcpp::ok() && !done_)
 	{
-		auto stateAC(ac_.getState());
-		if (stateAC == actionlib::SimpleClientGoalState::REJECTED  ||
-			stateAC == actionlib::SimpleClientGoalState::PREEMPTED ||
-			stateAC == actionlib::SimpleClientGoalState::ABORTED   ||
-			stateAC == actionlib::SimpleClientGoalState::SUCCEEDED ||
-			stateAC == actionlib::SimpleClientGoalState::LOST)
-			break;
+		rclcpp::spin_some(this->shared_from_this());
 		if (kbhit() && getchar() == 'x')
 		{
 			cancel("user hit key x");
 			break;
 		}
-		if (ros::Time::now() - begin > timeout)
+		if (this->now() - begin > timeout)
 		{
 			cancel("timeout");
 			break;
 		}
+		rate.sleep();
 	}
 }
 
@@ -317,49 +324,34 @@ void CtlCommandClient::waitForResult()
 // アクションのキャンセル
 void CtlCommandClient::cancel(const std::string& info)
 {
-	ROS_INFO("Action Canceled by %s.",info.c_str());
-	ac_.cancelGoal();
+	RCLCPP_INFO(this->get_logger(), "Action Canceled by %s.", info.c_str());
+	if (goal_handle_) {
+		ac_->async_cancel_goal(goal_handle_);
+	}
 }
 
 //------------------------------------------------------------------------------
-// アクション終了時の処理
-void CtlCommandClient::doneCb
-(const actionlib::SimpleClientGoalState& state,
- const ib2_msgs::CtlCommandResultConstPtr& result)
+// ゴール応答時の処理
+void CtlCommandClient::goalResponseCb(GoalHandle::SharedPtr goal_handle)
 {
-	ROS_INFO("Finished in state [%s]", state.toString().c_str());
-	if (result->stamp.isSystemTime())
-	{
-		std::string tstr(boost::posix_time::to_iso_extended_string
-						 (result->stamp.toBoost()));
-		ROS_INFO("Finished at %s", tstr.c_str());
+	if (!goal_handle) {
+		RCLCPP_ERROR(this->get_logger(), "Goal was rejected by server");
+		done_ = true;
+		return;
 	}
-	else
-	{
-		ROS_INFO("Finished at %.3f (Simulation Time)",
-				 result->stamp.toSec());
-	}
-	static const std::vector<std::string> RESULT_STRINGS = {
-		"SUCCESS", "ABORTED", "TIME_OUT", "INVALID_NAV", "INVALID_CMD"
-	};
-	auto rstr = RESULT_STRINGS[result->type];
-	ROS_INFO("Finished in type  [%d : %s]", result->type, rstr.c_str());
-}
-
-//------------------------------------------------------------------------------
-// アクション有効時の処理
-void CtlCommandClient::activeCb()
-{
-	ROS_INFO("Goal just went active");
+	RCLCPP_INFO(this->get_logger(), "Goal just went active");
+	goal_handle_ = goal_handle;
 }
 
 //------------------------------------------------------------------------------
 // アクションのフィードバック受信時の処理
-void CtlCommandClient::feedbackCb(const ib2_msgs::CtlCommandFeedbackConstPtr& feedback)
+void CtlCommandClient::feedbackCb(
+	GoalHandle::SharedPtr,
+	const std::shared_ptr<const CtlCommandAction::Feedback> feedback)
 {
 	using namespace ib2_mss;
 
-	auto& dt(feedback->time_to_go);
+	double dt_sec = rclcpp::Duration(feedback->time_to_go).seconds();
 	auto& dr(feedback->pose_to_go.position);
 	auto& dq(feedback->pose_to_go.orientation);
 
@@ -367,15 +359,49 @@ void CtlCommandClient::feedbackCb(const ib2_msgs::CtlCommandFeedbackConstPtr& fe
 	if (dqx_ * dq.x + dqy_ * dq.y + dqz_ * dq.z < 0.)
 		rot *= -1.;
 
-	ROS_INFO("Got Feedback time to goal %.3f [s]", dt.toSec());
-	ROS_INFO("Got Feedback distance(x) to goal %.3f [m]", dr.x);
-	ROS_INFO("Got Feedback distance(y) to goal %.3f [m]", dr.y);
-	ROS_INFO("Got Feedback distance(z) to goal %.3f [m]", dr.z);
-	ROS_INFO("Got Feedback rotation to goal %.3f [deg]", rot);
-	ROS_INFO("Got Feedback orientation(x) to goal %.6f", dq.x);
-	ROS_INFO("Got Feedback orientation(y) to goal %.6f", dq.y);
-	ROS_INFO("Got Feedback orientation(z) to goal %.6f", dq.z);
-	ROS_INFO("Got Feedback orientation(w) to goal %.6f", dq.w);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback time to goal %.3f [s]", dt_sec);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback distance(x) to goal %.3f [m]", dr.x);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback distance(y) to goal %.3f [m]", dr.y);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback distance(z) to goal %.3f [m]", dr.z);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback rotation to goal %.3f [deg]", rot);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback orientation(x) to goal %.6f", dq.x);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback orientation(y) to goal %.6f", dq.y);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback orientation(z) to goal %.6f", dq.z);
+	RCLCPP_INFO(this->get_logger(), "Got Feedback orientation(w) to goal %.6f", dq.w);
+}
+
+//------------------------------------------------------------------------------
+// アクション結果受信時の処理
+void CtlCommandClient::resultCb(const GoalHandle::WrappedResult& result)
+{
+	std::string state_str;
+	switch (result.code) {
+		case rclcpp_action::ResultCode::SUCCEEDED:
+			state_str = "SUCCEEDED";
+			break;
+		case rclcpp_action::ResultCode::ABORTED:
+			state_str = "ABORTED";
+			break;
+		case rclcpp_action::ResultCode::CANCELED:
+			state_str = "CANCELED";
+			break;
+		default:
+			state_str = "UNKNOWN";
+			break;
+	}
+
+	RCLCPP_INFO(this->get_logger(), "Finished in state [%s]", state_str.c_str());
+
+	double stamp_sec = rclcpp::Time(result.result->stamp).seconds();
+	RCLCPP_INFO(this->get_logger(), "Finished at %.3f (Simulation Time)", stamp_sec);
+
+	static const std::vector<std::string> RESULT_STRINGS = {
+		"SUCCESS", "ABORTED", "TIME_OUT", "INVALID_NAV", "INVALID_CMD"
+	};
+	auto rstr = RESULT_STRINGS[result.result->type];
+	RCLCPP_INFO(this->get_logger(), "Finished in type  [%d : %s]", result.result->type, rstr.c_str());
+
+	done_ = true;
 }
 
 //------------------------------------------------------------------------------
@@ -383,14 +409,12 @@ void CtlCommandClient::feedbackCb(const ib2_msgs::CtlCommandFeedbackConstPtr& fe
 int main(int argc, char** argv)
 {
 	using namespace ib2_mss;
-//	Log::configure("log/target_node.log", "INFO");
 
-	ros::init(argc, argv, "target_node");
+	rclcpp::init(argc, argv);
 	try
 	{
-		CtlCommandClient o;
-		o.execute();
-		return 0;
+		auto node = std::make_shared<CtlCommandClient>();
+		node->execute();
 	}
 	catch (const std::exception& e)
 	{
@@ -400,7 +424,8 @@ int main(int argc, char** argv)
 	{
 		LOG_ERROR("caught unknown exception");
 	}
-	return 1;
+	rclcpp::shutdown();
+	return 0;
 }
 
 // End Of File -----------------------------------------------------------------

@@ -1,1 +1,15 @@
 out
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+
+# Colcon markers
+COLCON_IGNORE
+
+# Editor files
+*.swp
+*~
+.#*
+*.user

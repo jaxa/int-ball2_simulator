@@ -1,15 +1,15 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 
 #include <deque>
 
 #include <Eigen/Dense>
 
 // Standard messages
-#include "ib2_msgs/Navigation.h"
-#include "ib2_msgs/CtlStatus.h"
+#include "ib2_msgs/msg/navigation.hpp"
+#include "ib2_msgs/msg/ctl_status.hpp"
 
 #include "guidance_control_common/MovingAverage.h"
 
@@ -39,13 +39,13 @@ private:
 	Dtc() = delete;
 
 public:
-	
+
 	/** コンストラクタ */
-	explicit Dtc(const ros::NodeHandle& nh);
+	explicit Dtc(rclcpp::Node* node);
 
 	/** デストラクタ */
 	~Dtc();
-	
+
 	//----------------------------------------------------------------------
 	// コピー/ムーブ
 private:
@@ -69,7 +69,7 @@ public:
 	 * @retval false 設定失敗
 	 */
 	bool setMember();
-	
+
 	//----------------------------------------------------------------------
 	// 属性(Getter)
 public:
@@ -82,7 +82,7 @@ public:
 	 * @param [in] t 目標設定時刻
 	 * @return ドッキング目標値航法メッセージ
 	 */
-	ib2_msgs::Navigation dockingTarget(const ros::Time& t) const;
+	ib2_msgs::msg::Navigation dockingTarget(const rclcpp::Time& t) const;
 
 	//----------------------------------------------------------------------
 	// 実装
@@ -92,7 +92,7 @@ public:
 	 * @param [in] ctl_status 誘導ステータス
 	 * @return ステータス
 	 */
-	Dtc::DETECT detection(const ib2_msgs::Navigation nav_stamp, const int32_t ctl_status);
+	Dtc::DETECT detection(const ib2_msgs::msg::Navigation nav_stamp, const int32_t ctl_status);
 
 	/** 検知ステータスのクリア
 	 */
@@ -106,7 +106,7 @@ private:
 
 	/** 航法暦
 	 */
-	 void history(const ib2_msgs::Navigation nav_stamp);
+	 void history(const ib2_msgs::msg::Navigation nav_stamp);
 
 	/** 衝突・クルーリリース判定
 	 */
@@ -135,11 +135,11 @@ private:
 	//----------------------------------------------------------------------
 	// メンバ変数
 private:
-	/** ROSノードハンドラ */
-	ros::NodeHandle nh_;
+	/** ROSノードポインタ */
+	rclcpp::Node* node_;
 
 	/** 前回の航法値*/
-	ib2_msgs::Navigation last_nav_stamp_;
+	ib2_msgs::msg::Navigation last_nav_stamp_;
 
 	/** 最新の位置*/
 	Eigen::Vector3d rc_;
@@ -148,7 +148,7 @@ private:
 	Eigen::Quaterniond qc_;
 
 	/** キューサイズ */
-	unsigned int que_size_; 
+	unsigned int que_size_;
 
 	/** ステータス */
 	DETECT status_;

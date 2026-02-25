@@ -136,8 +136,13 @@
     <origin rpy="3.1415926535898 0 -1.5707963267949" xyz="10.9358938 -3.3864698 4.1205872" />
   </joint>
 
+  <!-- ISS dynamics plugin (custom) - requires porting the 'issdyn' package to gz-sim plugin -->
   <gazebo>
-    <plugin name="issdyn" filename="libissdyn.so" />
+    <plugin filename="issdyn" name="issdyn">
+      <!-- TODO: Update after porting issdyn package to Gazebo Harmonic gz-sim system plugin.
+           Original: filename="libissdyn.so"
+           New format: The actual plugin name depends on the ported issdyn package's gz-sim registration. -->
+    </plugin>
   </gazebo>
 
 </robot>

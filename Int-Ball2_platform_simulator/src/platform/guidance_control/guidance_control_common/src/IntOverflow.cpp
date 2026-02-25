@@ -2,6 +2,7 @@
 #include "guidance_control_common/IntOverflow.h"
 #include "guidance_control_common/Log.h"
 
+#include <cstdint>
 #include <sstream>
 #include <stdexcept>
 #include <limits>

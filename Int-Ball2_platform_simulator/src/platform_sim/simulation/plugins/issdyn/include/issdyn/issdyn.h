@@ -1,19 +1,25 @@
 
 #pragma once
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <ros/ros.h>
-#include "ib2_msgs/Navigation.h"
+#include <gz/sim/System.hh>
+#include <gz/sim/Entity.hh>
+#include <gz/math/Vector3.hh>
+
+#include <rclcpp/rclcpp.hpp>
+#include <ib2_msgs/msg/navigation.hpp>
+
 #include <cmath>
 #include <cassert>
+#include <chrono>
 
-namespace gazebo
+namespace issdyn_plugin
 {
 	/**
 	 * @brief ISSの姿勢変動を模擬するプラグイン.
 	 */
-	class Issdyn : public ModelPlugin
+	class Issdyn : public gz::sim::System,
+	               public gz::sim::ISystemConfigure,
+	               public gz::sim::ISystemPreUpdate
 	{
 		//----------------------------------------------------------------------
 		// コンストラクタ/デストラクタ
@@ -22,79 +28,77 @@ namespace gazebo
 		Issdyn();
 
 		/** デストラクタ. */
-		~Issdyn();
+		~Issdyn() override;
 
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
 	private:
-		/** コピーコンストラクタ. */
 		Issdyn(const Issdyn&) = delete;
-
-		/** コピー代入演算子. */
 		Issdyn& operator=(const Issdyn&) = delete;
-
-		/** ムーブコンストラクタ. */
 		Issdyn(Issdyn&&) = delete;
-
-		/** ムーブ代入演算子. */
 		Issdyn& operator=(Issdyn&&) = delete;
 
 		//----------------------------------------------------------------------
 		// 実装
 	public:
-		/** プラグインのロード
-		 * @param [in, out] _model モデルへのポインタ
-		 * @param [in, out] _sdf SDF要素へのポインタ
-		 */
-		virtual void Load(physics::ModelPtr _model, sdf::ElementPtr _sdf);
+		void Configure(const gz::sim::Entity &_entity,
+		               const std::shared_ptr<const sdf::Element> &_sdf,
+		               gz::sim::EntityComponentManager &_ecm,
+		               gz::sim::EventManager &_eventMgr) override;
+
+		void PreUpdate(const gz::sim::UpdateInfo &_info,
+		               gz::sim::EntityComponentManager &_ecm) override;
 
 	private:
-		/** ROS Parameter Serverからパラメータ取得
-		 */
+		/** ROS Parameter Serverからパラメータ取得 */
 		void getParameter();
 
-		/** ISSの姿勢変動を設定
-		 */
-		void setIssAttitude();
+		/** ISSの姿勢変動を設定 */
+		void setIssAttitude(const gz::sim::UpdateInfo &_info,
+		                    gz::sim::EntityComponentManager &_ecm);
 
-		/** ROS Timerのコールバック関数
-		 * @param [in, out] event TimerEvent構造体への参照
-		 */
-		void pubIssNav(const ros::TimerEvent& event);
+		/** ISS航法値をパブリッシュ */
+		void pubIssNav(const gz::sim::UpdateInfo &_info,
+		               gz::sim::EntityComponentManager &_ecm);
 
 		//----------------------------------------------------------------------
 		// メンバ変数
 	private:
-		/** ROSノードハンドラ */
-		ros::NodeHandle                nh_;
+		/** ROSノード */
+		std::shared_ptr<rclcpp::Node>  ros_node_;
 
-		/** モデルへのポインタ */
-		physics::ModelPtr              model_;
+		/** モデルエンティティ */
+		gz::sim::Entity                model_entity_{gz::sim::kNullEntity};
 
-		/** ISSモデルのリンクへのポインタ */
-		std::vector<physics::LinkPtr>  link_iss_body_;
+		/** ISSリンクエンティティ */
+		gz::sim::Entity                iss_link_{gz::sim::kNullEntity};
 
 		/** 航法値のパブリッシャ */
-		ros::Publisher                 pub_nav_;
-
-		/** Gazeboへの接続のためのポインタ */
-		event::ConnectionPtr           update_;
+		rclcpp::Publisher<ib2_msgs::msg::Navigation>::SharedPtr pub_nav_;
 
 		/** ISS 姿勢変動バイアスの傾き */
-		ignition::math::Vector3d       att_bias_slope_;
+		gz::math::Vector3d             att_bias_slope_;
 
 		/** ISS 姿勢変動正弦波のゲイン */
-		ignition::math::Vector3d       att_fluc_gain_;
+		gz::math::Vector3d             att_fluc_gain_;
 
 		/** ISS姿勢変動正弦波の周期 */
-		ignition::math::Vector3d       att_fluc_freq_;
-
-		/** ROSタイマ */
-		ros::Timer                     pub_timer_;
+		gz::math::Vector3d             att_fluc_freq_;
 
 		/** ISS航法値のパブリッシュ周期 */
-		double                         pub_cycle_;
+		double                         pub_cycle_{0.0};
+
+		/** 本ノード開始フラグ */
+		bool                           start_flag_{false};
+
+		/** 本ノード開始時シミュレーション時刻 */
+		double                         start_time_{0.0};
+
+		/** 最後のパブリッシュ時刻 */
+		double                         last_pub_time_{-1.0};
+
+		/** 速度チェック有効化フラグ */
+		bool                           velocity_checks_enabled_{false};
 	};
 }
 // End Of File -----------------------------------------------------------------
-

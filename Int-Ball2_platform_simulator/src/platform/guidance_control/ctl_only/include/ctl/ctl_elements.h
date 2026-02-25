@@ -1,9 +1,9 @@
 
 #pragma once
 
-#include "ib2_msgs/CtlStatus.h"
+#include "ib2_msgs/msg/ctl_status.hpp"
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Dense>
 
 /**
@@ -25,7 +25,7 @@ public:
 	 * @param [in] q 姿勢クォータニオン
 	 * @param [in] w 角速度ベクトル
 	 */
-	CtlElements(const ros::Time& t, 
+	CtlElements(const rclcpp::Time& t,
 				const Eigen::Vector3d& r, const Eigen::Vector3d& v,
 				const Eigen::Vector3d& a,
 				const Eigen::Quaterniond& q, const Eigen::Vector3d& w);
@@ -52,9 +52,9 @@ public:
 	// 属性(Getter)
 public:
 	/** ROS時刻の参照
-	 * @return 位置ベクトルの参照
+	 * @return ROS時刻の参照
 	 */
-	const ros::Time& t() const;
+	const rclcpp::Time& t() const;
 
 	/** 位置ベクトルの参照
 	 * @return 位置ベクトルの参照
@@ -62,17 +62,17 @@ public:
 	const Eigen::Vector3d& r() const;
 
 	/** 速度ベクトルの参照
-	 * @return 位置ベクトルの参照
+	 * @return 速度ベクトルの参照
 	 */
 	const Eigen::Vector3d& v() const;
 
 	/** 加速度ベクトルの参照
-	 * @return 位置ベクトルの参照
+	 * @return 加速度ベクトルの参照
 	 */
 	const Eigen::Vector3d& a() const;
 
 	/** 姿勢クォータニオンの参照
-	 * @return 位置ベクトルの参照
+	 * @return 姿勢クォータニオンの参照
 	 */
 	const Eigen::Quaterniond& q() const;
 
@@ -85,13 +85,13 @@ public:
 	 * @param [in] status 誘導制御ステータス
 	 * @return 誘導制御ステータスメッセージ
 	 */
-	ib2_msgs::CtlStatus status(int32_t status) const;
+	ib2_msgs::msg::CtlStatus status(int32_t status) const;
 
 	//--------------------------------------------------------------------------
 	// メンバ変数
 private:
 	/** 時刻 */
-	ros::Time t_;
+	rclcpp::Time t_;
 
 	/** 位置ベクトル */
 	Eigen::Vector3d r_;

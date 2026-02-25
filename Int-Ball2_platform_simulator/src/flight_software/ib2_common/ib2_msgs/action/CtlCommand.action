@@ -8,9 +8,9 @@ uint8 TERMINATE_ABORTED = 1
 uint8 TERMINATE_TIME_OUT = 2
 uint8 TERMINATE_INVALID_NAV = 3
 uint8 TERMINATE_INVALID_CMD = 4
-time stamp	# goal reached time
+builtin_interfaces/Time stamp	# goal reached time
 uint8 type	# result status
 ---
 #feedback
-duration time_to_go				# time to goal
+builtin_interfaces/Duration time_to_go				# time to goal
 geometry_msgs/Pose pose_to_go	# target - nav

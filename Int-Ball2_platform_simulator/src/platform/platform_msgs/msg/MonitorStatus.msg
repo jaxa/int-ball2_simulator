@@ -1,4 +1,4 @@
-time check_time
+builtin_interfaces/Time check_time
 platform_msgs/NodeStatusValue[] publications
 platform_msgs/NodeStatusValue[] subscriptions
 platform_msgs/NodeStatusValue[] services

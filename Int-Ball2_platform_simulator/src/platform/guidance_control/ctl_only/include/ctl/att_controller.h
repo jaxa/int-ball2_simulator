@@ -3,7 +3,7 @@
 
 #include "ctl/ctl_elements.h"
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
 
 namespace ib2
@@ -18,30 +18,30 @@ namespace ib2
 	public:
 		/** デフォルトコンストラクタ */
 		AttController();
-		
-		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+
+		/** パラメータによるコンストラクタ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit AttController(const ros::NodeHandle& nh);
-		
+		explicit AttController(rclcpp::Node* node);
+
 		/** デストラクタ. */
 		~AttController();
-		
+
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
 	public:
 		/** コピーコンストラクタ. */
 		AttController(const AttController&);
-		
+
 		/** コピー代入演算子. */
 		AttController& operator=(const AttController&);
-		
+
 		/** ムーブコンストラクタ. */
 		AttController(AttController&&);
-		
+
 		/** ムーブ代入演算子. */
 		AttController& operator=(AttController&&);
-		
+
 		//----------------------------------------------------------------------
 		// 属性(Getter)
 	public:
