@@ -1,7 +1,7 @@
 
 #pragma once
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <Eigen/Core>
 
 namespace ib2
@@ -18,11 +18,11 @@ namespace ib2
 	public:
 		/** デフォルトコンストラクタ */
 		ThrustAllocator();
-		
+
 		/** rosparamによるコンストラクタ
-		 * @param [in] nh ノードハンドラ
+		 * @param [in] node ノードポインタ
 		 */
-		explicit ThrustAllocator(const ros::NodeHandle& nh);
+		explicit ThrustAllocator(rclcpp::Node* node);
 
 		/** 値によるコンストラクタ.
 		 * @param [in] Fmax 各ファンの最大推力
@@ -31,25 +31,25 @@ namespace ib2
 		 */
 		ThrustAllocator
 		(double Fmax, const Eigen::MatrixXd& Wp, const Eigen::MatrixXd& Wm);
-		
+
 		/** デストラクタ. */
 		~ThrustAllocator();
-		
+
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
 	public:
 		/** コピーコンストラクタ. */
 		ThrustAllocator(const ThrustAllocator&);
-		
+
 		/** コピー代入演算子. */
 		ThrustAllocator& operator=(const ThrustAllocator&);
-		
+
 		/** ムーブコンストラクタ. */
 		ThrustAllocator(ThrustAllocator&&);
-		
+
 		/** ムーブ代入演算子. */
 		ThrustAllocator& operator=(ThrustAllocator&&);
-		
+
 		//----------------------------------------------------------------------
 		// 操作(Setter)
 	public:
@@ -61,7 +61,7 @@ namespace ib2
 		 */
 		ThrustAllocator& set
 		(double Fmax, const Eigen::MatrixXd& Wp, const Eigen::MatrixXd& Wm);
-		
+
 		//----------------------------------------------------------------------
 		// 属性(Getter)
 	public:
@@ -74,7 +74,7 @@ namespace ib2
 		 * @return ファン推力最大値[N]
 		 */
 		double Fmax() const;
-		
+
 		//----------------------------------------------------------------------
 		// 実装
 	public:
@@ -92,7 +92,7 @@ namespace ib2
 		 */
 		Eigen::VectorXd allocate(const Eigen::VectorXd& y) const;
 
-		
+
 		/** 実効最大推力の計算
 		 * @param [in] Fmax 最大推力基準値[N]
 		 * @param [in] dir 移動方向（機体座標系）
@@ -101,7 +101,7 @@ namespace ib2
 		 */
 		double effectiveFmax
 		(double Fmax, const Eigen::Vector3d& dir, double eta) const;
-		
+
 		/** 実効最大トルクの計算
 		 * @param [in] Tmax 最大トルク基準値[Nm]
 		 * @param [in] axis 回転軸（機体座標系）
@@ -121,7 +121,7 @@ namespace ib2
 		 * @return 実効最大推力[Nm]
 		 */
 		std::pair<double,double> effectiveFTmax
-		(double Fmax, const Eigen::Vector3d& dir, 
+		(double Fmax, const Eigen::Vector3d& dir,
 		 double Tmax, const Eigen::Vector3d& axis, double eta) const;
 
 	private:
@@ -140,10 +140,10 @@ namespace ib2
 
 		/** 各ファンの最大推力 */
 		double Fmax_;
-		
+
 		/** 正の配分行列 */
 		Eigen::MatrixXd Wp_;
-		
+
 		/** 負の配分行列 */
 		Eigen::MatrixXd Wm_;
 	};

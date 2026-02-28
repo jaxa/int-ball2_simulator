@@ -1,16 +1,19 @@
 #include <QButtonGroup>
+#include <QThread>
 #include <QLabel>
 #include <QPushButton>
 #include <QQuaternion>
 #include <QSpacerItem>
 #include <QVector3D>
-#include <rviz/config.h>
-#include <rviz/display.h>
-#include <rviz/render_panel.h>
-#include <rviz/view_controller.h>
-#include <rviz/visualization_manager.h>
-#include <rviz/yaml_config_reader.h>
-#include <tf/transform_broadcaster.h>
+#include <rviz_common/config.hpp>
+#include <rviz_common/display.hpp>
+#include <rviz_common/render_panel.hpp>
+#include <rviz_rendering/render_window.hpp>
+#include <rviz_common/view_controller.hpp>
+#include <rviz_common/visualization_manager.hpp>
+#include <rviz_common/yaml_config_reader.hpp>
+#include <rviz_common/ros_integration/ros_node_abstraction.hpp>
+#include <tf2_ros/transform_broadcaster.h>
 #include "exception/config_error.h"
 #include "gui_color.h"
 #include "intball_route_panel.h"
@@ -33,11 +36,17 @@ IntBallRoutePanel::IntBallRoutePanel(QWidget *parent)
 
 void IntBallRoutePanel::initialize(const QString pathRvizConfig)
 {
+    createRenderPanel();
+    initializeVisualizationManager(pathRvizConfig);
+}
+
+void IntBallRoutePanel::createRenderPanel()
+{
     // ボタン.
     buttonWidget_ = new QWidget(this);
     buttonWidget_->setAttribute(Qt::WA_TranslucentBackground, true);
     QHBoxLayout* buttonLayout = new QHBoxLayout(buttonWidget_);
-    buttonLayout->setMargin(0);
+    buttonLayout->setContentsMargins(0, 0, 0, 0);
     buttonLayout->setSpacing(0);
 
     // 両端にスペースを挿入して中央揃えとする.
@@ -148,27 +157,36 @@ void IntBallRoutePanel::initialize(const QString pathRvizConfig)
     connect(button6, &QAbstractButton::clicked, this, &IntBallRoutePanel::setFocalPointIntBall2);
 
     // rvizパネル.
-    renderPanel_ = new rviz::RenderPanel();
+    renderPanel_ = new rviz_common::RenderPanel();
     renderPanel_->setFixedSize(width(), height() - button1->height() - 10);
 
     layout_ = new QVBoxLayout();
     layout_->setSpacing(10);
-    layout_->setMargin(0);
+    layout_->setContentsMargins(0, 0, 0, 0);
     layout_->addWidget(renderPanel_);
     layout_->addWidget(buttonWidget_);
     setLayout(layout_);
+}
 
+void IntBallRoutePanel::initializeVisualizationManager(const QString pathRvizConfig)
+{
     // rviz設定ファイルの読み込み.
-    rviz::YamlConfigReader rvizConfigReader;
-    rviz::Config config;
+    rviz_common::YamlConfigReader rvizConfigReader;
+    rviz_common::Config config;
     rvizConfigReader.readFile(config, pathRvizConfig);
     if(rvizConfigReader.error())
     {
         throwIntBallConfigError(pathRvizConfig, rvizConfigReader.errorMessage());
     }
-    manager_.reset(new rviz::VisualizationManager(renderPanel_, nullptr, getTransformListener()));
+    static int nodeCounter = 0;
+    auto nodeName = std::string("route_panel_rviz_") + std::to_string(nodeCounter++);
+    auto ros_node_abs = std::make_shared<rviz_common::ros_integration::RosNodeAbstraction>(nodeName);
+    auto clock = std::make_shared<rclcpp::Clock>(RCL_ROS_TIME);
+    // rviz2 (VisualizationFrame) と同じ初期化順序:
+    // VisualizationManager生成 → RenderPanel初期化 → Manager初期化
+    manager_.reset(new rviz_common::VisualizationManager(renderPanel_, ros_node_abs, nullptr, clock));
+    renderPanel_->initialize(manager_.get());
     manager_->initialize();
-    renderPanel_->initialize(manager_->getSceneManager(), manager_.get());
     manager_->load(config);
 
     // GUI設定ファイルの内容でカメラ表示を初期化する.
@@ -176,6 +194,20 @@ void IntBallRoutePanel::initialize(const QString pathRvizConfig)
 
     //rvizパネルの更新開始.
     manager_->startUpdate();
+}
+
+void IntBallRoutePanel::startRendering()
+{
+    if (manager_) {
+        manager_->startUpdate();
+    }
+}
+
+void IntBallRoutePanel::stopRendering()
+{
+    if (manager_) {
+        manager_->stopUpdate();
+    }
 }
 
 void IntBallRoutePanel::setFocalPointDockingStation()

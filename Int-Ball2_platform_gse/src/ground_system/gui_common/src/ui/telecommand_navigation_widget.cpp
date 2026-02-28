@@ -12,7 +12,7 @@ TelecommandNavigationWidget::TelecommandNavigationWidget(QWidget *parent) :
     ui(new Ui::TelecommandNavigationWidget)
 {
     ui->setupUi(this);
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandNavigationWidget::executed);
 }
 

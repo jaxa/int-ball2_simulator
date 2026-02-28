@@ -7,4 +7,4 @@ uint16 id
 uint8 msg_type
 string name
 uint8[] data
-time additional_timestamp
+builtin_interfaces/Time additional_timestamp

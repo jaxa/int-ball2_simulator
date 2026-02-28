@@ -16,7 +16,7 @@ TelecommandRosparamWidget::TelecommandRosparamWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandRosparamWidget::executed);
 
     ui->checkBoxOnlyDefault->setCheckState(Qt::CheckState::Checked);

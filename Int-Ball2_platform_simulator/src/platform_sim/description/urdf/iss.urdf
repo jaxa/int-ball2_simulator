@@ -17,12 +17,10 @@
       </geometry>
       <origin rpy="0 0 0" xyz="-4.4586144 -6.8356992 6.8434244" />
     </visual>
-    <collision name="cupola">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/cupola.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="-4.4586144 -6.8356992 6.8434244" />
-    </collision>
+    <!-- Collision meshes removed: DAE files have vertex/normal count mismatches
+         that cause DART physics engine segfaults in Gazebo Harmonic.
+         Visual-only meshes are retained. Collision can be re-added with
+         primitive shapes (boxes) or fixed DAE files if needed. -->
 
     <visual name="eu_lab">
       <geometry>
@@ -30,12 +28,6 @@
       </geometry>
       <origin rpy="0 0 0" xyz="10.9325664  2.3509732 4.8505872" />
     </visual>
-    <collision name="eu_lab">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/eu_lab.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="10.9325664  2.3509732 4.8505872" />
-    </collision>
 
     <visual name="jpm">
       <geometry>
@@ -43,12 +35,6 @@
       </geometry>
       <origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />
     </visual>
-    <collision name="jpm">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/jpm.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="10.9358938 -2.3364698 4.8505872" />
-    </collision>
 
     <visual name="node_1">
       <geometry>
@@ -56,12 +42,6 @@
       </geometry>
       <origin rpy="0 0 0" xyz="-4.4630848 -0.0027432 4.8508666" />
     </visual>
-    <collision name="node_1">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/node_1.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="-4.4630848 -0.0027432 4.8508666" />
-    </collision>
 
     <visual name="node_2">
       <geometry>
@@ -69,12 +49,6 @@
       </geometry>
       <origin rpy="0 0 0" xyz="10.9344206  0.0107442 4.8558958" />
     </visual>
-    <collision name="node_2">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/node_2.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="10.9344206  0.0107442 4.8558958" />
-    </collision>
 
     <visual name="node_3">
       <geometry>
@@ -82,12 +56,6 @@
       </geometry>
       <origin rpy="0 0 0" xyz="-4.4586144 -6.6356992 4.8434244" />
     </visual>
-    <collision name="node_3">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/node_3.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="-4.4586144 -6.6356992 4.8434244" />
-    </collision>
 
 <!--
     <visual name="us_lab">
@@ -116,12 +84,7 @@
       </geometry>
       <origin rpy="0 0 0" xyz="0 0 0" />
     </visual>
-    <collision name="docking_station">
-      <geometry>
-        <mesh filename="package://description/media/meshes/iss/docking_station.dae" />
-      </geometry>
-      <origin rpy="0 0 0" xyz="0 0 0" />
-    </collision>
+    <!-- Collision mesh removed: see iss_body comment above -->
   </link>
   <joint name="dock_joint" type="fixed">
     <parent link="iss_body" />
@@ -136,8 +99,23 @@
     <origin rpy="3.1415926535898 0 -1.5707963267949" xyz="10.9358938 -3.3864698 4.1205872" />
   </joint>
 
+  <!-- ISS dynamics plugin (gz-sim system plugin) -->
   <gazebo>
-    <plugin name="issdyn" filename="libissdyn.so" />
+    <plugin filename="libissdyn.so" name="issdyn::Issdyn"/>
+  </gazebo>
+
+  <!-- Pose publisher (publishes model pose to gz-transport for ros_gz_bridge) -->
+  <!-- Note: publish_nested_model_pose=true is a workaround for gz-sim#2690
+       where publish_model_pose is ignored and publish_nested_model_pose is
+       checked instead. This causes the model's own world pose to be published. -->
+  <gazebo>
+    <plugin filename="gz-sim-pose-publisher-system"
+            name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <update_frequency>50.0</update_frequency>
+    </plugin>
   </gazebo>
 
 </robot>

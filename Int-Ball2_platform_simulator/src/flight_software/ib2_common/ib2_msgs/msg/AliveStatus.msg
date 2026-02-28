@@ -6,5 +6,5 @@ uint8 INVALID_CONFIG_DATA_CLASS = 2
 
 string name
 uint8 result
-time latest_valid_time
-time check_time
+builtin_interfaces/Time latest_valid_time
+builtin_interfaces/Time check_time

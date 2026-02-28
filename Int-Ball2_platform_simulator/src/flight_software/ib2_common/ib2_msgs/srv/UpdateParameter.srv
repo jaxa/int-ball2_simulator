@@ -5,5 +5,5 @@ uint8 SUCCESS = 0
 uint8 FAILURE_UPDATE = 1
 uint8 FAILURE_CALL = 2
 # response
-time stamp
+builtin_interfaces/Time stamp
 uint8 status

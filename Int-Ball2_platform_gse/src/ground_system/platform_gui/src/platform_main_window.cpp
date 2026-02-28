@@ -1,6 +1,6 @@
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include <QStandardItemModel>
-#include <ros/package.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "ros_common.h"
 #include "platform_main_window.h"
 #include "ui_platform_main_window.h"
@@ -25,7 +25,7 @@ using namespace qsettings;
 using namespace qsettings::key;
 using namespace intball::telemetry;
 using namespace intball::message;
-using namespace platform_msgs;
+using namespace platform_msgs::msg;
 
 const QColor PlatformMainWindow::DEFAULT_FRAME_COLOR = Color::U2;
 const QString PlatformMainWindow::SUFFIX_ALIVE_STATUS_MAIN_CAMERA = "/camera_main/status";
@@ -87,7 +87,7 @@ PlatformMainWindow::PlatformMainWindow(QWidget *parent) :
     connect(telemetryMonitor_, &TelemetryMonitor::offNominalDetected, this, &PlatformMainWindow::TelemetryMonitor_offNominalDetected);
     connect(telemetryMonitor_, &TelemetryMonitor::releaseAllOffNominal, this, &PlatformMainWindow::TelemetryMonitor_releaseAllOffNominal);
 
-    telecommandClient_ = new TelecommandClient(*getNodeHandle());
+    telecommandClient_ = new TelecommandClient(getNode(), this);
 
     // 初期表示時.
     getUserPackageList();
@@ -139,7 +139,7 @@ PlatformMainWindow::PlatformMainWindow(QWidget *parent) :
 
     // その他初期化が完了してからテレメトリの受信処理を開始する.
     telemetrySubscriber_ = new TelemetrySubscriber();
-    telemetrySubscriber_->start(*getNodeHandle(), intballTelemetry_, dockTelemetry_);
+    telemetrySubscriber_->start(getNode(), intballTelemetry_, dockTelemetry_);
 }
 
 PlatformMainWindow::~PlatformMainWindow()
@@ -150,7 +150,7 @@ PlatformMainWindow::~PlatformMainWindow()
 void PlatformMainWindow::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event);
-    ros::shutdown();
+    rclcpp::shutdown();
 }
 
 void PlatformMainWindow::IntBall2Telemetry_dataChanged(const QModelIndex &topLeft, const QModelIndex &bottomRight, const QVector<int> &roles)
@@ -162,26 +162,26 @@ void PlatformMainWindow::IntBall2Telemetry_dataChanged(const QModelIndex &topLef
     // カメラ状態を受信済みであれば,ボタンにステータス値を反映する.
     if(intballTelemetry_->getInsertStatus(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS))
     {
-        auto streamingStatus = intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS).status;
-        ui->controlMainCameraStreamingButton->setStatus(streamingStatus == platform_msgs::PowerStatus::ON);
+        auto streamingStatus = intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS).status;
+        ui->controlMainCameraStreamingButton->setStatus(streamingStatus == platform_msgs::msg::PowerStatus::ON);
     }
 
     if(intballTelemetry_->getInsertStatus(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS))
     {
-        auto streamingStatus = intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS).status;
-        ui->controlLeftCameraStreamingButton->setStatus(streamingStatus == platform_msgs::PowerStatus::ON);
+        auto streamingStatus = intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS).status;
+        ui->controlLeftCameraStreamingButton->setStatus(streamingStatus == platform_msgs::msg::PowerStatus::ON);
     }
 
     if(intballTelemetry_->getInsertStatus(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS))
     {
-        auto streamingStatus = intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS).status;
-        ui->controlRightCameraStreamingButton->setStatus(streamingStatus == platform_msgs::PowerStatus::ON);
+        auto streamingStatus = intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS).status;
+        ui->controlRightCameraStreamingButton->setStatus(streamingStatus == platform_msgs::msg::PowerStatus::ON);
     }
 
     if(intballTelemetry_->getInsertStatus(telemetry::Index::MICROPHONE_STREAMING_STATUS))
     {
-        auto streamingStatus = intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::MICROPHONE_STREAMING_STATUS).status;
-        ui->controlMicrophoneStreamingButton->setStatus(streamingStatus == platform_msgs::PowerStatus::ON);
+        auto streamingStatus = intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::MICROPHONE_STREAMING_STATUS).status;
+        ui->controlMicrophoneStreamingButton->setStatus(streamingStatus == platform_msgs::msg::PowerStatus::ON);
     }
 
     /*
@@ -402,7 +402,7 @@ void PlatformMainWindow::sendMicrophoneStreaming()
 
 void PlatformMainWindow::getUserPackageList()
 {
-    std::string path = ros::package::getPath(THIS_PACKAGE_NAME.toStdString());
+    std::string path = ament_index_cpp::get_package_share_directory(THIS_PACKAGE_NAME.toStdString());
     std::string file = Config::valueAsStdString(KEY_USER_PACKAGE_LIST_FILE);
     if(file.front() != '/')
     {
@@ -438,7 +438,7 @@ void PlatformMainWindow::getUserPackageList()
 
 void PlatformMainWindow::getContainerImageList()
 {
-    std::string path = ros::package::getPath(THIS_PACKAGE_NAME.toStdString());
+    std::string path = ament_index_cpp::get_package_share_directory(THIS_PACKAGE_NAME.toStdString());
     std::string file = Config::valueAsStdString(KEY_CONTAINER_IMAGE_LIST_FILE);
     if(file.front() != '/')
     {
@@ -518,7 +518,7 @@ void PlatformMainWindow::on_pushButtonUserLogicStart_clicked()
     if(ui->controlUserNodeCommandComboBox->currentIndex() != 0)
     {
         // ユーザロジック実行.
-        platform_msgs::UserLogic logic;
+        platform_msgs::msg::UserLogic logic;
         logic.id = ui->spinBoxLogicId->text().toUShort();
         DialogFactory::telecommandCheck(COMMAND_NAME_USER_LOGIC_START,
                                         std::bind(&PlatformMainWindow::sendUserLogic,
@@ -534,10 +534,10 @@ void PlatformMainWindow::on_pushButtonUserLogicStop_clicked()
                                     std::bind(&PlatformMainWindow::sendUserLogic,
                                               this,
                                               false,
-                                              platform_msgs::UserLogic()));
+                                              platform_msgs::msg::UserLogic()));
 }
 
-void PlatformMainWindow::sendUserLogic(const bool on, const platform_msgs::UserLogic& userLogic)
+void PlatformMainWindow::sendUserLogic(const bool on, const platform_msgs::msg::UserLogic& userLogic)
 {
     if(telecommandClient_->sendUserLogic(on, userLogic))
     {
@@ -592,39 +592,39 @@ bool PlatformMainWindow::isNormalMoveCommandEnabled()
 {
     auto controlStatus_ = intballTelemetry_->data<int>(telemetry::Index::CTL_STATUS_TYPE);
     auto operationType = intballTelemetry_->data<unsigned char>(telemetry::Index::PLATFORM_MANAGER_OPERATION_TYPE);
-    return (controlStatus_ == ib2_msgs::CtlStatusType::STAND_BY ||
-            controlStatus_ == ib2_msgs::CtlStatusType::KEEP_POSE ||
-            controlStatus_ == ib2_msgs::CtlStatusType::KEEPING_POSE_BY_COLLISION) &&
-            operationType == platform_msgs::OperationType::NAV_ON &&
+    return (controlStatus_ == ib2_msgs::msg::CtlStatusType::STAND_BY ||
+            controlStatus_ == ib2_msgs::msg::CtlStatusType::KEEP_POSE ||
+            controlStatus_ == ib2_msgs::msg::CtlStatusType::KEEPING_POSE_BY_COLLISION) &&
+            operationType == platform_msgs::msg::OperationType::NAV_ON &&
             intballTelemetry_->isPlatformFlightSoftwareStarted();
 }
 
 bool PlatformMainWindow::isSetOperationTypeEnabled()
 {
-    // NAV_ON/NAV_OFFはplatform_msgs::Mode::USER_OFFまたはUSER_READYのときのみ可
-    return (intballTelemetry_->getPlatformMode() == platform_msgs::Mode::USER_OFF ||
-            intballTelemetry_->getPlatformMode() == platform_msgs::Mode::USER_READY);
+    // NAV_ON/NAV_OFFはplatform_msgs::msg::Mode::USER_OFFまたはUSER_READYのときのみ可
+    return (intballTelemetry_->getPlatformMode() == platform_msgs::msg::Mode::USER_OFF ||
+            intballTelemetry_->getPlatformMode() == platform_msgs::msg::Mode::USER_READY);
 }
 
 bool PlatformMainWindow::isLaunchEnabled()
 {
-    // ユーザノードのlaunchはplatform_msgs::Mode::USER_OFFのときのみ可
-    return (intballTelemetry_->getPlatformMode() == platform_msgs::Mode::USER_OFF);
+    // ユーザノードのlaunchはplatform_msgs::msg::Mode::USER_OFFのときのみ可
+    return (intballTelemetry_->getPlatformMode() == platform_msgs::msg::Mode::USER_OFF);
 }
 
 bool PlatformMainWindow::isLogicEnabled()
 {
-    // ユーザロジックのlaunchはplatform_msgs::Mode::USER_READYのときのみ可
-    return (intballTelemetry_->getPlatformMode() == platform_msgs::Mode::USER_READY);
+    // ユーザロジックのlaunchはplatform_msgs::msg::Mode::USER_READYのときのみ可
+    return (intballTelemetry_->getPlatformMode() == platform_msgs::msg::Mode::USER_READY);
 }
 
 bool PlatformMainWindow::isMainCameraEnabled()
 {
-    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
+    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
 
     // メインカメラのストリーミングは監視結果がSuccessのときのみ可
     if(aliveStatusMap.find(SUFFIX_ALIVE_STATUS_MAIN_CAMERA) != aliveStatusMap.end() &&
-       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_MAIN_CAMERA).result == ib2_msgs::AliveStatus::SUCCESS)
+       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_MAIN_CAMERA).result == ib2_msgs::msg::AliveStatus::SUCCESS)
     {
         return true;
     }
@@ -636,11 +636,11 @@ bool PlatformMainWindow::isMainCameraEnabled()
 
 bool PlatformMainWindow::isLeftCameraEnabled()
 {
-    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
+    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
 
     // 航法カメラのストリーミングは監視結果がSuccessのときのみ可
     if(aliveStatusMap.find(SUFFIX_ALIVE_STATUS_LEFT_CAMERA) != aliveStatusMap.end() &&
-       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_LEFT_CAMERA).result == ib2_msgs::AliveStatus::SUCCESS)
+       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_LEFT_CAMERA).result == ib2_msgs::msg::AliveStatus::SUCCESS)
     {
         return true;
     }
@@ -652,11 +652,11 @@ bool PlatformMainWindow::isLeftCameraEnabled()
 
 bool PlatformMainWindow::isRightCameraEnabled()
 {
-    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
+    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
 
     // 航法カメラのストリーミングは監視結果がSuccessのときのみ可
     if(aliveStatusMap.find(SUFFIX_ALIVE_STATUS_RIGHT_CAMERA) != aliveStatusMap.end() &&
-       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_RIGHT_CAMERA).result == ib2_msgs::AliveStatus::SUCCESS)
+       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_RIGHT_CAMERA).result == ib2_msgs::msg::AliveStatus::SUCCESS)
     {
         return true;
     }
@@ -668,11 +668,11 @@ bool PlatformMainWindow::isRightCameraEnabled()
 
 bool PlatformMainWindow::isMicrophoneEnabled()
 {
-    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
+    auto aliveStatusMap = intballTelemetry_->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
 
     // マイクのストリーミングは監視結果がSuccessのときのみ可
     if(aliveStatusMap.find(SUFFIX_ALIVE_STATUS_MICROPHONE) != aliveStatusMap.end() &&
-       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_MICROPHONE).result == ib2_msgs::AliveStatus::SUCCESS)
+       aliveStatusMap.value(SUFFIX_ALIVE_STATUS_MICROPHONE).result == ib2_msgs::msg::AliveStatus::SUCCESS)
     {
         return true;
     }
@@ -744,7 +744,7 @@ void PlatformMainWindow::on_pushButtonOperationTypeOn_clicked()
     DialogFactory::telecommandCheck(COMMAND_NAME_SET_OPERATION_TYPE,
                                     std::bind(&PlatformMainWindow::sendOperationType,
                                               this,
-                                              platform_msgs::OperationType::NAV_ON));
+                                              platform_msgs::msg::OperationType::NAV_ON));
 }
 
 void PlatformMainWindow::on_pushButtonOperationTypeOff_clicked()
@@ -753,12 +753,12 @@ void PlatformMainWindow::on_pushButtonOperationTypeOff_clicked()
     DialogFactory::telecommandCheck(COMMAND_NAME_SET_OPERATION_TYPE,
                                     std::bind(&PlatformMainWindow::sendOperationType,
                                               this,
-                                              platform_msgs::OperationType::NAV_OFF));
+                                              platform_msgs::msg::OperationType::NAV_OFF));
 }
 
 void PlatformMainWindow::sendOperationType(const unsigned char type)
 {
-    platform_msgs::OperationType operationType;
+    platform_msgs::msg::OperationType operationType;
     operationType.type = type;
     if(telecommandClient_->sendSetOperationType(operationType))
     {

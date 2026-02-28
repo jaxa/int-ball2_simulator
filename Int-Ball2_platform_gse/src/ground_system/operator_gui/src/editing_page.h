@@ -1,22 +1,17 @@
 #ifndef EDITING_PAGE_H
 #define EDITING_PAGE_H
 
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <QFuture>
 #include <QItemSelection>
 #include <QQuaternion>
 #include <QVector3D>
 #include <QWidget>
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include "operator_gui_common.h"
-
-namespace tf
-{
-class TransformListener;
-class StampedTransform;
-} // namespace tf
 
 namespace intball
 {
@@ -41,6 +36,10 @@ public:
                     QItemSelectionModel* routeInformationSelection,
                     intball::TelecommandClient* telecommandClient
                     );
+    void initializeRviz(const QString& pathRvizConfig, const QString& pathRvizConfigCamera);
+    void hideCameraPanel();
+    void startRendering();
+    void stopRendering();
     void setVideoArea(QWidget* video);
     void setStatusArea(QWidget* status);
     void setCamera();
@@ -95,14 +94,15 @@ private slots:
 private:
     Ui::EditingPage *ui;
     intball::RoutePointList* routePointListWidget_;
-    tf::TransformBroadcaster tfBroadcaster_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tfBroadcaster_;
     QFuture<bool> futureTelemetry_;
     intball::RouteInformation* routeInformation_;
     QItemSelectionModel* routeInformationSelectionModel_;
     TelecommandClient* telecommandClient_;
 
-    void callbackUpdateTransform(tf::StampedTransform &transform);
+    void callbackUpdateTransform(geometry_msgs::msg::TransformStamped &transform);
     void checkGoal();
+    void ensureCameraVmInitialized();
     void publishCameraTf(const QVector3D& position, const QQuaternion& orientation);
     void removeCameraTf();
     void setPointValues(const int index);
@@ -110,6 +110,8 @@ private:
     void editPositionButtonOperation(const QVector3D& diff);
     void editAttitudeButtonOperationRPY(const float roll, const float pitch, const float yaw);
     void removePoint();
+    QString pathRvizConfigCamera_;
+    bool cameraVmInitialized_ = false;
 };
 
 } // namespace intball

@@ -9,25 +9,30 @@ namespace
 	/** ファンステータスパブリッシュ周期　デフォルト値 */
 	const double           PUB_DURATION(1.0);
 
-	/** shutdownフラグモニタ周期 */
-	const double           MON_DURATION(0.01);
-
 	/** PWM制御周期　デフォルト値 */
 	const unsigned short   FREQ(1000);
 }
 
 //------------------------------------------------------------------------------
 // コンストラクタ
-PropManager::PropManager(const ros::NodeHandle& nh) : 
-nh_(nh),
+PropManager::PropManager() :
+rclcpp::Node("prop"),
 fan_num_(FAN_NUM),
 pwm_frequency_(FREQ),
 pub_fan_status_duration_(PUB_DURATION),
 init_error_id_(0)
 {
+	// パラメータ宣言
+	this->declare_parameter("/prop/fan_number", static_cast<int>(FAN_NUM));
+	this->declare_parameter("/prop/device_file_name", std::string(""));
+	this->declare_parameter("/prop/device_address", 0);
+	this->declare_parameter("/prop/pwm_frequency", static_cast<int>(FREQ));
+	this->declare_parameter("/prop/pub_fan_status_duration", PUB_DURATION);
+	this->declare_parameter("/prop/i2c_comm_duration", 0.01);
+
 	int ge = getParameter();
 
-	prop_tlm_cmd_.initialize(nh_, fan_num_);
+	prop_tlm_cmd_.initialize(this, fan_num_);
 
 	const char* device_file_name = device_file_name_.c_str();
 	bool        pe               = prop_pca9685_.initialize(device_file_name, device_address_, pwm_frequency_);
@@ -45,6 +50,30 @@ init_error_id_(0)
 	//   64 : ROSPARAM ファンステータスパブリッシュ周期取得エラー
 	//  128 : ROSPARAM I2C通信周期取得エラー
 	init_error_id_ = ((ge << 2) | pe);
+
+	// ファン駆動デューティ比サブスクライブ＆PWM制御ボードへの送信
+	if(init_error_id_ == 0)
+	{
+		fan_status_timer_  = this->create_wall_timer(
+			std::chrono::duration<double>(pub_fan_status_duration_),
+			[this]() { prop_tlm_cmd_.pubFanStatus(); });
+		pwm_control_timer_ = this->create_wall_timer(
+			std::chrono::duration<double>(i2c_comm_duration_),
+			std::bind(&PropManager::sendPWM, this));
+	}
+	else
+	{
+		// 初期化エラーの場合は、ファンステータス(異常)のパブリッシュのみ(PWM信号は送信しない)
+		RCLCPP_ERROR(this->get_logger(), "prop node initialization error : %d", init_error_id_);
+		fan_status_timer_ = this->create_wall_timer(
+			std::chrono::duration<double>(pub_fan_status_duration_),
+			[this]() { prop_tlm_cmd_.pubErrorFanStatus(); });
+	}
+
+	// パラメータ更新サービスサーバ
+	update_params_server_ = this->create_service<ib2_msgs::srv::UpdateParameter>(
+		SERVICE_UPDATE_PARAMS,
+		std::bind(&PropManager::updateParams, this, std::placeholders::_1, std::placeholders::_2));
 }
 
 //------------------------------------------------------------------------------
@@ -52,29 +81,6 @@ init_error_id_(0)
 PropManager::~PropManager()
 {
 	shutdown();
-}
-
-//------------------------------------------------------------------------------
-// 管理機能実行
-void PropManager::start()
-{
-	// ファン駆動デューティ比サブスクライブ＆PWM制御ボードへの送信
-	if(init_error_id_ == 0)
-	{
-		fan_status_timer_  = nh_.createTimer(ros::Duration(pub_fan_status_duration_), &PropTlmCmd::pubFanStatus,      &prop_tlm_cmd_);
-		pwm_control_timer_ = nh_.createTimer(ros::Duration(i2c_comm_duration_),       &PropManager::sendPWM,          this);
-	}
-	else
-	{
-		// 初期化エラーの場合は、ファンステータス(異常)のパブリッシュのみ(PWM信号は送信しない)
-		ROS_ERROR("prop node initialization error : %d", init_error_id_);
-		fan_status_timer_ = nh_.createTimer(ros::Duration(pub_fan_status_duration_),  &PropTlmCmd::pubErrorFanStatus, &prop_tlm_cmd_);
-	}
-
-	// パラメータ更新サービスサーバ
-	update_params_server_ = nh_.advertiseService(SERVICE_UPDATE_PARAMS, &PropManager::updateParams, this);
-
-	ros::spin();
 }
 
 //------------------------------------------------------------------------------
@@ -96,26 +102,19 @@ void PropManager::shutdown()
 	if(fan_status_timer_)
 	{
 		std::cout << " -> Stop Fan Status Pubilsh Timer"            << std::endl;
-		fan_status_timer_.stop();
+		fan_status_timer_->cancel();
 	}
-	
+
 	if(pwm_control_timer_)
 	{
 		std::cout << " -> Stop PWM Control Signal Send Timer"       << std::endl;
-		pwm_control_timer_.stop();
-	}
-
-	// 推進機能ノード停止
-	if(!ros::isShuttingDown())
-	{
-		std::cout << " -> Shutdown Prop Node"                       << std::endl;
-		ros::shutdown();
+		pwm_control_timer_->cancel();
 	}
 }
 
 //------------------------------------------------------------------------------
 // PWM制御ボード(PCA9685)にPWM信号を送信
-void PropManager::sendPWM(const ros::TimerEvent&)
+void PropManager::sendPWM()
 {
 	duty_ = prop_tlm_cmd_.getFanDuty();
 	prop_pca9685_.setPWM(duty_);
@@ -127,28 +126,28 @@ int PropManager::getParameter()
 {
 	int ret = 0;
 
-	if(!nh_.getParam("/prop/fan_number", fan_num_))
+	if(!this->get_parameter("/prop/fan_number", fan_num_))
 	{
-		ROS_ERROR("Cannot Get /prop/fan_number in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/fan_number in prop.cpp");
 		ret = ret | 0x0001;
 	}
 
-	if(!nh_.getParam("/prop/device_file_name", device_file_name_))
+	if(!this->get_parameter("/prop/device_file_name", device_file_name_))
 	{
-		ROS_ERROR("Cannot Get /prop/device_file_name in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/device_file_name in prop.cpp");
 		ret = ret | 0x0002;
 	}
 
-	if(!nh_.getParam("/prop/device_address", device_address_))
+	if(!this->get_parameter("/prop/device_address", device_address_))
 	{
-		ROS_ERROR("Cannot Get /prop/device_address in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/device_address in prop.cpp");
 		ret = ret | 0x0004;
 	}
 
 	int freq;
-	if(!nh_.getParam("/prop/pwm_frequency", freq))
+	if(!this->get_parameter("/prop/pwm_frequency", freq))
 	{
-		ROS_ERROR("Cannot Get /prop/pwm_frequency in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/pwm_frequency in prop.cpp");
 		ret = ret | 0x0008;
 	}
 	if(freq > 0)
@@ -156,52 +155,50 @@ int PropManager::getParameter()
 		pwm_frequency_ = static_cast<unsigned short>(freq);
 	}
 
-	if(!nh_.getParam("/prop/pub_fan_status_duration", pub_fan_status_duration_))
+	if(!this->get_parameter("/prop/pub_fan_status_duration", pub_fan_status_duration_))
 	{
-		ROS_ERROR("Cannot Get /prop/pub_fan_status_duration in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/pub_fan_status_duration in prop.cpp");
 		ret = ret | 0x000F;
 	}
 
-	if(!nh_.getParam("/prop/i2c_comm_duration", i2c_comm_duration_))
+	if(!this->get_parameter("/prop/i2c_comm_duration", i2c_comm_duration_))
 	{
-		ROS_ERROR("Cannot Get /prop/i2c_comm_duration in prop.cpp");
+		RCLCPP_ERROR(this->get_logger(), "Cannot Get /prop/i2c_comm_duration in prop.cpp");
 		ret = ret | 0x0010;
 	}
 
-	ROS_INFO("******** Set Parameters in prop_manager.cpp");
-	ROS_INFO("/prop/fan_number                    : %d" , fan_num_);
-	ROS_INFO("/prop/device_file_name              : %s" , device_file_name_.c_str());
-	ROS_INFO("/prop/device_address                : %x" , device_address_);
-	ROS_INFO("/prop/pwm_frequency                 : %d" , pwm_frequency_);
-	ROS_INFO("/prop/pub_fan_status_duration       : %f" , pub_fan_status_duration_);
-	ROS_INFO("/prop/i2c_comm_duration             : %f" , i2c_comm_duration_);
+	RCLCPP_INFO(this->get_logger(), "******** Set Parameters in prop_manager.cpp");
+	RCLCPP_INFO(this->get_logger(), "/prop/fan_number                    : %d" , fan_num_);
+	RCLCPP_INFO(this->get_logger(), "/prop/device_file_name              : %s" , device_file_name_.c_str());
+	RCLCPP_INFO(this->get_logger(), "/prop/device_address                : %x" , device_address_);
+	RCLCPP_INFO(this->get_logger(), "/prop/pwm_frequency                 : %d" , pwm_frequency_);
+	RCLCPP_INFO(this->get_logger(), "/prop/pub_fan_status_duration       : %f" , pub_fan_status_duration_);
+	RCLCPP_INFO(this->get_logger(), "/prop/i2c_comm_duration             : %f" , i2c_comm_duration_);
 
 	return ret;
 }
 
 //------------------------------------------------------------------------------
 // パラメータ更新
-bool PropManager::updateParams
-(ib2_msgs::UpdateParameter::Request&,
- ib2_msgs::UpdateParameter::Response& res)
+void PropManager::updateParams(
+	const std::shared_ptr<ib2_msgs::srv::UpdateParameter::Request>,
+	std::shared_ptr<ib2_msgs::srv::UpdateParameter::Response> response)
 {
-	ROS_INFO("Update Parameters by /prop/update_params");
+	RCLCPP_INFO(this->get_logger(), "Update Parameters by /prop/update_params");
 
-	res.stamp = ros::Time::now();
+	response->stamp = this->now();
 	int err   = getParameter();
 
 	if (err == 0)
 	{
-		ROS_INFO("%s: Succeeded", SERVICE_UPDATE_PARAMS);
-		res.status = ib2_msgs::UpdateParameter::Response::SUCCESS;
+		RCLCPP_INFO(this->get_logger(), "%s: Succeeded", SERVICE_UPDATE_PARAMS);
+		response->status = ib2_msgs::srv::UpdateParameter::Response::SUCCESS;
 	}
 	else
 	{
-		ROS_ERROR("%s: Failed : err = %d", SERVICE_UPDATE_PARAMS, err);
-		res.status = ib2_msgs::UpdateParameter::Response::FAILURE_UPDATE;
+		RCLCPP_ERROR(this->get_logger(), "%s: Failed : err = %d", SERVICE_UPDATE_PARAMS, err);
+		response->status = ib2_msgs::srv::UpdateParameter::Response::FAILURE_UPDATE;
 	}
-
-	return true;
 }
 
 // End Of File -----------------------------------------------------------------

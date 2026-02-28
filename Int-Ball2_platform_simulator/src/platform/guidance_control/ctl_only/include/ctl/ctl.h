@@ -1,29 +1,27 @@
 
 #pragma once
 
-#include <ros/ros.h>
-#include <actionlib/server/simple_action_server.h>
-#include <ros/service_server.h>
-#include <ros/service_client.h>
-//#include "ctl/fsm.h"    // Modification for platform packages
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp_action/rclcpp_action.hpp>
 #include "ctl/dtc.h"
 
 // Standard messages
-#include <std_msgs/Float64MultiArray.h>
-#include <geometry_msgs/Pose.h>
-#include <geometry_msgs/WrenchStamped.h> 
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/TwistStamped.h>
-#include "ib2_msgs/Navigation.h"
-#include "ib2_msgs/CtlStatusType.h"
-#include "ib2_msgs/CtlStatus.h"
-#include "ib2_msgs/CtlProfile.h"
-#include "ib2_msgs/CtlCommandAction.h"
-#include "ib2_msgs/UpdateParameter.h"
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <geometry_msgs/msg/pose.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
+#include <geometry_msgs/msg/pose_stamped.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include "ib2_msgs/msg/navigation.hpp"
+#include "ib2_msgs/msg/ctl_status_type.hpp"
+#include "ib2_msgs/msg/ctl_status.hpp"
+#include "ib2_msgs/msg/ctl_profile.hpp"
+#include "ib2_msgs/action/ctl_command.hpp"
+#include "ib2_msgs/srv/update_parameter.hpp"
+#include "ib2_msgs/srv/marker_correction.hpp"
 
 #include <memory>
+#include <thread>
 
-// マクロ宣言、後でどこか共通の*.hに移動したほうがいいかも
 #define TOPIC_CTL_WRENCH  "/ctl/wrench"
 #define TOPIC_CTL_PROFILE "/ctl/profile"
 #define TOPIC_CTL_STATUS  "/ctl/status"
@@ -31,26 +29,26 @@
 
 namespace ib2
 {
-	// classの前方宣言
 	class CtlBody;
 	class PosAttController;
 	class PosAttProfiler;
 }
-	
+
 /**
 * @brief 制御ノードクラス
 */
-class Ctl
+class Ctl : public rclcpp::Node
 {
+public:
+	// Action types
+	using CtlCommandAction = ib2_msgs::action::CtlCommand;
+	using GoalHandleCtlCommand = rclcpp_action::ServerGoalHandle<CtlCommandAction>;
+
 	//----------------------------------------------------------------------
 	// コンストラクタ/デストラクタ
-private:
-	/** デフォルトコンストラクタ */
-	Ctl() = delete;
-
 public:
 	/** コンストラクタ */
-	explicit Ctl(const ros::NodeHandle& nh);
+	Ctl();
 
 	/** デストラクタ */
 	~Ctl();
@@ -58,238 +56,158 @@ public:
 	//----------------------------------------------------------------------
 	// コピー/ムーブ
 private:
-	/** コピーコンストラクタ. */
 	Ctl(const Ctl&) = delete;
-
-	/** コピー代入演算子. */
 	Ctl& operator=(const Ctl&) = delete;
-
-	/** ムーブコンストラクタ. */
 	Ctl(Ctl&&) = delete;
-
-	/** ムーブ代入演算子. */
 	Ctl& operator=(Ctl&&) = delete;
-    
+
 	//----------------------------------------------------------------------
 	// 操作(Setter)
 private:
-	/** メンバ設定
-	 * @retval true 設定成功
-	 * @retval false 設定失敗
-	 */
 	bool setMember();
-	
-	/** 位置姿勢保持設定 */
 	void setKeepPose();
 
 	//----------------------------------------------------------------------
 	// 実装
 private:
-	/** 制御目標への誘導
-	 * @param [in] goalType 制御目標種別
-	 * @param [in] tolp 位置誤差許容値[m]
-	 * @param [in] tola 姿勢誤差許容値[rad]
-	 * @retval true 目標到達
-	 * @retval false 中断
-	 */
 	bool guidance(int32_t goal_type, double tolp, double tola);
-	
-	/** ターゲットモードの処理
-	 * @param [in] goal 制御目標
-	 */
-	void target(const ib2_msgs::CtlCommandGoalConstPtr& goal);
-	
-	/** リリースモードの処理 */
+	void target(const std::shared_ptr<const CtlCommandAction::Goal>& goal);
 	void release();
-	
-	/** ドッキングモードの処理
-	 * @param [in] correction マーカー補正フラグ(true更新あり/false補正なし)
-	 */
 	void docking(bool correction);
-	
-	/** ドッキングスタンバイモードの処理 */
 	void dockingStandBy();
-	
-	/** スキャンモードの処理 */
 	void scan();
-	
-	/** 停止誘導モードの処理 */
 	void stopping();
-	
-	/** アクション中止
-	 * @param [in] reult_type アクション結果種別
-	 */
 	void abortAction(uint8_t reult_type);
-	
-	/** 制御目標キャンセル時の処理
-	 * @param [in] docking ドッキングモードフラグ
-	 */
 	void cancelTarget(bool docking = false);
-
-	/** 制御目標到達時の処理 */
 	void goalTarget();
-
-	/** 航法メッセージタイムアウト処理 */
 	void timeoutNavigation();
 
-	/** 制御目標到達判定
-	 * @param [in, out] stay 制御目標周辺継続判定結果
-	 * @param [in, out] tin 制御目標周辺到達時刻
-	 * @param [in] tnav 最新の航法時刻
-	 * @param [in] fb アクションフィードバック
-	 * @param [in] tolp 位置誤差許容値[m]
-	 * @param [in] tola 姿勢誤差許容値[rad]
-	 * @return 制御目標到達判定結果
-	 */
 	bool reachGoal
-	(bool& stay, ros::Time& tin, const ros::Time& tnav,
-	 const ib2_msgs::CtlCommandFeedback& fb, double tolp, double tola);
+	(bool& stay, rclcpp::Time& tin, const rclcpp::Time& tnav,
+	 const CtlCommandAction::Feedback& fb, double tolp, double tola);
 
-	/** 制御目標到達判定(SCAN)
-	 * @param [in, out] stay 制御目標周辺継続判定結果
-	 * @param [in, out] tin 制御目標周辺到達時刻
-	 * @param [in] tnav 最新の航法時刻
-	 * @param [in] fb アクションフィードバック
-	 * @param [in] tola 姿勢誤差許容値[rad]
-	 * @return 制御目標到達判定結果
-	 */
 	bool reachGoalScan
-	(bool& stay, ros::Time& tin, const ros::Time& tnav,
-	 const ib2_msgs::CtlCommandFeedback& fb, double tola);
+	(bool& stay, rclcpp::Time& tin, const rclcpp::Time& tnav,
+	 const CtlCommandAction::Feedback& fb, double tola);
 
-	/** 制御目標到達判定(DOCK)
-	 * @return 制御目標到達判定結果
-	 */
 	bool reachGoalDock();
 
-	/** 制御目標妥当性確認
-	 * @param [in] goal 制御目標
-	 * @retval true 妥当
-	 * @retval false 不正
-	 */
-	bool validCommand(const ib2_msgs::CtlCommandGoalConstPtr& goal) const;
+	bool validCommand(const std::shared_ptr<const CtlCommandAction::Goal>& goal) const;
+	bool validNavigation(const ib2_msgs::msg::Navigation& nav, bool first) const;
 
-	/** 航法メッセージ妥当性確認
-	 * @param [in] nav 判定対象航法メッセージ
-	 * @param [in] first 初期フラグ(true:初めて / false : 初めてでない)
-	 * @retval true 妥当
-	 * @retval false 不正
-	 */
-	bool validNavigation(const ib2_msgs::Navigation& nav, bool first) const;
-	
+	//--------------------------------------------------------------------------
+	// Action server callbacks
+private:
+	rclcpp_action::GoalResponse handleGoal(
+		const rclcpp_action::GoalUUID& uuid,
+		std::shared_ptr<const CtlCommandAction::Goal> goal);
+	rclcpp_action::CancelResponse handleCancel(
+		const std::shared_ptr<GoalHandleCtlCommand> goal_handle);
+	void handleAccepted(
+		const std::shared_ptr<GoalHandleCtlCommand> goal_handle);
+
 	//--------------------------------------------------------------------------
 	// 実装（コールバック関数）
 public:
-	/** 制御目標アクション受信時の処理
-	 * @param [in] goal 制御目標値メッセージ
-	 */
-	void commandCallback(const ib2_msgs::CtlCommandGoalConstPtr& goal);
+	void commandCallback(const std::shared_ptr<GoalHandleCtlCommand> goal_handle);
 
-	/** パラメータ更新サービス受信時の処理
-	 * @param [in] パラメータ更新サービスリクエスト
-	 * @param [in] res パラメータ更新サービス実行結果
-	 * @retval true 更新成功
-	 * @retval false 更新失敗
-	 */
-	bool updateCallback
-	(ib2_msgs::UpdateParameter::Request&,
-	 ib2_msgs::UpdateParameter::Response& res);
+	void updateCallback(
+		const std::shared_ptr<ib2_msgs::srv::UpdateParameter::Request> request,
+		std::shared_ptr<ib2_msgs::srv::UpdateParameter::Response> response);
 
-	/** 航法値のサブスクライバのコールバック関数
-	 * @param [in] nav_stamp 航法値
-	 */
-	void navinfoCallback(const ib2_msgs::Navigation& nav_stamp);
+	void navinfoCallback(const ib2_msgs::msg::Navigation::SharedPtr nav_stamp);
 
-	/** 定期的な処理
-	 * @param [in] ev タイマーイベント
-	 */
-	void timerCallback(const ros::TimerEvent& ev);
+	void timerCallback();
+
+	//--------------------------------------------------------------------------
+	// Action server helper methods
+private:
+	bool isGoalActive() const;
+	bool isPreemptRequested() const;
+	void publishFeedback(const CtlCommandAction::Feedback& fb);
+	void setSucceeded(const CtlCommandAction::Result& r);
+	void setPreempted(const CtlCommandAction::Result& r);
 
 	//----------------------------------------------------------------------
 	// メンバ変数
 private:
-	/** ROSノードハンドラ */
-	ros::NodeHandle nh_;
-
 	/** 制御目標アクションサーバ */
-	actionlib::SimpleActionServer<ib2_msgs::CtlCommandAction> command_as_;
-	
+	rclcpp_action::Server<CtlCommandAction>::SharedPtr command_as_;
+
+	/** 現在のゴールハンドル */
+	std::shared_ptr<GoalHandleCtlCommand> current_goal_handle_;
+
 	/** パラメータ更新サービスサーバ */
-	ros::ServiceServer update_ss_;
+	rclcpp::Service<ib2_msgs::srv::UpdateParameter>::SharedPtr update_ss_;
 
 	/** マーカー補正サービスクライアント */
-	ros::ServiceClient marker_sc_;
-	
+	rclcpp::Client<ib2_msgs::srv::MarkerCorrection>::SharedPtr marker_sc_;
+
 	/** 誘導制御ステータス出力間隔 */
-	ros::Duration interval_status_;
-	
+	rclcpp::Duration interval_status_;
+
 	/** フィードバック間隔 */
-	ros::Duration interval_feedback_;
+	rclcpp::Duration interval_feedback_;
 
 	/** 目標到達継続時間 */
-	ros::Duration duration_goal_;
-	
+	rclcpp::Duration duration_goal_;
+
 	/** 制御目標位置到達判定値[m] */
 	double tolerance_pos_;
 
 	/** 制御目標姿勢到達判定値[rad] */
 	double tolerance_att_;
-	
+
 	/** 位置停止判定値[m] */
 	double tolerance_pos_stop_;
-	
+
 	/** 姿勢停止判定値[rad] */
 	double tolerance_att_stop_;
-	
+
 	/** 航法異常連続上限 */
 	size_t nav_counter_;
-	
+
 	/** 航法位置変動量上限[m/s] */
 	double nav_dr_;
-	
+
 	/** 航法速度変動量上限[m/s2] */
 	double nav_dv_;
-	
+
 	/** 航法加速度変動量上限[m/s3] */
 	double nav_da_;
 
 	/** 航法姿勢変動量上限[rad/s] */
 	double nav_dq_;
-	
+
 	/** 航法角速度変動量上限[rad/s2] */
 	double nav_dw_;
-	
+
 	/** ターゲットキャンセルの待ち時間 */
-	ros::Duration waitCancel_;
-	
+	rclcpp::Duration waitCancel_;
+
 	/** リリース開始からAIP移動開始までの待ち時間 */
-	ros::Duration waitRelease_;
-	
+	rclcpp::Duration waitRelease_;
+
 	/** ホーミング時VisualSLAM較正の待ち時間 */
-	ros::Duration waitCalibration_;
-	
+	rclcpp::Duration waitCalibration_;
+
 	/** ドッキング開始からスタンバイまでの待ち時間 */
-	ros::Duration waitDocking_;
-	
-    // Subscriber
+	rclcpp::Duration waitDocking_;
+
 	/** 航法値のサブスクライバ */
-    ros::Subscriber navinfo_sub_;
+	rclcpp::Subscription<ib2_msgs::msg::Navigation>::SharedPtr navinfo_sub_;
 
-	/** 目標値のサブスクライバ */
-    ros::Subscriber target_sub_;
-
-	// Publisher
 	/** 誘導制御モードパブリッシャ */
-	ros::Publisher status_pub_;
+	rclcpp::Publisher<ib2_msgs::msg::CtlStatus>::SharedPtr status_pub_;
 
 	/** 力トルクのパブリッシャ */
-    ros::Publisher wrench_pub_;
+	rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr wrench_pub_;
 
 	/** 制御プロファイルのパブリッシャ */
-	ros::Publisher profile_pub_;
+	rclcpp::Publisher<ib2_msgs::msg::CtlProfile>::SharedPtr profile_pub_;
 
 	/** 航法メッセージの前回値 */
-	ib2_msgs::Navigation last_nav_stamp_;
+	ib2_msgs::msg::Navigation last_nav_stamp_;
 
 	/** 機体パラメータ */
 	std::unique_ptr<ib2::CtlBody> body_;
@@ -300,22 +218,19 @@ private:
 	/** 位置姿勢誘導プロファイル */
 	std::unique_ptr<ib2::PosAttProfiler> profiler_;
 
-	/** ファン選択 */
-	//std::unique_ptr<Fsm> fsm_;    // Modification for platform packages
-
 	/** 検知 */
 	Dtc dtc_;
 
-	/**  誘導制御モード */
+	/** 誘導制御モード */
 	int32_t status_;
 
 	/** ステータス出力タイマー */
-	ros::Timer timer_;
+	rclcpp::TimerBase::SharedPtr timer_;
 
-	/** CtlStatus sequcens id  */
+	/** CtlStatus sequence id */
 	mutable uint32_t seq_status_;
-	
-	/** 航法えメッセージ取得フラグ */
+
+	/** 航法メッセージ取得フラグ */
 	bool valid_navigation_;
 };
 

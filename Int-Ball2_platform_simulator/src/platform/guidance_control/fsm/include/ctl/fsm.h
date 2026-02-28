@@ -2,29 +2,25 @@
 #pragma once
 
 #include <numeric>
-#include <ros/ros.h>
-#include <std_msgs/Float64MultiArray.h>
-#include <geometry_msgs/WrenchStamped.h>
+#include <rclcpp/rclcpp.hpp>
+#include <std_msgs/msg/float64_multi_array.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
 #include "ctl/thrust_allocator.h"
 
 /**
 * @brief ファン選択ノードクラス
 */
-class Fsm
+class Fsm : public rclcpp::Node
 {
 	//----------------------------------------------------------------------
 	// コンストラクタ/デストラクタ
-private:
-	/** デフォルトコンストラクタ */
-	Fsm() = delete;
-
 public:
 	/** コンストラクタ */
-	explicit Fsm(const ros::NodeHandle& nh);
+	Fsm();
 
 	/** デストラクタ */
 	~Fsm();
-	
+
 	//----------------------------------------------------------------------
 	// コピー/ムーブ
 private:
@@ -56,8 +52,7 @@ public:
 	/** 制御推力トルクのサブスクライバのコールバック関数
 	 * @param [in] wrench 力トルク
 	 */
-	//void subscribeCommand(const geometry_msgs::WrenchStamped& wrench) const;    // Modification for platform packages
-	void wrenchCallback(const geometry_msgs::WrenchStamped& wrench) const;        // Modification for platform packages
+	void wrenchCallback(const geometry_msgs::msg::WrenchStamped::SharedPtr wrench) const;
 
 private:
 	/** 各ファンの駆動デューティ比のPublish
@@ -73,11 +68,8 @@ private:
 	//----------------------------------------------------------------------
 	// メンバ変数
 private:
-	/** ROSノードハンドラ */
-	ros::NodeHandle nh_;
-
 	/** デューティのパブリッシャ */
-	ros::Publisher  pub_duty_;
+	rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr pub_duty_;
 
 	/** 推力配分 */
 	ib2::ThrustAllocator thr_;
@@ -90,7 +82,7 @@ private:
 
 	/** 力トルクに影響を与えないファン出力群 */
     Eigen::VectorXd fj0_;
-    
+
 	/** ファンの数 */
     int nfan_;
 
@@ -98,7 +90,7 @@ private:
     int nsaturation_;
 
 	/** 力トルクのサブスクライバ */
-    ros::Subscriber wrench_sub_; // Modification for platform packages
+    rclcpp::Subscription<geometry_msgs::msg::WrenchStamped>::SharedPtr wrench_sub_;
 
 };
 // End Of File -----------------------------------------------------------------

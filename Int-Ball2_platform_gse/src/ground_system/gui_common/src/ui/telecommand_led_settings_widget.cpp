@@ -16,7 +16,7 @@ TelecommandLedSettingsWidget::TelecommandLedSettingsWidget(QWidget *parent) :
     minGain_(Config::valueAsFloat(key::KEY_LED_MIN_GAIN))
 {
     ui->setupUi(this);
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandLedSettingsWidget::executed);
 
     ui->doubleSpinBoxLeftGainsRAll->setMinimum(minGain_);

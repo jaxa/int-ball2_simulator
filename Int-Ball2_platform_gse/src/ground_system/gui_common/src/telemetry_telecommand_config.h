@@ -5,9 +5,10 @@
 #include <QMap>
 #include <QString>
 #include <QVariant>
-#include <geometry_msgs/PoseStamped.h>
-#include <rviz/display.h>
-#include <std_msgs/Time.h>
+#include "geometry_msgs/msg/pose_stamped.hpp"
+// rviz/display.h removed for ROS 2
+#include "builtin_interfaces/msg/time.hpp"
+#include "builtin_interfaces/msg/duration.hpp"
 #include "ib2_msgs.h"
 #include "platform_msgs.h"
 #include "ros_related_type_definitions.h"
@@ -22,52 +23,52 @@ namespace intball
 static const unsigned char INTBALL_MODE_UNKNOWN = 255u;
 static const QMap<unsigned char, QString> MODE_TYPE_LABEL =
 {
-    {ib2_msgs::Mode::STANDBY,          "STANDBY"},
-    {ib2_msgs::Mode::MAINTENANCE,      "MAINTENANCE"},
-    {ib2_msgs::Mode::RELEASE,          "RELEASE"},
-    {ib2_msgs::Mode::DOCKING,          "DOCKING"},
-    {ib2_msgs::Mode::OPERATION,        "OPERATION"},
-    {ib2_msgs::Mode::RECOVERY,         "RECOVERY"},
-    {ib2_msgs::Mode::IDLING,           "IDLING"},
-    {ib2_msgs::Mode::OFF_NOMINAL,      "OFF_NOMINAL"},
+    {ib2_msgs::msg::Mode::STANDBY,          "STANDBY"},
+    {ib2_msgs::msg::Mode::MAINTENANCE,      "MAINTENANCE"},
+    {ib2_msgs::msg::Mode::RELEASE,          "RELEASE"},
+    {ib2_msgs::msg::Mode::DOCKING,          "DOCKING"},
+    {ib2_msgs::msg::Mode::OPERATION,        "OPERATION"},
+    {ib2_msgs::msg::Mode::RECOVERY,         "RECOVERY"},
+    {ib2_msgs::msg::Mode::IDLING,           "IDLING"},
+    {ib2_msgs::msg::Mode::OFF_NOMINAL,      "OFF_NOMINAL"},
     {INTBALL_MODE_UNKNOWN,             "UNKNOWN"} // GUI用の未定義値.
 };
 
 static const QMap<unsigned char, QString> POWER_STATUS_LABEL
 {
-    {ib2_msgs::PowerStatus::ON,       "ON"},
-    {ib2_msgs::PowerStatus::OFF,      "OFF"},
-    {ib2_msgs::PowerStatus::UNKNOWN,  "UNKNOWN"},
+    {ib2_msgs::msg::PowerStatus::ON,       "ON"},
+    {ib2_msgs::msg::PowerStatus::OFF,      "OFF"},
+    {ib2_msgs::msg::PowerStatus::UNKNOWN,  "UNKNOWN"},
 };
 
 static const QMap<unsigned char, QString> MAIN_CAMERA_WHITE_BALANCE_MODE_LABEL
 {
-    {ib2_msgs::MainCameraWhiteBalanceMode::AUTO,             "AUTO"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::INCANDESCENT,     "INCANDESCENT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::FLUORESCENT,      "FLUORESCENT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::WARM_FLUORESCENT, "WARM_FLUORESCENT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::DAYLIGHT,         "DAYLIGHT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT,  "CLOUDY_DAYLIGHT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::TWILIGHT,         "TWILIGHT"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::SHADE,            "SHADE"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::MANUAL,           "MANUAL"},
-    {ib2_msgs::MainCameraWhiteBalanceMode::OFF,              "OFF"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::AUTO,             "AUTO"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::INCANDESCENT,     "INCANDESCENT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::FLUORESCENT,      "FLUORESCENT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::WARM_FLUORESCENT, "WARM_FLUORESCENT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::DAYLIGHT,         "DAYLIGHT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT,  "CLOUDY_DAYLIGHT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::TWILIGHT,         "TWILIGHT"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::SHADE,            "SHADE"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::MANUAL,           "MANUAL"},
+    {ib2_msgs::msg::MainCameraWhiteBalanceMode::OFF,              "OFF"},
 };
 
 static const unsigned char PLATFORM_MODE_UNKNOWN = 255u;
 static const QMap<unsigned char, QString> PLATFORM_MODE_TYPE_LABEL =
 {
-    {platform_msgs::Mode::USER_OFF,         "USER_OFF"},
-    {platform_msgs::Mode::USER_READY,       "USER_READY"},
-    {platform_msgs::Mode::USER_IN_PROGRESS, "USER_IN_PROGRESS"},
+    {platform_msgs::msg::Mode::USER_OFF,         "USER_OFF"},
+    {platform_msgs::msg::Mode::USER_READY,       "USER_READY"},
+    {platform_msgs::msg::Mode::USER_IN_PROGRESS, "USER_IN_PROGRESS"},
     {PLATFORM_MODE_UNKNOWN,                 "UNKNOWN"} // GUI用の未定義値.
 };
 
 static const unsigned char PLATFORM_OPERATION_TYPE_UNKNOWN = 255u;
 static const QMap<unsigned char, QString> PLATFORM_OPERATION_TYPE_LABEL =
 {
-    {platform_msgs::OperationType::NAV_ON,  "NAV_ON"},
-    {platform_msgs::OperationType::NAV_OFF, "NAV_OFF"},
+    {platform_msgs::msg::OperationType::NAV_ON,  "NAV_ON"},
+    {platform_msgs::msg::OperationType::NAV_OFF, "NAV_OFF"},
     {PLATFORM_OPERATION_TYPE_UNKNOWN,       "UNKNOWN"} // GUI用の未定義値.
 };
 
@@ -176,15 +177,15 @@ static const QMap<UPDATE_PARAMETER_TARGET, std::string> UPDATE_PARAMETER_SERVICE
 
 static const QMap<int, QString> CTL_ACTION_TYPE_LABEL =
 {
-    {ib2_msgs::CtlStatusType::STAND_BY,                  "STAND_BY"},
-    {ib2_msgs::CtlStatusType::KEEP_POSE,                 "KEEP_POSE"},
-    {ib2_msgs::CtlStatusType::STOP_MOVING,               "STOP_MOVING"},
-    {ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET,   "MOVE_TO_RELATIVE_TARGET"},
-    {ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET,   "MOVE_TO_ABSOLUTE_TARGET"},
-    {ib2_msgs::CtlStatusType::RELEASE,                   "RELEASE"},
-    {ib2_msgs::CtlStatusType::DOCK,                      "DOCK"},
-    {ib2_msgs::CtlStatusType::DOCK_WITHOUT_CORRECTION,   "DOCK_WITHOUT_CORRECTION"},
-    {ib2_msgs::CtlStatusType::SCAN,                      "SCAN"},
+    {ib2_msgs::msg::CtlStatusType::STAND_BY,                  "STAND_BY"},
+    {ib2_msgs::msg::CtlStatusType::KEEP_POSE,                 "KEEP_POSE"},
+    {ib2_msgs::msg::CtlStatusType::STOP_MOVING,               "STOP_MOVING"},
+    {ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET,   "MOVE_TO_RELATIVE_TARGET"},
+    {ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET,   "MOVE_TO_ABSOLUTE_TARGET"},
+    {ib2_msgs::msg::CtlStatusType::RELEASE,                   "RELEASE"},
+    {ib2_msgs::msg::CtlStatusType::DOCK,                      "DOCK"},
+    {ib2_msgs::msg::CtlStatusType::DOCK_WITHOUT_CORRECTION,   "DOCK_WITHOUT_CORRECTION"},
+    {ib2_msgs::msg::CtlStatusType::SCAN,                      "SCAN"},
 };
 
 /**
@@ -294,33 +295,33 @@ const std::string MICROPHONE_UPDATE_PARAMETER = "/microphone/update_params";
 static const int GUIDANCE_CONTROL_TYPE_UNKNOWN = -1;
 static const QMap<int, QString> GUIDANCE_CONTROL_TYPE_LABEL =
 {
-    {ib2_msgs::CtlStatusType::STAND_BY,                  "STAND_BY"},
-    {ib2_msgs::CtlStatusType::CAPTURED,                  "CAPTURED"},
-    {ib2_msgs::CtlStatusType::DISTURBED,                 "DISTURBED"},
-    {ib2_msgs::CtlStatusType::KEEP_POSE,                 "KEEP_POSE"},
-    {ib2_msgs::CtlStatusType::KEEPING_POSE_BY_COLLISION, "KEEPING_POSE_BY_COLLISION"},
-    {ib2_msgs::CtlStatusType::STOP_MOVING,               "STOP_MOVING"},
-    {ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET,   "MOVE_TO_RELATIVE_TARGET"},
-    {ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET,   "MOVE_TO_ABSOLUTE_TARGET"},
-    {ib2_msgs::CtlStatusType::RELEASE,                   "RELEASE"},
-    {ib2_msgs::CtlStatusType::DOCK,                      "DOCK"},
-    {ib2_msgs::CtlStatusType::DOCK_WITHOUT_CORRECTION,   "DOCK_WITHOUT_CORRECTION"},
-    {ib2_msgs::CtlStatusType::MOVING_TO_AIA_AIP,         "MOVING_TO_AIA_AIP"},
-    {ib2_msgs::CtlStatusType::WAITING_AT_AIA_AIP,        "WAITING_AT_AIA_AIP"},
-    {ib2_msgs::CtlStatusType::MOVING_TO_RDA_AIP,         "MOVING_TO_RDA_AIP"},
-    {ib2_msgs::CtlStatusType::MOVING_TO_RDP,             "MOVING_TO_RDP"},
-    {ib2_msgs::CtlStatusType::DOCKING_STAND_BY,          "DOCKING_STAND_BY"},
-    {ib2_msgs::CtlStatusType::SCAN,                      "SCAN"},
+    {ib2_msgs::msg::CtlStatusType::STAND_BY,                  "STAND_BY"},
+    {ib2_msgs::msg::CtlStatusType::CAPTURED,                  "CAPTURED"},
+    {ib2_msgs::msg::CtlStatusType::DISTURBED,                 "DISTURBED"},
+    {ib2_msgs::msg::CtlStatusType::KEEP_POSE,                 "KEEP_POSE"},
+    {ib2_msgs::msg::CtlStatusType::KEEPING_POSE_BY_COLLISION, "KEEPING_POSE_BY_COLLISION"},
+    {ib2_msgs::msg::CtlStatusType::STOP_MOVING,               "STOP_MOVING"},
+    {ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET,   "MOVE_TO_RELATIVE_TARGET"},
+    {ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET,   "MOVE_TO_ABSOLUTE_TARGET"},
+    {ib2_msgs::msg::CtlStatusType::RELEASE,                   "RELEASE"},
+    {ib2_msgs::msg::CtlStatusType::DOCK,                      "DOCK"},
+    {ib2_msgs::msg::CtlStatusType::DOCK_WITHOUT_CORRECTION,   "DOCK_WITHOUT_CORRECTION"},
+    {ib2_msgs::msg::CtlStatusType::MOVING_TO_AIA_AIP,         "MOVING_TO_AIA_AIP"},
+    {ib2_msgs::msg::CtlStatusType::WAITING_AT_AIA_AIP,        "WAITING_AT_AIA_AIP"},
+    {ib2_msgs::msg::CtlStatusType::MOVING_TO_RDA_AIP,         "MOVING_TO_RDA_AIP"},
+    {ib2_msgs::msg::CtlStatusType::MOVING_TO_RDP,             "MOVING_TO_RDP"},
+    {ib2_msgs::msg::CtlStatusType::DOCKING_STAND_BY,          "DOCKING_STAND_BY"},
+    {ib2_msgs::msg::CtlStatusType::SCAN,                      "SCAN"},
     {GUIDANCE_CONTROL_TYPE_UNKNOWN,                      "UNKNOWN"},    // GUI向けの無効値を定義.
 };
 
 static const QMap<unsigned char, QString> GUIDANCE_CONTROL_ACTION_RESULT_LABEL =
 {
-    {ib2_msgs::CtlCommandResult::TERMINATE_SUCCESS,        "SUCCESS"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_ABORTED,        "ABORTED"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_TIME_OUT,       "TIME_OUT"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_INVALID_CMD,    "INVALID_CMD"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_INVALID_NAV,    "INVALID_NAV"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_SUCCESS,        "SUCCESS"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_ABORTED,        "ABORTED"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_TIME_OUT,       "TIME_OUT"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_INVALID_CMD,    "INVALID_CMD"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_INVALID_NAV,    "INVALID_NAV"},
 };
 
 /**
@@ -486,70 +487,70 @@ enum class Index
 
 static const QMap<unsigned char, QString> UPDATE_PARAMETER_RESULT_LABEL =
 {
-    {ib2_msgs::UpdateParameterResponse::FAILURE_CALL,   "FAILURE_CALL"},
-    {ib2_msgs::UpdateParameterResponse::FAILURE_UPDATE, "FAILURE_UPDATE"},
-    {ib2_msgs::UpdateParameterResponse::SUCCESS,        "SUCCESS"},
+    {ib2_msgs::srv::UpdateParameter::Response::FAILURE_CALL,   "FAILURE_CALL"},
+    {ib2_msgs::srv::UpdateParameter::Response::FAILURE_UPDATE, "FAILURE_UPDATE"},
+    {ib2_msgs::srv::UpdateParameter::Response::SUCCESS,        "SUCCESS"},
 };
 
 static const QMap<unsigned char, QString> NAVIGATION_STARTUP_RESULT_LABEL =
 {
-    {ib2_msgs::NavigationStartUpResult::OFF,        "OFF"},
-    {ib2_msgs::NavigationStartUpResult::ABORTED,    "ABORTED"},
-    {ib2_msgs::NavigationStartUpResult::ON_READY,   "ON_READY"},
-    {ib2_msgs::NavigationStartUpResult::TIME_OUT,   "TIME_OUT"},
+    {ib2_msgs::action::NavigationStartUp_Result::OFF,        "OFF"},
+    {ib2_msgs::action::NavigationStartUp_Result::ABORTED,    "ABORTED"},
+    {ib2_msgs::action::NavigationStartUp_Result::ON_READY,   "ON_READY"},
+    {ib2_msgs::action::NavigationStartUp_Result::TIME_OUT,   "TIME_OUT"},
 };
 
 
 static const QMap<short, QString> MARKER_CORRECTION_STATUS_LABEL =
 {
-    {ib2_msgs::MarkerCorrectionResponse::FAILURE_CALL,    "FAILURE_CALL"},
-    {ib2_msgs::MarkerCorrectionResponse::FAILURE_UPDATE,  "FAILURE_UPDATE"},
-    {ib2_msgs::MarkerCorrectionResponse::SUCCESS,         "SUCCESS"},
+    {ib2_msgs::srv::MarkerCorrection::Response::FAILURE_CALL,    "FAILURE_CALL"},
+    {ib2_msgs::srv::MarkerCorrection::Response::FAILURE_UPDATE,  "FAILURE_UPDATE"},
+    {ib2_msgs::srv::MarkerCorrection::Response::SUCCESS,         "SUCCESS"},
 };
 
 static const QMap<unsigned char, QString> ALIVE_STATUS_LABEL =
 {
-    {ib2_msgs::AliveStatus::SUCCESS,                    "SUCCESS"},
-    {ib2_msgs::AliveStatus::FAIL,                       "FAIL"},
-    {ib2_msgs::AliveStatus::INVALID_CONFIG_DATA_CLASS,  "INVALID_CONFIG_DATA_CLASS"},
+    {ib2_msgs::msg::AliveStatus::SUCCESS,                    "SUCCESS"},
+    {ib2_msgs::msg::AliveStatus::FAIL,                       "FAIL"},
+    {ib2_msgs::msg::AliveStatus::INVALID_CONFIG_DATA_CLASS,  "INVALID_CONFIG_DATA_CLASS"},
 };
 
 static const QMap<unsigned char, QString> NAVIGATION_STATUS_LABEL =
 {
-    {ib2_msgs::NavigationStatus::NAV_OFF,       "NAV_OFF"},
-    {ib2_msgs::NavigationStatus::NAV_SLAM,      "NAV_SLAM"},
-    {ib2_msgs::NavigationStatus::NAV_FUSION,    "NAV_FUSION"},
-    {ib2_msgs::NavigationStatus::NAV_INERTIAL,  "NAV_INERTIAL"},
+    {ib2_msgs::msg::NavigationStatus::NAV_OFF,       "NAV_OFF"},
+    {ib2_msgs::msg::NavigationStatus::NAV_SLAM,      "NAV_SLAM"},
+    {ib2_msgs::msg::NavigationStatus::NAV_FUSION,    "NAV_FUSION"},
+    {ib2_msgs::msg::NavigationStatus::NAV_INERTIAL,  "NAV_INERTIAL"},
 };
 
 static const QMap<unsigned char, QString> CTL_COMMAND_RESULT_LABEL =
 {
-    {ib2_msgs::CtlCommandResult::TERMINATE_SUCCESS,       "TERMINATE_SUCCESS"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_ABORTED,       "TERMINATE_ABORTED"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_TIME_OUT,      "TERMINATE_TIME_OUT"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_INVALID_CMD,   "TERMINATE_INVALID_CMD"},
-    {ib2_msgs::CtlCommandResult::TERMINATE_INVALID_NAV,   "TERMINATE_INVALID_NAV"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_SUCCESS,       "TERMINATE_SUCCESS"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_ABORTED,       "TERMINATE_ABORTED"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_TIME_OUT,      "TERMINATE_TIME_OUT"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_INVALID_CMD,   "TERMINATE_INVALID_CMD"},
+    {ib2_msgs::action::CtlCommand_Result::TERMINATE_INVALID_NAV,   "TERMINATE_INVALID_NAV"},
 };
 
 static const QMap<unsigned char, QString> USER_NODE_RESULT_LABEL =
 {
-    {platform_msgs::UserNodeCommandResponse::SUCCESS,              "SUCCESS"},
-    {platform_msgs::UserNodeCommandResponse::INVALID_COMMAND,      "INVALID_COMMAND"},
-    {platform_msgs::UserNodeCommandResponse::ERROR,                "ERROR"},
-    {platform_msgs::UserNodeCommandResponse::NODE_ALREADY_RUNNING, "NODE_ALREADY_RUNNING"},
-    {platform_msgs::UserNodeCommandResponse::IMAGE_NOT_FOUND,      "IMAGE_NOT_FOUND"},
-    {platform_msgs::UserNodeCommandResponse::USER_NOT_FOUND,       "USER_NOT_FOUND"},
-    {platform_msgs::UserNodeCommandResponse::LAUNCH_NOT_FOUND,     "LAUNCH_NOT_FOUND"},
-    {platform_msgs::UserNodeCommandResponse::INVALID_LAUNCH,       "INVALID_LAUNCH"},
-    {platform_msgs::UserNodeCommandResponse::NODE_NOT_STARTED,     "NODE_NOT_STARTED"},
+    {platform_msgs::srv::UserNodeCommand::Response::SUCCESS,              "SUCCESS"},
+    {platform_msgs::srv::UserNodeCommand::Response::INVALID_COMMAND,      "INVALID_COMMAND"},
+    {platform_msgs::srv::UserNodeCommand::Response::ERROR,                "ERROR"},
+    {platform_msgs::srv::UserNodeCommand::Response::NODE_ALREADY_RUNNING, "NODE_ALREADY_RUNNING"},
+    {platform_msgs::srv::UserNodeCommand::Response::IMAGE_NOT_FOUND,      "IMAGE_NOT_FOUND"},
+    {platform_msgs::srv::UserNodeCommand::Response::USER_NOT_FOUND,       "USER_NOT_FOUND"},
+    {platform_msgs::srv::UserNodeCommand::Response::LAUNCH_NOT_FOUND,     "LAUNCH_NOT_FOUND"},
+    {platform_msgs::srv::UserNodeCommand::Response::INVALID_LAUNCH,       "INVALID_LAUNCH"},
+    {platform_msgs::srv::UserNodeCommand::Response::NODE_NOT_STARTED,     "NODE_NOT_STARTED"},
 };
 
 static const QMap<unsigned char, QString> CONTAINER_STATUS_LABEL =
 {
-    {platform_msgs::ContainerStatus::EXITED,     "EXITED"},
-    {platform_msgs::ContainerStatus::PAUSED,     "PAUSED"},
-    {platform_msgs::ContainerStatus::RESTARTING, "RESTARTING"},
-    {platform_msgs::ContainerStatus::RUNNING,    "RUNNING"},
+    {platform_msgs::msg::ContainerStatus::EXITED,     "EXITED"},
+    {platform_msgs::msg::ContainerStatus::PAUSED,     "PAUSED"},
+    {platform_msgs::msg::ContainerStatus::RESTARTING, "RESTARTING"},
+    {platform_msgs::msg::ContainerStatus::RUNNING,    "RUNNING"},
 };
 
 /**
@@ -568,7 +569,7 @@ static const QMap<Index, ConfigItem> Config =
 {
     {
         Index::TIMESTAMP,
-        {rosname::TIMESTAMP, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::TIMESTAMP, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::LAST_EXECUTED_COMMAND,
@@ -604,11 +605,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::NAVIGATION_STARTUP_FEEDBACK_DURATION,
-        {rosname::NAVIGATION_STARTUP_FEEDBACK, "Duration", QVariant::fromValue(ros::Duration())}
+        {rosname::NAVIGATION_STARTUP_FEEDBACK, "Duration", QVariant::fromValue(builtin_interfaces::msg::Duration())}
     },
     {
         Index::NAVIGATION_STARTUP_RESULT_TIMESTAMP,
-        {rosname::NAVIGATION_STARTUP_RESULT, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::NAVIGATION_STARTUP_RESULT, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::NAVIGATION_STARTUP_RESULT_TYPE,
@@ -620,7 +621,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::NAVIGATION_HEADER_STAMP,
-        {rosname::NAVIGATION, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::NAVIGATION, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::NAVIGATION_HEADER_FRAME_ID,
@@ -628,27 +629,27 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::NAVIGATION_POSE_POSITION,
-        {rosname::NAVIGATION, "Position", QVariant::fromValue(geometry_msgs::Point())}
+        {rosname::NAVIGATION, "Position", QVariant::fromValue(geometry_msgs::msg::Point())}
     },
     {
         Index::NAVIGATION_POSE_ORIENTATION,
-        {rosname::NAVIGATION, "Orientation", QVariant::fromValue(geometry_msgs::Quaternion())}
+        {rosname::NAVIGATION, "Orientation", QVariant::fromValue(geometry_msgs::msg::Quaternion())}
     },
     {
         Index::NAVIGATION_TWIST_LINEAR,
-        {rosname::NAVIGATION, "Linear", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::NAVIGATION, "Linear", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::NAVIGATION_TWIST_ANGULAR,
-        {rosname::NAVIGATION, "Angular", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::NAVIGATION, "Angular", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::NAVIGATION_A,
-        {rosname::NAVIGATION, "Acceleration", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::NAVIGATION, "Acceleration", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::NAVIGATION_STATUS,
-        {rosname::NAVIGATION, "Status", QVariant::fromValue(ib2_msgs::NavigationStatus())}
+        {rosname::NAVIGATION, "Status", QVariant::fromValue(ib2_msgs::msg::NavigationStatus())}
     },
     {
         Index::NAVIGATION_DEBUG_POINT,
@@ -668,11 +669,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::NAVIGATION_STATUS_TOPIC_STASUS,
-        {rosname::NAVIGATION_STATUS_TOPIC, "Status", QVariant::fromValue(ib2_msgs::NavigationStatus())}
+        {rosname::NAVIGATION_STATUS_TOPIC, "Status", QVariant::fromValue(ib2_msgs::msg::NavigationStatus())}
     },
     {
         Index::MARKER_CORRECTION_TIMESTAMP,
-        {rosname::MARKER_CORRECTION, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::MARKER_CORRECTION, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::MARKER_CORRECTION_STATUS,
@@ -680,7 +681,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::NAVIGATION_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::NAVIGATION_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -688,7 +689,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::IMU_TIMESTAMP,
-        {rosname::IMU_IMU, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::IMU_IMU, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::IMU_ACC_X,
@@ -720,7 +721,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::IMU_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::IMU_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::IMU_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::IMU_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -728,7 +729,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::SLAM_WRAPPER_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::SLAM_WRAPPER_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -740,7 +741,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_STATUS_HEADER_STAMP,
-        {rosname::CTL_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CTL_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CTL_STATUS_HEADER_FRAME_ID,
@@ -748,23 +749,23 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_STATUS_POSE_POSITION,
-        {rosname::CTL_STATUS, "Position", QVariant::fromValue(geometry_msgs::Point())}
+        {rosname::CTL_STATUS, "Position", QVariant::fromValue(geometry_msgs::msg::Point())}
     },
     {
         Index::CTL_STATUS_POSE_ORIENTATION,
-        {rosname::CTL_STATUS, "Orientation", QVariant::fromValue(geometry_msgs::Quaternion())}
+        {rosname::CTL_STATUS, "Orientation", QVariant::fromValue(geometry_msgs::msg::Quaternion())}
     },
     {
         Index::CTL_STATUS_TWIST_LINEAR,
-        {rosname::CTL_STATUS, "Linear", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::CTL_STATUS, "Linear", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::CTL_STATUS_TWIST_ANGULAR,
-        {rosname::CTL_STATUS, "Angular", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::CTL_STATUS, "Angular", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::CTL_STATUS_A,
-        {rosname::CTL_STATUS, "Acceleration", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::CTL_STATUS, "Acceleration", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::CTL_STATUS_TYPE,
@@ -776,7 +777,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_WRENCH_HEADER_STAMP,
-        {rosname::CTL_WRENCH, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CTL_WRENCH, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CTL_WRENCH_HEADER_FRAME_ID,
@@ -784,11 +785,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_WRENCH_FORCE,
-        {rosname::CTL_WRENCH, "Force", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::CTL_WRENCH, "Force", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::CTL_WRENCH_TORQUE,
-        {rosname::CTL_WRENCH, "Torque", QVariant::fromValue(geometry_msgs::Vector3())}
+        {rosname::CTL_WRENCH, "Torque", QVariant::fromValue(geometry_msgs::msg::Vector3())}
     },
     {
         Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_ID,
@@ -796,23 +797,23 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP,
-        {rosname::CTL_ACTION_FEEDBACK, "Goal timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CTL_ACTION_FEEDBACK, "Goal timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CTL_ACTION_FEEDBACK_TIME_TO_GO,
-        {rosname::CTL_ACTION_FEEDBACK, "Time to go", QVariant::fromValue(ros::Duration())}
+        {rosname::CTL_ACTION_FEEDBACK, "Time to go", QVariant::fromValue(builtin_interfaces::msg::Duration())}
     },
     {
         Index::CTL_ACTION_FEEDBACK_POSE_POSITION,
-        {rosname::CTL_ACTION_FEEDBACK, "Position", QVariant::fromValue(geometry_msgs::Point())}
+        {rosname::CTL_ACTION_FEEDBACK, "Position", QVariant::fromValue(geometry_msgs::msg::Point())}
     },
     {
         Index::CTL_ACTION_FEEDBACK_POSE_ORIENTATION,
-        {rosname::CTL_ACTION_FEEDBACK, "Orientation", QVariant::fromValue(geometry_msgs::Quaternion())}
+        {rosname::CTL_ACTION_FEEDBACK, "Orientation", QVariant::fromValue(geometry_msgs::msg::Quaternion())}
     },
     {
         Index::CTL_ACTION_RESULT_TIMESTAMP,
-        {rosname::CTL_ACTION_RESULT, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CTL_ACTION_RESULT, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CTL_ACTION_RESULT_TYPE,
@@ -820,7 +821,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CTL_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::CTL_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CTL_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CTL_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -832,7 +833,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::PROP_STATUS_HEADER_STAMP,
-        {rosname::PROP_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::PROP_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::PROP_STATUS_HEADER_FRAME_ID,
@@ -844,15 +845,15 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::PROP_STATUS_POWER,
-        {rosname::PROP_STATUS, "Power status", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::PROP_STATUS, "Power status", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::PROP_SWITCH_POWER_RESPONSE,
-        {rosname::PROP_SWITCH_POWER, "Switch power response", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::PROP_SWITCH_POWER, "Switch power response", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::PROP_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::PROP_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::PROP_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -860,19 +861,19 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_MIC_STREAMING_STATUS,
-        {rosname::CAMERA_MIC_STATUS, "Streaming status", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::CAMERA_MIC_STATUS, "Streaming status", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_MIC_RECORDING_STATUS,
-        {rosname::CAMERA_MIC_STATUS, "Recording status", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::CAMERA_MIC_STATUS, "Recording status", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_MIC_CAMERA_POWER,
-        {rosname::CAMERA_MIC_STATUS, "Camera power", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::CAMERA_MIC_STATUS, "Camera power", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_MIC_MICROPHONE_POWER,
-        {rosname::CAMERA_MIC_STATUS, "Microphone power", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::CAMERA_MIC_STATUS, "Microphone power", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_MIC_ZOOM,
@@ -880,7 +881,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_MIC_RESOLUTION_TYPE,
-        {rosname::CAMERA_MIC_STATUS, "Resolution type", QVariant::fromValue(ib2_msgs::MainCameraResolutionType())}
+        {rosname::CAMERA_MIC_STATUS, "Resolution type", QVariant::fromValue(ib2_msgs::msg::MainCameraResolutionType())}
     },
     {
         Index::CAMERA_MIC_EV,
@@ -892,7 +893,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_MIC_WHITE_BALANCE_MODE,
-        {rosname::CAMERA_MIC_STATUS, "White balance mode", QVariant::fromValue(ib2_msgs::MainCameraWhiteBalanceMode())}
+        {rosname::CAMERA_MIC_STATUS, "White balance mode", QVariant::fromValue(ib2_msgs::msg::MainCameraWhiteBalanceMode())}
     },
     {
         Index::CAMERA_MIC_FRAME_RATE,
@@ -908,7 +909,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::CAMERA_MIC_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CAMERA_MIC_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -916,15 +917,15 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::LED_LEFT_LED_COLORS,
-        {rosname::LED_LEFT_LED_COLORS, "Colors", QVariant::fromValue(QVector<std_msgs::ColorRGBA>(8))}
+        {rosname::LED_LEFT_LED_COLORS, "Colors", QVariant::fromValue(QVector<std_msgs::msg::ColorRGBA>(8))}
     },
     {
         Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::LED_LEFT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::LED_LEFT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::LED_RIGHT_LED_COLORS,
-        {rosname::LED_RIGHT_LED_COLORS, "Colors", QVariant::fromValue(QVector<std_msgs::ColorRGBA>(8))}
+        {rosname::LED_RIGHT_LED_COLORS, "Colors", QVariant::fromValue(QVector<std_msgs::msg::ColorRGBA>(8))}
     },
     {
         Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -932,7 +933,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::LED_RIGHT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::LED_RIGHT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -948,27 +949,27 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::DISPLAY_MANAGER_STATUS_COLOR,
-        {rosname::DISPLAY_MANAGER_STATUS, "Color", QVariant::fromValue(std_msgs::ColorRGBA())}
+        {rosname::DISPLAY_MANAGER_STATUS, "Color", QVariant::fromValue(std_msgs::msg::ColorRGBA())}
     },
     {
         Index::DISPLAY_MANAGER_STATUS_POWER,
-        {rosname::DISPLAY_MANAGER_STATUS, "Power", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::DISPLAY_MANAGER_STATUS, "Power", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::DISPLAY_MANAGER_STATUS_FLASH,
-        {rosname::DISPLAY_MANAGER_STATUS, "Lighting", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::DISPLAY_MANAGER_STATUS, "Lighting", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::DISPLAY_MANAGER_SWITCH_POWER_RESPONSE,
-        {rosname::DISPLAY_MANAGER_SWITCH_POWER, "Switch power response", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::DISPLAY_MANAGER_SWITCH_POWER, "Switch power response", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::DISPLAY_MANAGER_SWITCH_FLASH_RESPONSE,
-        {rosname::DISPLAY_MANAGER_SWITCH_FLASH, "Switch flash response", QVariant::fromValue(ib2_msgs::PowerStatus())}
+        {rosname::DISPLAY_MANAGER_SWITCH_FLASH, "Switch flash response", QVariant::fromValue(ib2_msgs::msg::PowerStatus())}
     },
     {
         Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::DISPLAY_MANAGER_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::DISPLAY_MANAGER_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -992,7 +993,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::SET_ROS_PARAM_SUCCESS_TIMESTAMP,
-        {rosname::PARAMETER_MANAGER_SET_ROS_PARAM, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::PARAMETER_MANAGER_SET_ROS_PARAM, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::SET_ROS_PARAMS_SUCCESS_ALL,
@@ -1000,7 +1001,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::SET_ROS_PARAMS_SUCCESS_ALL_TIMESTAMP,
-        {rosname::PARAMETER_MANAGER_SET_ROS_PARAMS, "Success", QVariant::fromValue(ros::Time())}
+        {rosname::PARAMETER_MANAGER_SET_ROS_PARAMS, "Success", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::SET_ROS_PARAMS_PARAMS_LIST,
@@ -1032,19 +1033,19 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::SYSTEM_MONITOR_TIMESTAMP,
-        {rosname::SYSTEM_MONITOR_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::SYSTEM_MONITOR_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::ALIVE_MONITOR_STATUSES_TOPIC,
-        {rosname::SYSTEM_MONITOR_STATUS, "Topic statuses", QVariant::fromValue(QMap<QString, ib2_msgs::AliveStatus>())}
+        {rosname::SYSTEM_MONITOR_STATUS, "Topic statuses", QVariant::fromValue(QMap<QString, ib2_msgs::msg::AliveStatus>())}
     },
     {
         Index::ALIVE_MONITOR_STATUSES_SERVICE,
-        {rosname::SYSTEM_MONITOR_STATUS, "Service statuses", QVariant::fromValue(QMap<QString, ib2_msgs::AliveStatus>())}
+        {rosname::SYSTEM_MONITOR_STATUS, "Service statuses", QVariant::fromValue(QMap<QString, ib2_msgs::msg::AliveStatus>())}
     },
     {
         Index::FILE_MONITOR_CHECK_TIME,
-        {rosname::FILE_MONITOR_STATUS, "Check time", QVariant::fromValue(ros::Time())}
+        {rosname::FILE_MONITOR_STATUS, "Check time", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::FILE_MONITOR_TIMESYNC_LOG,
@@ -1064,7 +1065,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::PLATFORM_MANAGER_TIMESTAMP,
-        {rosname::PLATFORM_MANAGER_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::PLATFORM_MANAGER_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::PLATFORM_MANAGER_OPERATION_TYPE,
@@ -1100,7 +1101,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::PLATFORM_MONITOR_CHECK_TIME,
-        {rosname::PLATFORM_MONITOR_STATUS, "Check time", QVariant::fromValue(ros::Time())}
+        {rosname::PLATFORM_MONITOR_STATUS, "Check time", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::PLATFORM_MONITOR_PUBLICATIONS,
@@ -1120,11 +1121,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_MAIN_STREAMING_STATUS,
-        {rosname::CAMERA_MAIN_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::PowerStatus())}
+        {rosname::CAMERA_MAIN_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_MAIN_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::CAMERA_MAIN_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CAMERA_MAIN_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CAMERA_MAIN_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -1132,11 +1133,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_LEFT_STREAMING_STATUS,
-        {rosname::CAMERA_LEFT_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::PowerStatus())}
+        {rosname::CAMERA_LEFT_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::CAMERA_LEFT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CAMERA_LEFT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CAMERA_LEFT_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -1144,11 +1145,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::CAMERA_RIGHT_STREAMING_STATUS,
-        {rosname::CAMERA_RIGHT_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::PowerStatus())}
+        {rosname::CAMERA_RIGHT_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::msg::PowerStatus())}
     },
     {
         Index::CAMERA_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::CAMERA_RIGHT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::CAMERA_RIGHT_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::CAMERA_RIGHT_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -1156,11 +1157,11 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::MICROPHONE_STREAMING_STATUS,
-        {rosname::MICROPHONE_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::PowerStatus())}
+        {rosname::MICROPHONE_STATUS, "Streaming status", QVariant::fromValue(platform_msgs::msg::PowerStatus())}
     },
     {
         Index::MICROPHONE_UPDATE_PARAMETER_RESPONSE_TIMESTAMP,
-        {rosname::MICROPHONE_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::MICROPHONE_UPDATE_PARAMETER, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::MICROPHONE_UPDATE_PARAMETER_RESPONSE_RESULT,
@@ -1168,7 +1169,7 @@ static const QMap<Index, ConfigItem> Config =
     },
     {
         Index::USER_NODE_STATUS_TIMESTAMP,
-        {rosname::USER_NODE_STATUS, "Timestamp", QVariant::fromValue(ros::Time())}
+        {rosname::USER_NODE_STATUS, "Timestamp", QVariant::fromValue(builtin_interfaces::msg::Time())}
     },
     {
         Index::USER_NODE_STATUS_MESSAGE,
@@ -1351,24 +1352,25 @@ Q_DECLARE_METATYPE(intball::telecommand::UPDATE_PARAMETER_TARGET);
 Q_DECLARE_METATYPE(intball::dock::telecommand::CHARGE_ON_OFF_TYPE);
 Q_DECLARE_METATYPE(intball::dock::telecommand::MOTOR_ON_OFF_TYPE);
 Q_DECLARE_METATYPE(std::string);
-Q_DECLARE_METATYPE(geometry_msgs::Point);
-Q_DECLARE_METATYPE(geometry_msgs::Quaternion);
-Q_DECLARE_METATYPE(geometry_msgs::Vector3);
-Q_DECLARE_METATYPE(ib2_msgs::NavigationStatus);
-Q_DECLARE_METATYPE(ib2_msgs::PowerStatus);
-Q_DECLARE_METATYPE(ib2_msgs::MainCameraResolutionType);
-Q_DECLARE_METATYPE(ib2_msgs::MainCameraWhiteBalanceMode);
-Q_DECLARE_METATYPE(platform_msgs::OperationType);
-Q_DECLARE_METATYPE(platform_msgs::Mode);
-Q_DECLARE_METATYPE(platform_msgs::PowerStatus);
-Q_DECLARE_METATYPE(ros::Duration);
-Q_DECLARE_METATYPE(std_msgs::ColorRGBA);
-Q_DECLARE_METATYPE(std_msgs::Float64MultiArray);
-Q_DECLARE_METATYPE(ib2_msgs::AliveStatus);
+Q_DECLARE_METATYPE(builtin_interfaces::msg::Time);
+Q_DECLARE_METATYPE(builtin_interfaces::msg::Duration);
+Q_DECLARE_METATYPE(geometry_msgs::msg::Point);
+Q_DECLARE_METATYPE(geometry_msgs::msg::Quaternion);
+Q_DECLARE_METATYPE(geometry_msgs::msg::Vector3);
+Q_DECLARE_METATYPE(std_msgs::msg::ColorRGBA);
+Q_DECLARE_METATYPE(std_msgs::msg::Float64MultiArray);
+Q_DECLARE_METATYPE(ib2_msgs::msg::NavigationStatus);
+Q_DECLARE_METATYPE(ib2_msgs::msg::PowerStatus);
+Q_DECLARE_METATYPE(ib2_msgs::msg::MainCameraResolutionType);
+Q_DECLARE_METATYPE(ib2_msgs::msg::MainCameraWhiteBalanceMode);
+Q_DECLARE_METATYPE(platform_msgs::msg::OperationType);
+Q_DECLARE_METATYPE(platform_msgs::msg::Mode);
+Q_DECLARE_METATYPE(platform_msgs::msg::PowerStatus);
+Q_DECLARE_METATYPE(ib2_msgs::msg::AliveStatus);
 Q_DECLARE_METATYPE(intball::RosParam);
 Q_DECLARE_METATYPE(intball::NodeStatus);
 Q_DECLARE_METATYPE(intball::ContainerStatus);
-Q_DECLARE_METATYPE(platform_msgs::NodeStatusValue);
-Q_DECLARE_METATYPE(platform_msgs::ContainerStatus);
-Q_DECLARE_METATYPE(platform_msgs::UserLogic);
+Q_DECLARE_METATYPE(platform_msgs::msg::NodeStatusValue);
+Q_DECLARE_METATYPE(platform_msgs::msg::ContainerStatus);
+Q_DECLARE_METATYPE(platform_msgs::msg::UserLogic);
 #endif // TELEMETRY_TELECOMMAND_CONFIG_H

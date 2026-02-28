@@ -325,7 +325,7 @@ void StatusWidget::TelemetryMonitor_detected(TelemetryMonitor::Event event, QVar
         eventOccurred(CommandLog(CommandLogLevel::INFO, "The guidance control has started."));
         break;
     case TelemetryMonitor::Event::FAILED_CTL_COMMAND:
-        if(value.isValid() && value.toUInt() == ib2_msgs::CtlCommandResult::TERMINATE_ABORTED)
+        if(value.isValid() && value.toUInt() == ib2_msgs::action::CtlCommand_Result::TERMINATE_ABORTED)
         {
             eventOccurred(CommandLog(CommandLogLevel::WARN, "The guidance control process has aborted."));
         }

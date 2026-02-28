@@ -3,18 +3,14 @@
 
 #include <QVBoxLayout>
 #include <QWidget>
-#include <rviz/visualization_manager.h>
+#include <QQuaternion>
+#include <rviz_common/visualization_manager.hpp>
 
-namespace rviz
+namespace rviz_common
 {
 class Display;
 class RenderPanel;
-} // namespace rviz
-
-namespace tf
-{
-class Quaternion;
-} // namespace tf
+} // namespace rviz_common
 
 namespace intball
 {
@@ -25,8 +21,12 @@ class CameraViewPanel : public QWidget
 public:
     explicit CameraViewPanel(QWidget *parent = nullptr);
     void initialize(const QString& pathRvizConfig);
+    void createRenderPanel();
+    void initializeVisualizationManager(const QString& pathRvizConfig);
+    void startRendering();
+    void stopRendering();
     void setView(const QVector3D& position, const QQuaternion& quaternion);
-    tf::Quaternion getQuaternion();
+    QQuaternion getQuaternion();
     void clear();
 signals:
     void changed();
@@ -34,8 +34,8 @@ signals:
 public slots:
 private:
     QVBoxLayout* layout_;
-    QScopedPointer<rviz::VisualizationManager> manager_;
-    rviz::RenderPanel* renderPanel_;
+    QScopedPointer<rviz_common::VisualizationManager> manager_;
+    rviz_common::RenderPanel* renderPanel_;
 };
 
 } // namespace intball

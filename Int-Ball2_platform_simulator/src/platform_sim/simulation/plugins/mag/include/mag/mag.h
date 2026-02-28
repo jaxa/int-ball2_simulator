@@ -1,236 +1,119 @@
 
 #pragma once
 
-#include <gazebo/gazebo.hh>
-#include <gazebo/physics/physics.hh>
-#include <gazebo/common/Plugin.hh>
-#include <ros/ros.h>
-#include <geometry_msgs/WrenchStamped.h>
+#include <gz/sim/System.hh>
+#include <gz/sim/Entity.hh>
+#include <gz/math/Vector3.hh>
+#include <gz/math/Quaternion.hh>
+#include <gz/math/Rand.hh>
+
+#include <rclcpp/rclcpp.hpp>
+#include <geometry_msgs/msg/wrench_stamped.hpp>
+#include <ib2_msgs/msg/power_status.hpp>
+#include <ib2_msgs/srv/switch_power.hpp>
+#include <sim_msgs/srv/update_parameter.hpp>
+
 #include "coordinate_transform/coordinate_transform.h"
-#include "ib2_msgs/SwitchPower.h"
-#include "ib2_msgs/PowerStatus.h"
-#include "sim_msgs/UpdateParameter.h"
+
+#include <string>
+#include <vector>
 #include <cassert>
 
-namespace gazebo
+namespace mag_plugin
 {
 	/**
 	 * @brief ドッキングステーションの磁力による吸引力やトルクを模擬するプラグイン.
 	 */
-	class Mag : public WorldPlugin
+	class Mag : public gz::sim::System,
+	            public gz::sim::ISystemConfigure,
+	            public gz::sim::ISystemPreUpdate
 	{
 		//----------------------------------------------------------------------
 		// コンストラクタ/デストラクタ
 	public:
-		/** デフォルトコンストラクタ */
 		Mag();
-
-		/** デストラクタ. */
-		~Mag();
+		~Mag() override;
 
 		//----------------------------------------------------------------------
 		// コピー/ムーブ
 	private:
-		/** コピーコンストラクタ. */
 		Mag(const Mag&) = delete;
-
-		/** コピー代入演算子. */
 		Mag& operator=(const Mag&) = delete;
-
-		/** ムーブコンストラクタ. */
 		Mag(Mag&&) = delete;
-
-		/** ムーブ代入演算子. */
 		Mag& operator=(Mag&&) = delete;
 
 		//----------------------------------------------------------------------
 		// 実装
 	public:
-		/** プラグインのロード
-		 * @param [in, out] _world Worldへのポインタ
-		 * @param [in, out] _sdf SDF要素へのポインタ
-		 */
-		virtual void Load(physics::WorldPtr _world, sdf::ElementPtr _sdf);
+		void Configure(const gz::sim::Entity &_entity,
+		               const std::shared_ptr<const sdf::Element> &_sdf,
+		               gz::sim::EntityComponentManager &_ecm,
+		               gz::sim::EventManager &_eventMgr) override;
+
+		void PreUpdate(const gz::sim::UpdateInfo &_info,
+		               gz::sim::EntityComponentManager &_ecm) override;
 
 	private:
-		/** ROS Parameter Serverからパラメータを取得
-		 */
 		void getParameter();
-
-		/** 磁力プラグインパラメータ更新
-		  * @param [in]                 req      パラメータ更新サービスリクエスト
-		  * @param [in]                 res      パラメータ更新サービス実行結果
-          * @retval                     true     更新成功
-		  * @retval                     false    更新失敗
-		  */
-		bool updateParameter(sim_msgs::UpdateParameter::Request& req, sim_msgs::UpdateParameter::Response& res);
-
-		/** 磁力プラグインパラメータログ作成
-		 */
+		void updateParameter(
+			const std::shared_ptr<sim_msgs::srv::UpdateParameter::Request> req,
+			std::shared_ptr<sim_msgs::srv::UpdateParameter::Response> res);
 		void logParameter();
-
-		/** ISS/IB2モデルを取得
-		 */
-		void getModels();
-
-		/** Gazeboのコールバック関数
-		 */
-		void magCallBack();
-		
-		/** ドッキングステーション座標系(ホーム座標系)でのロボット位置・姿勢を取得
-		 * @param [in, out] r_ds          ドッキングステーション座標系でのロボット位置[m]
-		 * @param [in, out] q_ds          ドッキングステーション座標系に対するロボット姿勢クォータニオン
-		 */
-		void getDsPose(ignition::math::Vector3d& r_ds, ignition::math::Quaterniond& q_ds);
-
-		/** 磁石による吸引力を取得
-		 * @param [in]      r_ds          ドッキングステーション座標系(ホーム座標系)でのロボット位置[m]
-		 * @param [in]      q_ds          ドッキングステーション座標系(ホーム座標系)に対するロボット姿勢クォータニオン
-		 * @param [in, out] fmag_ds       ドッキングステーション座標系(ホーム座標系)での吸引力[N]
-		 * @param [in, out] fmag_bd       機体座標系での吸引力[N]
-		 */
+		void getModels(gz::sim::EntityComponentManager &_ecm);
+		void magCallBack(const gz::sim::UpdateInfo &_info,
+		                 gz::sim::EntityComponentManager &_ecm);
+		void getDsPose(gz::sim::EntityComponentManager &_ecm,
+		               gz::math::Vector3d& r_ds, gz::math::Quaterniond& q_ds);
 		void getForce(
-			const ignition::math::Vector3d& r_ds,    const ignition::math::Quaterniond& q_ds,
-			      ignition::math::Vector3d& fmag_ds,       ignition::math::Vector3d&    fmag_bd
-		);
-
-		/** 磁石によるトルクを取得
-		 * @param [in]      fmag_bd       機体座標系での吸引力[N]
-		 * @param [in, out] tmag_bd       機体座標系でのトルク[N]
-		 */
-		void getTorque(const ignition::math::Vector3d& fmag_bd, ignition::math::Vector3d& tmag_bd);
-		
-		/** 吸引力・トルクを印加
-		 * @param [in]      fmag_bd        機体座標系での吸引力[N]
-		 * @param [in]      tmag_bd        機体座標系でのトルク[Nm]
-		 */
-		void addForceAndTorque(const ignition::math::Vector3d& fmag_bd, const ignition::math::Vector3d& tmag_bd);
-
-		/** 吸引力・トルクをパブリッシュ
-		 * @param [in]      fmag_ds        ドッキングステーション座標系(ホーム座標系)での吸引力[N]
-		 * @param [in]      tmag_bd        機体座標系でのトルク[Nm]
-		 */
-		void pubForceAndTorque(const ignition::math::Vector3d& fmag_ds, const ignition::math::Vector3d& tmag_bd);
-
-		/** 磁力ON/OFF
-		* @param [in]                 req              磁力ON/OFFサービスリクエスト
-		* @param [in]                 res              現在の磁力ON/OFFステータス
-		* @retval                     true             設定成功
-		* @retval                     false            設定失敗
-		*/
-		bool switchPower(
-			ib2_msgs::SwitchPower::Request&  req,
-			ib2_msgs::SwitchPower::Response& res
-		);
-
-		/** 単位ステップ関数
-		 * @param [in]      x      入力値
-		 * @return                 出力値    　
-		 */
+			const gz::math::Vector3d& r_ds,    const gz::math::Quaterniond& q_ds,
+			      gz::math::Vector3d& fmag_ds,       gz::math::Vector3d&    fmag_bd);
+		void getTorque(const gz::math::Vector3d& fmag_bd, gz::math::Vector3d& tmag_bd);
+		void addForceAndTorque(gz::sim::EntityComponentManager &_ecm,
+		                       const gz::math::Vector3d& fmag_bd, const gz::math::Vector3d& tmag_bd);
+		void pubForceAndTorque(const gz::sim::UpdateInfo &_info,
+		                       const gz::math::Vector3d& fmag_ds, const gz::math::Vector3d& tmag_bd);
+		void switchPower(
+			const std::shared_ptr<ib2_msgs::srv::SwitchPower::Request> req,
+			std::shared_ptr<ib2_msgs::srv::SwitchPower::Response> res);
 		bool U(double x);
-
-		/** 吸引力関数
-		 * @param [in]      dist   IF間距離 [m]
-		 * @return                 吸引力   [N]    　
-		 */
 		double H(double dist);
 
 		//----------------------------------------------------------------------
 		// メンバ変数
 	private:
-		/** ROSノードハンドラ */
-		ros::NodeHandle                nh_;
+		std::shared_ptr<rclcpp::Node>  ros_node_;
 
-		/** Worldポインタ */
-		physics::WorldPtr              world_;
-
-		/** ISSモデル名 */
 		std::string                    iss_name_;
-
-		/** IB2モデル名 */
 		std::string                    ib2_name_;
+		gz::sim::Entity                iss_model_{gz::sim::kNullEntity};
+		gz::sim::Entity                ib2_model_{gz::sim::kNullEntity};
+		gz::sim::Entity                iss_link_{gz::sim::kNullEntity};
+		gz::sim::Entity                ib2_link_{gz::sim::kNullEntity};
 
-		/** ISSモデルへのポインタ */
-		physics::ModelPtr              iss_model_;
+		gz::math::Vector3d             jpm_pos_;
+		gz::math::Vector3d             jpm_att_;
+		gz::math::Vector3d             ds_pos_;
+		gz::math::Vector3d             ds_att_;
 
-		/** ロボットモデルへのポインタ */
-		physics::ModelPtr              ib2_model_;
+		rclcpp::Service<sim_msgs::srv::UpdateParameter>::SharedPtr mag_param_server_;
+		rclcpp::Service<ib2_msgs::srv::SwitchPower>::SharedPtr switch_power_server_;
+		rclcpp::Publisher<geometry_msgs::msg::WrenchStamped>::SharedPtr pub_mag_;
+		rclcpp::Publisher<ib2_msgs::msg::PowerStatus>::SharedPtr pub_power_status_;
 
-		/** ISSモデルのリンクへのポインタ */
-		std::vector<physics::LinkPtr>  iss_link_;
+		gz::math::Vector3d             rrif_;
+		gz::math::Vector3d             rdif_;
+		gz::math::Vector3d             cg_;
 
-		/** IB2モデルのリンクへのポインタ */
-		std::vector<physics::LinkPtr>  ib2_link_;
+		double                         d_threshold_{0.0};
+		double                         afar_{0.0}, bfar_{0.0}, cfar_{0.0};
+		double                         aprox_{0.0}, bprox_{0.0}, cprox_{0.0};
+		double                         stddev_{0.0};
+		double                         cycle_{0.0};
 
-		/** ISS機体座標系でのJPM基準点の位置 */
-		ignition::math::Vector3d                  jpm_pos_;
-
-		/** ISS機体座標系でのJPMの姿勢 */
-		ignition::math::Vector3d                  jpm_att_;
-
-		/** JPM基準座標系でのドッキングステーション(ホーム座標系)原点 */
-		ignition::math::Vector3d                  ds_pos_;
-
-		/** JPM基準座標系でのドッキングステーション姿勢 */
-		ignition::math::Vector3d                  ds_att_;
-
-		/** 磁力プラグインパラメータ更新サービスサーバ */
-		ros::ServiceServer             mag_param_server_;
-
-		/** ロボット側の磁力IF点 */
-		ignition::math::Vector3d                  rrif_;
-
-		/** ドッキングステーション側の磁力IF点 */
-		ignition::math::Vector3d                  rdif_;
-
-		/** ロボット重心位置 */
-		ignition::math::Vector3d                  cg_;
-
-		/** 遠方域 - 近傍域係数切替距離 */
-		double                         d_threshold_;
-
-		/** 遠方域吸引力計算式係数 a */
-		double                         afar_;
-
-		/** 遠方域吸引力計算式係数 b */
-		double                         bfar_;
-
-		/** 遠方域吸引力計算式係数 c */
-		double                         cfar_;
-
-		/** 近傍域吸引力計算式係数 a */
-		double                         aprox_;
-
-		/** 近傍域吸引力計算式係数 b */
-		double                         bprox_;
-
-		/** 近傍域吸引力計算式係数 c */
-		double                         cprox_;
-
-		/** 吸引力・トルクのパブリッシャ */
-		ros::Publisher                 pub_mag_;
-
-		/** 磁力ON/OFFステータスのパブリッシャ */
-		ros::Publisher                 pub_power_status_;
-
-		/** 磁力誤差の標準偏差 */
-		double                         stddev_;
-
-		/** パブリッシュ周期 */
-		double                         cycle_;
-
-		/** Gazeboへの接続のためのポインタ */
-		event::ConnectionPtr           update_;
-
-		/** 座標変換オブジェクト */
 		gazebo::CoordinateTransform    coord_transformer_;
+		ib2_msgs::msg::PowerStatus     power_status_;
 
-		/** 磁力ON/OFFサービスサーバ */
-		ros::ServiceServer             switch_power_server_;
-
-		/** 磁力ON/OFFステータス */
-		ib2_msgs::PowerStatus          power_status_;
+		int                            pub_cnt_{0};
 	};
 }
 // End Of File -----------------------------------------------------------------
-

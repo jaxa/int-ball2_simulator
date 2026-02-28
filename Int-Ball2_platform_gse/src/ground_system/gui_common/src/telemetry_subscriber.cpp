@@ -1,7 +1,8 @@
 #include <algorithm>
 #include <iterator>
-#include <ros/ros.h>
-#include "communication_software/Telemetry.h"
+#include <rclcpp/rclcpp.hpp>
+#include <rclcpp/serialization.hpp>
+#include "communication_software/msg/telemetry.hpp"
 #include "ib2_msgs.h"
 #include "platform_msgs.h"
 #include "qdebug_custom.h"
@@ -17,21 +18,25 @@ const std::string TelemetrySubscriber::TOPIC_NAME_DOCK = "telemetry_dock";
 namespace
 {
 template<typename T>
-inline void deserializeIntBall2TelemetryMessage(const communication_software::Message& message, T& output)
+inline void deserializeIntBall2TelemetryMessage(const communication_software::msg::Message& message, T& output)
 {
     uint32_t serializeSize = static_cast<uint32_t>(message.data.size());
     LOG_DEBUG() << "serializationLength: " << serializeSize;
-    boost::shared_array<uint8_t> buffer(new uint8_t[serializeSize]);
+    auto buffer = std::make_unique<uint8_t[]>(serializeSize);
     std::copy(message.data.begin(), message.data.end(), buffer.get());
-    ros::serialization::IStream stream(buffer.get(), serializeSize);
-    ros::serialization::deserialize(stream, output);
+    rclcpp::Serialization<T> serializer;
+    rclcpp::SerializedMessage serialized_msg(serializeSize);
+    auto& rcl_msg = serialized_msg.get_rcl_serialized_message();
+    memcpy(rcl_msg.buffer, buffer.get(), serializeSize);
+    rcl_msg.buffer_length = serializeSize;
+    serializer.deserialize_message(&serialized_msg, &output);
 }
 }
 
 TelemetrySubscriber::TelemetrySubscriber(QObject* parent)
     : QObject(parent), telemetryIntBall2_(nullptr), telemetryDock_(nullptr)
 {
-    qRegisterMetaType<communication_software::Telemetry::ConstPtr>("communication_software::Telemetry::ConstPtr");
+    qRegisterMetaType<communication_software::msg::Telemetry::SharedPtr>("communication_software::msg::Telemetry::SharedPtr");
 
     connect(this, &TelemetrySubscriber::subscribedIntBall2,
             this, &TelemetrySubscriber::parseIntball2Telemetry, Qt::QueuedConnection);
@@ -41,31 +46,33 @@ TelemetrySubscriber::TelemetrySubscriber(QObject* parent)
 
 TelemetrySubscriber::~TelemetrySubscriber()
 {
-    subscriberIntBall2_.shutdown();
+    
 }
 
-void TelemetrySubscriber::start(ros::NodeHandle& nodeHandle, IntBallTelemetry* telemetryIntBall2, DockTelemetry* telemetryDock)
+void TelemetrySubscriber::start(rclcpp::Node::SharedPtr node, IntBallTelemetry* telemetryIntBall2, DockTelemetry* telemetryDock)
 {
     Q_ASSERT(telemetryIntBall2_ == nullptr);
-    Q_ASSERT(subscriberIntBall2_.getTopic().empty());
+    
     Q_ASSERT(telemetryDock_ == nullptr);
-    Q_ASSERT(subscriberDock_.getTopic().empty());
+    
 
     telemetryIntBall2_ = telemetryIntBall2;
-    subscriberIntBall2_ = nodeHandle.subscribe(TOPIC_NAME_INTBALL2, 1000,
-                          &TelemetrySubscriber::intball2TelemetryCallback, this);
+    subscriberIntBall2_ = node->create_subscription<communication_software::msg::Telemetry>(
+                          TOPIC_NAME_INTBALL2, rclcpp::QoS(1000),
+                          [this](const communication_software::msg::Telemetry::SharedPtr msg) {
+                              emit subscribedIntBall2(msg);
+                          });
 
     telemetryDock_ = telemetryDock;
-    subscriberDock_ = nodeHandle.subscribe(TOPIC_NAME_DOCK, 1000,
-                          &TelemetrySubscriber::dockTelemetryCallback, this);
+    subscriberDock_ = node->create_subscription<communication_software::msg::Telemetry>(
+                          TOPIC_NAME_DOCK, rclcpp::QoS(1000),
+                          [this](const communication_software::msg::Telemetry::SharedPtr msg) {
+                              emit subscribedDock(msg);
+                          });
 }
 
-void TelemetrySubscriber::intball2TelemetryCallback(const communication_software::Telemetry::ConstPtr& msg)
-{
-    emit subscribedIntBall2(msg);
-}
 
-void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::Telemetry::ConstPtr msg)
+void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::msg::Telemetry::SharedPtr msg)
 {
     telemetryIntBall2_->setReceivedTimestamp(msg->received_time);
 
@@ -83,35 +90,35 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         if(contentName == telemetry::rosname::TIMESTAMP)
         {
             // タイムスタンプ.
-            std_msgs::Time timestamp;
+            builtin_interfaces::msg::Time timestamp;
             deserializeIntBall2TelemetryMessage((*i), timestamp);
-            subscribedTelemetry.insert(telemetry::Index::TIMESTAMP, QVariant::fromValue(timestamp.data));
+            subscribedTelemetry.insert(telemetry::Index::TIMESTAMP, QVariant::fromValue(timestamp));
         }
         else if(contentName == telemetry::rosname::LAST_EXECUTED_COMMAND)
         {
             // 最後に実行したテレコマンドのID.
-            std_msgs::UInt16 id;
+            std_msgs::msg::UInt16 id;
             deserializeIntBall2TelemetryMessage((*i), id);
             subscribedTelemetry.insert(telemetry::Index::LAST_EXECUTED_COMMAND, QVariant::fromValue(id.data));
         }
         else if(contentName == telemetry::rosname::SPLIT_NUMBER)
         {
             // テレメトリの分割数.
-            std_msgs::UInt8 data;
+            std_msgs::msg::UInt8 data;
             deserializeIntBall2TelemetryMessage((*i), data);
             subscribedTelemetry.insert(telemetry::Index::SPLIT_NUMBER, QVariant::fromValue(data.data));
         }
         else if(contentName == telemetry::rosname::CURRENT_SPILIT_INDEX)
         {
             // 受信したテレメトリの分割数インデックス.
-            std_msgs::UInt8 data;
+            std_msgs::msg::UInt8 data;
             deserializeIntBall2TelemetryMessage((*i), data);
             subscribedTelemetry.insert(telemetry::Index::CURRENT_SPILIT_INDEX, QVariant::fromValue(data.data));
         }
         else if(contentName == telemetry::rosname::SENDING_PORT_INDEX)
         {
             // 送信ポートのインデックス.
-            std_msgs::UInt8 data;
+            std_msgs::msg::UInt8 data;
             deserializeIntBall2TelemetryMessage((*i), data);
             subscribedTelemetry.insert(telemetry::Index::SENDING_PORT_INDEX, QVariant::fromValue(data.data));
         }
@@ -122,7 +129,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::TASK_MANAGER_MODE)
         {
             // 統合ソフトウェアモード.
-            ib2_msgs::Mode mode;
+            ib2_msgs::msg::Mode mode;
             deserializeIntBall2TelemetryMessage((*i), mode);
 
             subscribedTelemetry.insert(telemetry::Index::MODE, QVariant::fromValue(mode.mode));
@@ -130,7 +137,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::TASK_MANAGER_EXIT_DOCKING_MODE)
         {
             // ドッキングモード終了のレスポンス.
-            ib2_msgs::ExitDockingModeResponse response;
+            ib2_msgs::srv::ExitDockingMode::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::EXIT_DOCKING_MODE_SUCCESS, QVariant::fromValue(static_cast<bool>(response.success)));
@@ -139,7 +146,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::TASK_MANAGER_SET_MAINTENANCE_MODE)
         {
             // メンテナンスモード遷移のレスポンス.
-            ib2_msgs::SetMaintenanceModeResponse response;
+            ib2_msgs::srv::SetMaintenanceMode::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::SET_MAINTENANCE_MODE_RESULT_MODE, QVariant::fromValue(response.mode.mode));
@@ -147,7 +154,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION_STARTUP_FEEDBACK)
         {
             // 航法機能ON/OFFのフィードバック.
-            ib2_msgs::NavigationStartUpActionFeedback feedback;
+            ib2_msgs::action::NavigationStartUp_FeedbackMessage feedback;
             deserializeIntBall2TelemetryMessage((*i), feedback);
 
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_STARTUP_FEEDBACK_DURATION, QVariant::fromValue(feedback.feedback.time));
@@ -155,7 +162,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION_STARTUP_RESULT)
         {
             // 航法機能ON/OFFの結果.
-            ib2_msgs::NavigationStartUpActionResult result;
+            ib2_msgs::action::NavigationStartUp_GetResult_Response result;
             deserializeIntBall2TelemetryMessage((*i), result);
 
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_STARTUP_RESULT_TIMESTAMP, QVariant::fromValue(result.result.stamp));
@@ -164,10 +171,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION)
         {
             // 航法値.
-            ib2_msgs::Navigation navigation;
+            ib2_msgs::msg::Navigation navigation;
             deserializeIntBall2TelemetryMessage((*i), navigation);
 
-            subscribedTelemetry.insert(telemetry::Index::NAVIGATION_HEADER_SEQ, QVariant::fromValue(navigation.pose.header.seq));
+            subscribedTelemetry.insert(telemetry::Index::NAVIGATION_HEADER_SEQ, QVariant::fromValue(navigation.pose.header.stamp.sec /* seq removed in ROS 2 */));
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_HEADER_STAMP, QVariant::fromValue(navigation.pose.header.stamp));
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_HEADER_FRAME_ID, QVariant::fromValue(navigation.pose.header.frame_id));
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_POSE_POSITION, QVariant::fromValue(navigation.pose.pose.position));
@@ -180,7 +187,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION_DEBUG)
         {
             // 航法値デバッグ情報.
-            ib2_msgs::NavigationDebug navigationDebug;
+            ib2_msgs::msg::NavigationDebug navigationDebug;
             deserializeIntBall2TelemetryMessage((*i), navigationDebug);
 
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_DEBUG_POINT, QVariant::fromValue(navigationDebug.point));
@@ -201,7 +208,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION_STATUS_TOPIC)
         {
             // 航法機能の状態トピック.
-            ib2_msgs::NavigationStatus status;
+            ib2_msgs::msg::NavigationStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
 
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS, QVariant::fromValue(status));
@@ -209,7 +216,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NAVIGATION_UPDATE_PARAMETER)
         {
             // 航法機能のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -218,7 +225,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PROP_UPDATE_PARAMETER)
         {
             // propのUpdateParameterのレスポンス
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -227,7 +234,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::IMU_IMU)
         {
             // EPSONG370(IMUセンサ)の値
-            ib2_msgs::IMU response;
+            ib2_msgs::msg::IMU response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::IMU_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -242,7 +249,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::IMU_UPDATE_PARAMETER)
         {
             // EPSONG370のUpdateParameterのレスポンス
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -251,7 +258,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::SLAM_WRAPPER_UPDATE_PARAMETER)
         {
             // Slam wrapperのUpdateParameterのレスポンス
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -260,10 +267,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CTL_STATUS)
         {
             // 誘導制御ステータス.
-            ib2_msgs::CtlStatus ctlStatus;
+            ib2_msgs::msg::CtlStatus ctlStatus;
             deserializeIntBall2TelemetryMessage((*i), ctlStatus);
 
-            subscribedTelemetry.insert(telemetry::Index::CTL_STATUS_HEADER_SEQ, QVariant::fromValue(ctlStatus.pose.header.seq));
+            subscribedTelemetry.insert(telemetry::Index::CTL_STATUS_HEADER_SEQ, QVariant::fromValue(ctlStatus.pose.header.stamp.sec /* seq removed in ROS 2 */));
             subscribedTelemetry.insert(telemetry::Index::CTL_STATUS_HEADER_STAMP, QVariant::fromValue(ctlStatus.pose.header.stamp));
             subscribedTelemetry.insert(telemetry::Index::CTL_STATUS_HEADER_FRAME_ID, QVariant::fromValue(ctlStatus.pose.header.frame_id));
             subscribedTelemetry.insert(telemetry::Index::CTL_STATUS_POSE_POSITION, QVariant::fromValue(ctlStatus.pose.pose.position));
@@ -276,10 +283,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CTL_WRENCH)
         {
             // 誘導制御の力・トルク.
-            geometry_msgs::WrenchStamped ctlWrench;
+            geometry_msgs::msg::WrenchStamped ctlWrench;
             deserializeIntBall2TelemetryMessage((*i), ctlWrench);
 
-            subscribedTelemetry.insert(telemetry::Index::CTL_WRENCH_HEADER_SEQ, QVariant::fromValue(ctlWrench.header.seq));
+            subscribedTelemetry.insert(telemetry::Index::CTL_WRENCH_HEADER_SEQ, QVariant::fromValue(ctlWrench.header.stamp.sec /* seq removed in ROS 2 */));
             subscribedTelemetry.insert(telemetry::Index::CTL_WRENCH_HEADER_STAMP, QVariant::fromValue(ctlWrench.header.stamp));
             subscribedTelemetry.insert(telemetry::Index::CTL_WRENCH_HEADER_FRAME_ID, QVariant::fromValue(ctlWrench.header.frame_id));
             subscribedTelemetry.insert(telemetry::Index::CTL_WRENCH_FORCE, QVariant::fromValue(ctlWrench.wrench.force));
@@ -288,13 +295,20 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CTL_ACTION_FEEDBACK)
         {
             // 誘導制御アクションのフィードバック.
-            ib2_msgs::CtlCommandActionFeedback ctlActionFeedback;
+            ib2_msgs::action::CtlCommand_FeedbackMessage ctlActionFeedback;
             deserializeIntBall2TelemetryMessage((*i), ctlActionFeedback);
 
+            // ROS 2: goal_id is a UUID, convert to string
+            std::string goal_id_str;
+            for (auto byte : ctlActionFeedback.goal_id.uuid) {
+                char buf[3];
+                snprintf(buf, sizeof(buf), "%02x", byte);
+                goal_id_str += buf;
+            }
             subscribedTelemetry.insert(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_ID,
-                                       QVariant::fromValue(ctlActionFeedback.status.goal_id.id));
+                                       QVariant::fromValue(goal_id_str));
             subscribedTelemetry.insert(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP,
-                                       QVariant::fromValue(ctlActionFeedback.status.goal_id.stamp));
+                                       QVariant::fromValue(builtin_interfaces::msg::Time()));
             subscribedTelemetry.insert(telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO,
                                        QVariant::fromValue(ctlActionFeedback.feedback.time_to_go));
             subscribedTelemetry.insert(telemetry::Index::CTL_ACTION_FEEDBACK_POSE_POSITION,
@@ -306,7 +320,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         {
             // 誘導制御アクションの結果.
             isCtlCommandResult = true;
-            ib2_msgs::CtlCommandActionResult ctlActionResult;
+            ib2_msgs::action::CtlCommand_GetResult_Response ctlActionResult;
             deserializeIntBall2TelemetryMessage((*i), ctlActionResult);
 
             subscribedTelemetry.insert(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP, QVariant::fromValue(ctlActionResult.result.stamp));
@@ -315,7 +329,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CTL_UPDATE_PARAMETER)
         {
             // 誘導制御のUpdateParameterのレスポンス
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -324,10 +338,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PROP_STATUS)
         {
             // プロペラ状態.
-            ib2_msgs::FanStatus prop;
+            ib2_msgs::msg::FanStatus prop;
             deserializeIntBall2TelemetryMessage((*i), prop);
 
-            subscribedTelemetry.insert(telemetry::Index::PROP_STATUS_HEADER_SEQ, QVariant::fromValue(prop.header.seq));
+            subscribedTelemetry.insert(telemetry::Index::PROP_STATUS_HEADER_SEQ, QVariant::fromValue(prop.header.stamp.sec /* seq removed in ROS 2 */));
             subscribedTelemetry.insert(telemetry::Index::PROP_STATUS_HEADER_STAMP, QVariant::fromValue(prop.header.stamp));
             subscribedTelemetry.insert(telemetry::Index::PROP_STATUS_HEADER_FRAME_ID, QVariant::fromValue(prop.header.frame_id));
             subscribedTelemetry.insert(telemetry::Index::PROP_STATUS_DUTY, QVariant::fromValue(prop.duty.data));
@@ -336,7 +350,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PROP_SWITCH_POWER)
         {
             // プロペラON/OFFのレスポンス.
-            ib2_msgs::SwitchPowerResponse response;
+            ib2_msgs::srv::SwitchPower::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::PROP_SWITCH_POWER_RESPONSE, QVariant::fromValue(response.current_power));
@@ -344,7 +358,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PROP_UPDATE_PARAMETER)
         {
             // プロペラのUpdateParameterのレスポンス
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -353,7 +367,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::MARKER_CORRECTION)
         {
             // マーカー補正のレスポンス
-            ib2_msgs::MarkerCorrectionResponse response;
+            ib2_msgs::srv::MarkerCorrection::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::MARKER_CORRECTION_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -362,7 +376,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_MIC_STATUS)
         {
             // カメラ・マイクの状態.
-            ib2_msgs::MainCameraStatus mainCameraStatus;
+            ib2_msgs::msg::MainCameraStatus mainCameraStatus;
             deserializeIntBall2TelemetryMessage((*i), mainCameraStatus);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_STREAMING_STATUS, QVariant::fromValue(mainCameraStatus.streaming_status));
@@ -371,7 +385,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER, QVariant::fromValue(mainCameraStatus.microphone_power));
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_ZOOM, QVariant::fromValue(mainCameraStatus.zoom));
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_RESOLUTION_TYPE, QVariant::fromValue(mainCameraStatus.resolution_type));
-            subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_EV, QVariant::fromValue(mainCameraStatus.EV));
+            subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_EV, QVariant::fromValue(mainCameraStatus.ev));
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_CAMERA_GAIN, QVariant::fromValue(mainCameraStatus.camera_gain));
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_WHITE_BALANCE_MODE, QVariant::fromValue(mainCameraStatus.white_balance_mode));
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_FRAME_RATE, QVariant::fromValue(mainCameraStatus.frame_rate));
@@ -381,7 +395,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_MIC_UPDATE_PARAMETER)
         {
             // カメラ・マイクのUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -390,7 +404,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::LED_LEFT_UPDATE_PARAMETER)
         {
             // LED左のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -399,7 +413,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::LED_RIGHT_UPDATE_PARAMETER)
         {
             // LED右のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -411,7 +425,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         {
             // LED左の色.
             // ColorRGBAの配列が1要素ずつに分割されている.
-            std_msgs::ColorRGBA color;
+            std_msgs::msg::ColorRGBA color;
             deserializeIntBall2TelemetryMessage((*i), color);
 
             // LEDの色は、ColorRGBAの配列（LED0からLED7までの値を格納した配列）のインデックス0から順に
@@ -421,14 +435,14 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
 
             if(index < 8)
             {
-                 QVector<std_msgs::ColorRGBA> values(8);
+                 QVector<std_msgs::msg::ColorRGBA> values(8);
                 if(subscribedTelemetry.contains(telemetry::Index::LED_LEFT_LED_COLORS))
                 {
-                    values = subscribedTelemetry.value(telemetry::Index::LED_LEFT_LED_COLORS).value<QVector<std_msgs::ColorRGBA>>();
+                    values = subscribedTelemetry.value(telemetry::Index::LED_LEFT_LED_COLORS).value<QVector<std_msgs::msg::ColorRGBA>>();
                 }
                 else
                 {
-                    values = telemetryIntBall2_->data(telemetry::Index::LED_LEFT_LED_COLORS).value<QVector<std_msgs::ColorRGBA>>();
+                    values = telemetryIntBall2_->data(telemetry::Index::LED_LEFT_LED_COLORS).value<QVector<std_msgs::msg::ColorRGBA>>();
                 }
                 values.replace(index, color);
                 subscribedTelemetry.insert(telemetry::Index::LED_LEFT_LED_COLORS, QVariant::fromValue(values));
@@ -444,7 +458,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         {
             // LED右の色.
             // ColorRGBAの配列が1要素ずつに分割されている.
-            std_msgs::ColorRGBA color;
+            std_msgs::msg::ColorRGBA color;
             deserializeIntBall2TelemetryMessage((*i), color);
 
             // LEDの色は、ColorRGBAの配列（LED0からLED7までの値を格納した配列）のインデックス0から順に
@@ -454,14 +468,14 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
 
             if(index < 8)
             {
-                 QVector<std_msgs::ColorRGBA> values(8);
+                 QVector<std_msgs::msg::ColorRGBA> values(8);
                 if(subscribedTelemetry.contains(telemetry::Index::LED_RIGHT_LED_COLORS))
                 {
-                    values = subscribedTelemetry.value(telemetry::Index::LED_RIGHT_LED_COLORS).value<QVector<std_msgs::ColorRGBA>>();
+                    values = subscribedTelemetry.value(telemetry::Index::LED_RIGHT_LED_COLORS).value<QVector<std_msgs::msg::ColorRGBA>>();
                 }
                 else
                 {
-                    values = telemetryIntBall2_->data(telemetry::Index::LED_RIGHT_LED_COLORS).value<QVector<std_msgs::ColorRGBA>>();
+                    values = telemetryIntBall2_->data(telemetry::Index::LED_RIGHT_LED_COLORS).value<QVector<std_msgs::msg::ColorRGBA>>();
                 }
                 values.replace(index, color);
                 subscribedTelemetry.insert(telemetry::Index::LED_RIGHT_LED_COLORS, QVariant::fromValue(values));
@@ -474,7 +488,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::DISPLAY_MANAGER_STATUS)
         {
             // 表示管理の状態.
-            ib2_msgs::DisplayManagerStatus status;
+            ib2_msgs::msg::DisplayManagerStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
 
             subscribedTelemetry.insert(telemetry::Index::DISPLAY_MANAGER_STATUS_MODE, QVariant::fromValue(status.operation_mode.mode));
@@ -486,7 +500,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::DISPLAY_MANAGER_SWITCH_POWER)
         {
             // 表示管理ON/OFFのレスポンス
-            ib2_msgs::SwitchPowerResponse response;
+            ib2_msgs::srv::SwitchPower::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::DISPLAY_MANAGER_SWITCH_POWER_RESPONSE, QVariant::fromValue(response.current_power));
@@ -495,7 +509,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::DISPLAY_MANAGER_SWITCH_FLASH)
         {
             // 撮影用フラッシュON/OFFのレスポンス
-            ib2_msgs::SwitchPowerResponse response;
+            ib2_msgs::srv::SwitchPower::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::DISPLAY_MANAGER_SWITCH_FLASH_RESPONSE, QVariant::fromValue(response.current_power));
@@ -503,7 +517,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::DISPLAY_MANAGER_UPDATE_PARAMETER)
         {
             // 表示管理のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -512,10 +526,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PARAMETER_MANAGER_GET_ROS_PARAM)
         {
             // 単一ROSパラメータの取得.
-            ib2_msgs::GetRosParamResponse response;
+            ib2_msgs::srv::GetRosParam::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
             // 追加のタイムスタンプ.
-            ros::Time additionalTimestamp = (*i).additional_timestamp;
+            builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
             // 処理結果フラグ.
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
@@ -538,11 +552,11 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             if(contentName.find(telemetry::rosname::SUFFIX_PARAMETER_MANAGER_GET_ROS_PARAMS_PARAMS) != std::string::npos)
             {
                 // 取得したrosparamのリスト.
-                ib2_msgs::RosParam param;
+                ib2_msgs::msg::RosParam param;
                 deserializeIntBall2TelemetryMessage((*i), param);
 
                 // 追加のタイムスタンプ.
-                ros::Time additionalTimestamp = (*i).additional_timestamp;
+                builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
                 // 既存のリスト内容を追加・修正する.
                 QMap<QString, RosParam> beforeValues;
@@ -569,10 +583,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PARAMETER_MANAGER_SET_ROS_PARAM)
         {
             // 単一ROSパラメータの設定のレスポンス.
-            ib2_msgs::SetRosParamResponse response;
+            ib2_msgs::srv::SetRosParam::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
             // 追加のタイムスタンプ.
-            ros::Time additionalTimestamp = (*i).additional_timestamp;
+            builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
             subscribedTelemetry.insert(telemetry::Index::SET_ROS_PARAM_SUCCESS, QVariant::fromValue(static_cast<bool>(response.success)));
@@ -587,10 +601,10 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             if(contentName.find(telemetry::rosname::SUFFIX_PARAMETER_MANAGER_SET_ROS_PARAMS_SUCCESS_ALL) != std::string::npos)
             {
                 // 全てのrosparam設定に成功したかどうか.
-                std_msgs::Bool flag;
+                std_msgs::msg::Bool flag;
                 deserializeIntBall2TelemetryMessage((*i), flag);
                 // 追加のタイムスタンプ.
-                ros::Time additionalTimestamp = (*i).additional_timestamp;
+                builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
                 // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
                 subscribedTelemetry.insert(telemetry::Index::SET_ROS_PARAMS_SUCCESS_ALL, QVariant::fromValue(static_cast<bool>(flag.data)));
@@ -599,11 +613,11 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             else if(contentName.find(telemetry::rosname::SUFFIX_PARAMETER_MANAGER_SET_ROS_PARAMS_SUCCESS_PARAMS) != std::string::npos)
             {
                 // 設定に成功したrosparamのリスト.
-                ib2_msgs::RosParam param;
+                ib2_msgs::msg::RosParam param;
                 deserializeIntBall2TelemetryMessage((*i), param);
 
                 // 追加のタイムスタンプ.
-                ros::Time additionalTimestamp = (*i).additional_timestamp;
+                builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
                 // 既存のリスト内容を追加・修正する.
                 QMap<QString, RosParam> beforeValues;
@@ -630,7 +644,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PARAMETER_MANAGER_DUMP_ROS_PARAMS)
         {
             // ROSパラメータのファイル出力処理のレスポンス.
-            ib2_msgs::DumpRosParamsResponse response;
+            ib2_msgs::srv::DumpRosParams::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある
@@ -639,7 +653,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PARAMETER_MANAGER_LOAD_ROS_PARAMS)
         {
             // ROSパラメータのファイル読込処理のレスポンス.
-            ib2_msgs::LoadRosParamsResponse response;
+            ib2_msgs::srv::LoadRosParams::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
@@ -649,7 +663,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         {
             // ROSパラメータのリスト.
             // 元のメッセージは配列だが,配列1要素単位に分割されている.
-            ib2_msgs::RosParam param;
+            ib2_msgs::msg::RosParam param;
             deserializeIntBall2TelemetryMessage((*i), param);
 
             // 既存のリスト内容を追加・修正する.
@@ -671,7 +685,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         {
             // 死活監視情報のリスト.
             // 元のメッセージは配列だが,配列1要素単位に分割されている.
-            ib2_msgs::AliveStatus status;
+            ib2_msgs::msg::AliveStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
 
             if(contentName.find(telemetry::rosname::SUFFIX_ALIVE_MONITOR_STATUSES_TOPIC) != std::string::npos)
@@ -679,16 +693,16 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
                 //Topic.
 
                 // 既存のリスト内容を追加・修正する.
-                QMap<QString, ib2_msgs::AliveStatus> beforeValues;
+                QMap<QString, ib2_msgs::msg::AliveStatus> beforeValues;
                 if(subscribedTelemetry.contains(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC))
                 {
-                    beforeValues = subscribedTelemetry.value(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC).value<QMap<QString, ib2_msgs::AliveStatus>>();
+                    beforeValues = subscribedTelemetry.value(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC).value<QMap<QString, ib2_msgs::msg::AliveStatus>>();
                 }
                 else
                 {
-                    beforeValues = telemetryIntBall2_->data(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC).value<QMap<QString, ib2_msgs::AliveStatus>>();
+                    beforeValues = telemetryIntBall2_->data(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC).value<QMap<QString, ib2_msgs::msg::AliveStatus>>();
                 }
-                ib2_msgs::AliveStatus setValue;
+                ib2_msgs::msg::AliveStatus setValue;
                 setValue.name = status.name;
                 setValue.result = status.result;
                 setValue.check_time = status.check_time;
@@ -701,16 +715,16 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
                 //Service.
 
                 // 既存のリスト内容を追加・修正する.
-                QMap<QString, ib2_msgs::AliveStatus> beforeValues;
+                QMap<QString, ib2_msgs::msg::AliveStatus> beforeValues;
                 if(subscribedTelemetry.contains(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE))
                 {
-                    beforeValues = subscribedTelemetry.value(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE).value<QMap<QString, ib2_msgs::AliveStatus>>();
+                    beforeValues = subscribedTelemetry.value(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE).value<QMap<QString, ib2_msgs::msg::AliveStatus>>();
                 }
                 else
                 {
-                    beforeValues = telemetryIntBall2_->data(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE).value<QMap<QString, ib2_msgs::AliveStatus>>();
+                    beforeValues = telemetryIntBall2_->data(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE).value<QMap<QString, ib2_msgs::msg::AliveStatus>>();
                 }
-                ib2_msgs::AliveStatus setValue;
+                ib2_msgs::msg::AliveStatus setValue;
                 setValue.name = status.name;
                 setValue.result = status.result;
                 setValue.check_time = status.check_time;
@@ -726,7 +740,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::SYSTEM_MONITOR_STATUS)
         {
             // システム監視.
-            ib2_msgs::SystemStatus systemStatus;
+            ib2_msgs::msg::SystemStatus systemStatus;
             deserializeIntBall2TelemetryMessage((*i), systemStatus);
 
             QMap<QString, float> diskSpaces;
@@ -743,7 +757,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::FILE_MONITOR_STATUS)
         {
             // ファイル監視情報.
-            ib2_msgs::FileMonitoringStatus status;
+            ib2_msgs::msg::FileMonitoringStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
 
             subscribedTelemetry.insert(telemetry::Index::FILE_MONITOR_CHECK_TIME, QVariant::fromValue(status.check_time));
@@ -752,7 +766,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::DOCK_BATTERY_CHARGE_INFO)
         {
             // バッテリー充電状態.
-            ib2_msgs::BatteryChargeInfo info;
+            ib2_msgs::msg::BatteryChargeInfo info;
             deserializeIntBall2TelemetryMessage((*i), info);
 
             subscribedTelemetry.insert(telemetry::Index::DOCK_BATTERY_CHARGE_INFO_REMAIN, QVariant::fromValue(info.battery_remain));
@@ -760,7 +774,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NOT_ROS_FLIGHT_SOFTWARE_STATUS | contentName == telemetry::rosname::NOT_ROS_NORMAL_FLIGHT_SOFTWARE_STATUS)
         {
             // ROS外のソフトウェアから受信: Flight Softwareの起動状態
-            std_msgs::Bool info;
+            std_msgs::msg::Bool info;
             deserializeIntBall2TelemetryMessage((*i), info);
 
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
@@ -771,7 +785,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::NOT_ROS_PLATFORM_FLIGHT_SOFTWARE_STATUS)
         {
             // ROS外のソフトウェアから受信: Platform Flight Softwareの起動状態
-            std_msgs::Bool info;
+            std_msgs::msg::Bool info;
             deserializeIntBall2TelemetryMessage((*i), info);
 
             // ROSのC++ヘッダだとdataがuint8となっているため、boolにcastする必要がある.
@@ -780,7 +794,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PLATFORM_MANAGER_STATUS)
         {
             // プラットフォームマネージャの状態
-            platform_msgs::ManagerStatus status;
+            platform_msgs::msg::ManagerStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
 
             subscribedTelemetry.insert(telemetry::Index::PLATFORM_MANAGER_TIMESTAMP, QVariant::fromValue(status.stamp));
@@ -796,7 +810,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::SET_OPERATION_TYPE)
         {
             // ユーザノードのレスポンス.
-            platform_msgs::SetOperationTypeResponse response;
+            platform_msgs::srv::SetOperationType::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::SET_OPERATION_TYPE_RESULT, QVariant::fromValue(response.result));
@@ -811,19 +825,19 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             // ID値の下一桁から配列のインデックスを確定する。
 
             // 追加のタイムスタンプ.
-            ros::Time additionalTimestamp = (*i).additional_timestamp;
+            builtin_interfaces::msg::Time additionalTimestamp = (*i).additional_timestamp;
 
             if(contentName.find(telemetry::rosname::SUFFIX_PLATFORM_MONITOR_STATUS_CHECK_TIME) != std::string::npos)
             {
                 // Check time
-                ros::Time checkTime;
+                builtin_interfaces::msg::Time checkTime;
                 deserializeIntBall2TelemetryMessage((*i), checkTime);
                 subscribedTelemetry.insert(telemetry::Index::PLATFORM_MONITOR_CHECK_TIME, QVariant::fromValue(checkTime));
             }
             else if(contentName.find(telemetry::rosname::SUFFIX_PLATFORM_MONITOR_STATUS_PUBLICATIONS) != std::string::npos)
             {
                 // Publicaitons.
-                platform_msgs::NodeStatusValue nodeStatusValue;
+                platform_msgs::msg::NodeStatusValue nodeStatusValue;
                 deserializeIntBall2TelemetryMessage((*i), nodeStatusValue);
 
                 // 既存のリスト内容を追加・修正する.
@@ -847,7 +861,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             else if(contentName.find(telemetry::rosname::SUFFIX_PLATFORM_MONITOR_STATUS_SUBSCRIPTIONS) != std::string::npos)
             {
                 //Subscriptions.
-                platform_msgs::NodeStatusValue nodeStatusValue;
+                platform_msgs::msg::NodeStatusValue nodeStatusValue;
                 deserializeIntBall2TelemetryMessage((*i), nodeStatusValue);
 
                 // 既存のリスト内容を追加・修正する.
@@ -871,7 +885,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             else if(contentName.find(telemetry::rosname::SUFFIX_PLATFORM_MONITOR_STATUS_SERVICES) != std::string::npos)
             {
                 //Services.
-                platform_msgs::NodeStatusValue nodeStatusValue;
+                platform_msgs::msg::NodeStatusValue nodeStatusValue;
                 deserializeIntBall2TelemetryMessage((*i), nodeStatusValue);
 
                 // 既存のリスト内容を追加・修正する.
@@ -895,7 +909,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
             else if(contentName.find(telemetry::rosname::SUFFIX_PLATFORM_MONITOR_STATUS_CONTAINERS) != std::string::npos)
             {
                 //Containers.
-                platform_msgs::ContainerStatus containerStatusValue;
+                platform_msgs::msg::ContainerStatus containerStatusValue;
                 deserializeIntBall2TelemetryMessage((*i), containerStatusValue);
 
                 // 既存のリスト内容を追加・修正する.
@@ -925,7 +939,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_MAIN_STATUS)
         {
             // メインカメラの状態.
-            platform_msgs::CameraStatus cameraMainStatus;
+            platform_msgs::msg::CameraStatus cameraMainStatus;
             deserializeIntBall2TelemetryMessage((*i), cameraMainStatus);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS, QVariant::fromValue(cameraMainStatus.streaming_status));
@@ -933,7 +947,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_LEFT_STATUS)
         {
             // 航法カメラ左の状態.
-            platform_msgs::CameraStatus cameraLeftStatus;
+            platform_msgs::msg::CameraStatus cameraLeftStatus;
             deserializeIntBall2TelemetryMessage((*i), cameraLeftStatus);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS, QVariant::fromValue(cameraLeftStatus.streaming_status));
@@ -941,7 +955,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_RIGHT_STATUS)
         {
             // 航法カメラ右の状態.
-            platform_msgs::CameraStatus cameraRightStatus;
+            platform_msgs::msg::CameraStatus cameraRightStatus;
             deserializeIntBall2TelemetryMessage((*i), cameraRightStatus);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS, QVariant::fromValue(cameraRightStatus.streaming_status));
@@ -949,7 +963,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::MICROPHONE_STATUS)
         {
             // マイクの状態.
-            platform_msgs::MicrophoneStatus microphoneStatus;
+            platform_msgs::msg::MicrophoneStatus microphoneStatus;
             deserializeIntBall2TelemetryMessage((*i), microphoneStatus);
 
             subscribedTelemetry.insert(telemetry::Index::MICROPHONE_STREAMING_STATUS, QVariant::fromValue(microphoneStatus.streaming_status));
@@ -957,7 +971,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_MAIN_UPDATE_PARAMETER)
         {
             // メインカメラのUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_MAIN_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -966,7 +980,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_LEFT_UPDATE_PARAMETER)
         {
             // 航法カメラ左のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -975,7 +989,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::CAMERA_RIGHT_UPDATE_PARAMETER)
         {
             // 航法カメラ右のUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::CAMERA_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -984,7 +998,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::MICROPHONE_UPDATE_PARAMETER)
         {
             // マイクのUpdateParameterのレスポンス.
-            ib2_msgs::UpdateParameterResponse response;
+            ib2_msgs::srv::UpdateParameter::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::MICROPHONE_UPDATE_PARAMETER_RESPONSE_TIMESTAMP, QVariant::fromValue(response.stamp));
@@ -993,7 +1007,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::USER_NODE_STATUS)
         {
             // ユーザノードの状態.
-            platform_msgs::UserNodeStatus status;
+            platform_msgs::msg::UserNodeStatus status;
             deserializeIntBall2TelemetryMessage((*i), status);
             std::vector<char> msg(std::begin(status.msg), std::end(status.msg));
 
@@ -1003,7 +1017,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PLATFORM_MANAGER_USER_NODE)
         {
             // ユーザノードのレスポンス.
-            platform_msgs::UserNodeCommandResponse response;
+            platform_msgs::srv::UserNodeCommand::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::USER_NODE_RESULT, QVariant::fromValue(response.result));
@@ -1011,7 +1025,7 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
         else if(contentName == telemetry::rosname::PLATFORM_MANAGER_USER_LOGIC)
         {
             // ユーザロジックのレスポンス.
-            platform_msgs::UserLogicCommandResponse response;
+            platform_msgs::srv::UserLogicCommand::Response response;
             deserializeIntBall2TelemetryMessage((*i), response);
 
             subscribedTelemetry.insert(telemetry::Index::USER_LOGIC_RESULT, QVariant::fromValue(response.result));
@@ -1020,12 +1034,8 @@ void TelemetrySubscriber::parseIntball2Telemetry(const communication_software::T
     telemetryIntBall2_->setData(subscribedTelemetry);
 }
 
-void TelemetrySubscriber::dockTelemetryCallback(const communication_software::Telemetry::ConstPtr& msg)
-{
-    emit subscribedDock(msg);
-}
 
-void TelemetrySubscriber::parseDockTelemetry(const communication_software::Telemetry::ConstPtr msg)
+void TelemetrySubscriber::parseDockTelemetry(const communication_software::msg::Telemetry::SharedPtr msg)
 {
     telemetryDock_->setReceivedTimestamp(msg->received_time);
 

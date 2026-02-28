@@ -5,7 +5,7 @@ PowerStatus camera_power
 PowerStatus microphone_power
 float32 zoom
 MainCameraResolutionType resolution_type
-float32 EV
+float32 ev
 float32 camera_gain
 MainCameraWhiteBalanceMode white_balance_mode
 float32 frame_rate

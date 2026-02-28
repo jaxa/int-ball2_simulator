@@ -2,7 +2,7 @@
 #include <QHostAddress>
 #include <QVector3D>
 #include <QQuaternion>
-#include "communication_software/Telecommand.h"
+#include "communication_software/srv/telecommand.hpp"
 #include "ib2_msgs.h"
 #include "platform_msgs.h"
 #include "qdebug_custom.h"
@@ -10,34 +10,36 @@
 #include "common_log_object.h"
 
 using namespace intball;
-using namespace communication_software;
 
 const std::string TelecommandClient::SERVICE_NAME = "telecommand_bridge";
 
-TelecommandClient::TelecommandClient(ros::NodeHandle& nodeHandle, QObject* parent)
-    : QObject(parent)
+TelecommandClient::TelecommandClient(rclcpp::Node::SharedPtr node, QObject* parent)
+    : QObject(parent), node_(node)
 {
-    client_ = nodeHandle.serviceClient<communication_software::Telecommand>(SERVICE_NAME);
+    client_ = node_->create_client<communication_software::srv::Telecommand>(SERVICE_NAME);
     communicationConfig_.reset(new CommunicationConfig());
 }
 
 TelecommandClient::~TelecommandClient()
 {
-    client_.shutdown();
 }
 
-bool TelecommandClient::send(const communication_software::Message& command)
+bool TelecommandClient::send(const communication_software::msg::Message& command)
 {
     INFO_START_FUNCTION() << QString("name=%1 dataSize=%2")
                           .arg(QString::fromStdString(command.name)).arg(command.data.size());
-    Telecommand commandService;
-    commandService.request.command = command;
 
-    if (client_.call(commandService))
+    auto request = std::make_shared<communication_software::srv::Telecommand::Request>();
+    request->command = command;
+
+    auto future = client_->async_send_request(request);
+    if (rclcpp::spin_until_future_complete(node_, future, std::chrono::seconds(5)) ==
+        rclcpp::FutureReturnCode::SUCCESS)
     {
-        if(commandService.response.result == TelecommandResponse::SUCCESS)
+        auto response = future.get();
+        if(response->result == communication_software::srv::Telecommand::Response::SUCCESS)
         {
-            QString logMessage = "Command sent successfully: name=" + QString::fromStdString(commandService.request.command.name);
+            QString logMessage = "Command sent successfully: name=" + QString::fromStdString(command.name);
             LOG_INFO() << logMessage;
             emit executed(CommandLog(QDateTime::currentDateTime(), CommandLogLevel::INFO, logMessage));
             return true;
@@ -45,9 +47,9 @@ bool TelecommandClient::send(const communication_software::Message& command)
         else
         {
             QString logMessage = QString::asprintf("Failed to send command: name=%s result=%d message=\"%s\"",
-                                                   commandService.request.command.name.c_str(),
-                                                   commandService.response.result,
-                                                   commandService.response.message.c_str());
+                                                   command.name.c_str(),
+                                                   response->result,
+                                                   response->message.c_str());
             LOG_WARNING() << logMessage;
             emit executed(CommandLog(QDateTime::currentDateTime(), CommandLogLevel::WARN, logMessage));
             return false;
@@ -66,39 +68,39 @@ bool TelecommandClient::send(const communication_software::Message& command)
 
 bool TelecommandClient::sendTargetGoalAbsolute(const QVector3D& position, const QQuaternion& attitude)
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET, position, attitude);
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET, position, attitude);
 }
 
 bool TelecommandClient::sendTargetGoalRelative(const QVector3D& position, const QQuaternion& attitude)
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET, position, attitude);
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET, position, attitude);
 }
 
 bool TelecommandClient::sendDockingWithMarkerCorrection()
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::DOCK, QVector3D(), QQuaternion(1, 0, 0, 0));
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::DOCK, QVector3D(), QQuaternion(1, 0, 0, 0));
 }
 
 bool TelecommandClient::sendDockingWithoutMarkerCorrection()
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::DOCK_WITHOUT_CORRECTION, QVector3D(), QQuaternion(1, 0, 0, 0));
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::DOCK_WITHOUT_CORRECTION, QVector3D(), QQuaternion(1, 0, 0, 0));
 }
 
 bool TelecommandClient::sendRelease()
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::RELEASE, QVector3D(), QQuaternion(1, 0, 0, 0));
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::RELEASE, QVector3D(), QQuaternion(1, 0, 0, 0));
 }
 
 bool TelecommandClient::sendCtlCommand(const int type, const QVector3D& position, const QQuaternion& attitude)
 {
-    ib2_msgs::CtlCommandGoal targetGoal;
+    ib2_msgs::action::CtlCommand_Goal targetGoal;
 
-    targetGoal.target.header.stamp = ros::Time::now();
-    if(type == ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
+    targetGoal.target.header.stamp = node_->get_clock()->now();
+    if(type == ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
     {
         targetGoal.target.header.frame_id = "iss_body";
     }
-    else if(type == ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET)
+    else if(type == ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET)
     {
         targetGoal.target.header.frame_id = "body";
     }
@@ -117,19 +119,20 @@ bool TelecommandClient::sendCtlCommand(const int type, const QVector3D& position
 
 bool TelecommandClient::sendCtlCommandStop()
 {
-    return sendCtlCommand(ib2_msgs::CtlStatusType::STOP_MOVING, QVector3D(), QQuaternion());
+    return sendCtlCommand(ib2_msgs::msg::CtlStatusType::STOP_MOVING, QVector3D(), QQuaternion());
 }
 
 bool TelecommandClient::sendCtlCommandCancel()
 {
-    return send(telecommand::NAME_CTL_ACTION_CANCEL, actionlib_msgs::GoalID());
+    action_msgs::msg::GoalInfo goalInfo;
+    return send(telecommand::NAME_CTL_ACTION_CANCEL, goalInfo);
 }
 
 bool TelecommandClient::sendUpdateParameter(const telecommand::UPDATE_PARAMETER_TARGET target)
 {
     auto targetName = telecommand::UPDATE_PARAMETER_SERVICE_NAME.value(target);
     Q_ASSERT(!targetName.empty());
-    return send(targetName, ib2_msgs::UpdateParameterRequest());
+    return send(targetName, ib2_msgs::srv::UpdateParameter::Request());
 }
 
 bool TelecommandClient::sendSwitchPower(const telecommand::SWITCH_POWER_TARGET target, const bool on)
@@ -137,8 +140,8 @@ bool TelecommandClient::sendSwitchPower(const telecommand::SWITCH_POWER_TARGET t
     auto targetName = telecommand::SWITCH_POWER_SERVICE_NAME.value(target);
     Q_ASSERT(!targetName.empty());
 
-    ib2_msgs::SwitchPowerRequest request;
-    request.power.status = on ? ib2_msgs::PowerStatus::ON : ib2_msgs::PowerStatus::OFF;
+    ib2_msgs::srv::SwitchPower::Request request;
+    request.power.status = on ? ib2_msgs::msg::PowerStatus::ON : ib2_msgs::msg::PowerStatus::OFF;
 
     return send(targetName, request);
 }
@@ -147,46 +150,34 @@ bool TelecommandClient::sendNavigationStartUp(const bool on)
 {
     auto targetName = telecommand::NAME_NAVIGATION_STARTUP;
 
-    ib2_msgs::NavigationStartUpActionGoal request;
-    request.goal.command = on ? ib2_msgs::NavigationStartUpGoal::ON : ib2_msgs::NavigationStartUpGoal::OFF;
+    ib2_msgs::action::NavigationStartUp_Goal request;
+    request.command = on ? ib2_msgs::action::NavigationStartUp_Goal::ON : ib2_msgs::action::NavigationStartUp_Goal::OFF;
 
-    return send(targetName ,request);
+    return send(targetName, request);
 }
 
 bool TelecommandClient::sendRecord(const bool on)
 {
-    ib2_msgs::RecordRequest request;
-    request.command = on ? ib2_msgs::RecordRequest::START : ib2_msgs::RecordRequest::STOP;
+    ib2_msgs::srv::Record::Request request;
+    request.command = on ? ib2_msgs::srv::Record::Request::START : ib2_msgs::srv::Record::Request::STOP;
 
     return send(telecommand::NAME_CAMERA_ANC_MICROPHONE_RECORD, request);
-};
+}
 
 bool TelecommandClient::sendSetRosParam(const RosParam& setParams)
 {
-    ib2_msgs::SetRosParamRequest request;
-    ib2_msgs::RosParam set;
+    ib2_msgs::srv::SetRosParam::Request request;
+    ib2_msgs::msg::RosParam set;
     set.id = setParams.id;
     set.value = setParams.value;
     switch(setParams.type)
     {
-    case RosParamType::STRING:
-        set.type = std::string("string");
-        break;
-    case RosParamType::INTEGER:
-        set.type = std::string("int");
-        break;
-    case RosParamType::FLOAT:
-        set.type = std::string("float");
-        break;
-    case RosParamType::BOOL:
-        set.type = std::string("bool");
-        break;
-    case RosParamType::LIST:
-        set.type = std::string("list");
-        break;
-    case RosParamType::DICT:
-        set.type = std::string("dict");
-        break;
+    case RosParamType::STRING: set.type = "string"; break;
+    case RosParamType::INTEGER: set.type = "int"; break;
+    case RosParamType::FLOAT: set.type = "float"; break;
+    case RosParamType::BOOL: set.type = "bool"; break;
+    case RosParamType::LIST: set.type = "list"; break;
+    case RosParamType::DICT: set.type = "dict"; break;
     }
     request.param = set;
 
@@ -195,32 +186,20 @@ bool TelecommandClient::sendSetRosParam(const RosParam& setParams)
 
 bool TelecommandClient::sendSetRosParams(const QList<RosParam>& setParams)
 {
-    ib2_msgs::SetRosParamsRequest request;
-    for(auto i = setParams.begin(); i != setParams.end(); ++i)
+    ib2_msgs::srv::SetRosParams::Request request;
+    for(const auto& p : setParams)
     {
-        ib2_msgs::RosParam set;
-        set.id = (*i).id;
-        set.value = (*i).value;
-        switch((*i).type)
+        ib2_msgs::msg::RosParam set;
+        set.id = p.id;
+        set.value = p.value;
+        switch(p.type)
         {
-        case RosParamType::STRING:
-            set.type = std::string("string");
-            break;
-        case RosParamType::INTEGER:
-            set.type = std::string("int");
-            break;
-        case RosParamType::FLOAT:
-            set.type = std::string("float");
-            break;
-        case RosParamType::BOOL:
-            set.type = std::string("bool");
-            break;
-        case RosParamType::LIST:
-            set.type = std::string("list");
-            break;
-        case RosParamType::DICT:
-            set.type = std::string("dict");
-            break;
+        case RosParamType::STRING: set.type = "string"; break;
+        case RosParamType::INTEGER: set.type = "int"; break;
+        case RosParamType::FLOAT: set.type = "float"; break;
+        case RosParamType::BOOL: set.type = "bool"; break;
+        case RosParamType::LIST: set.type = "list"; break;
+        case RosParamType::DICT: set.type = "dict"; break;
         }
         request.params.push_back(set);
     }
@@ -230,15 +209,15 @@ bool TelecommandClient::sendSetRosParams(const QList<RosParam>& setParams)
 
 bool TelecommandClient::getRosParam(const QString& key)
 {
-    ib2_msgs::GetRosParamRequest request;
+    ib2_msgs::srv::GetRosParam::Request request;
     request.id = key.toStdString();
     return send(telecommand::NAME_GET_ROSPARAM, request);
 }
 
 bool TelecommandClient::getRosParams(const QList<QString>& keyList)
 {
-    ib2_msgs::GetRosParamsRequest request;
-    for(auto key : keyList)
+    ib2_msgs::srv::GetRosParams::Request request;
+    for(const auto& key : keyList)
     {
         request.ids.push_back(key.toStdString());
     }
@@ -247,184 +226,145 @@ bool TelecommandClient::getRosParams(const QList<QString>& keyList)
 
 bool TelecommandClient::sendDumpRosparams(const QString& path)
 {
-    ib2_msgs::DumpRosParamsRequest request;
+    ib2_msgs::srv::DumpRosParams::Request request;
     request.path = path.toStdString();
     return send(telecommand::NAME_DUMP_ROSPARAMS, request);
 }
 
 bool TelecommandClient::sendLoadRosparams(const QString& path)
 {
-    ib2_msgs::LoadRosParamsRequest request;
+    ib2_msgs::srv::LoadRosParams::Request request;
     request.path = path.toStdString();
     return send(telecommand::NAME_LOAD_ROSPARAMS, request);
 }
 
 bool TelecommandClient::sendSetMaintenanceMode(const bool on)
 {
-    ib2_msgs::SetMaintenanceModeRequest request;
+    ib2_msgs::srv::SetMaintenanceMode::Request request;
     request.maintenance_on = on;
-
     return send(telecommand::NAME_SET_MAINTENANCE_MODE, request);
 }
 
 bool TelecommandClient::sendExitDockingMode(const unsigned char mode)
 {
-    if(mode != ib2_msgs::Mode::OPERATION && mode != ib2_msgs::Mode::STANDBY)
+    if(mode != ib2_msgs::msg::Mode::OPERATION && mode != ib2_msgs::msg::Mode::STANDBY)
     {
         LOG_WARNING() << "Invalid mode " << MODE_TYPE_LABEL.value(mode) << ". "
-                      << telecommand::NAME_EXIT_DOCKING_MODE << " accept only"
-                      << MODE_TYPE_LABEL.value(ib2_msgs::Mode::OPERATION) << " or " << MODE_TYPE_LABEL.value(ib2_msgs::Mode::STANDBY);
+                      << telecommand::NAME_EXIT_DOCKING_MODE << " accept only "
+                      << MODE_TYPE_LABEL.value(ib2_msgs::msg::Mode::OPERATION) << " or " << MODE_TYPE_LABEL.value(ib2_msgs::msg::Mode::STANDBY);
         return false;
     }
 
-    ib2_msgs::ExitDockingModeRequest request;
+    ib2_msgs::srv::ExitDockingMode::Request request;
     request.mode.mode = mode;
-
     return send(telecommand::NAME_EXIT_DOCKING_MODE, request);
 }
 
 bool TelecommandClient::sendExitDockingModeFinish()
 {
-    return sendExitDockingMode(ib2_msgs::Mode::STANDBY);
+    return sendExitDockingMode(ib2_msgs::msg::Mode::STANDBY);
 }
 
 bool TelecommandClient::sendExitDockingModeCancel()
 {
-    return sendExitDockingMode(ib2_msgs::Mode::OPERATION);
+    return sendExitDockingMode(ib2_msgs::msg::Mode::OPERATION);
 }
 
 bool TelecommandClient::sendDuty(const QList<double>& duty)
 {
-    std_msgs::Float64MultiArray request;
-    for(auto i = duty.begin(); i != duty.end(); ++i)
-    {
-        request.data.push_back(*i);
-    }
-
+    std_msgs::msg::Float64MultiArray request;
+    for(const auto& d : duty) { request.data.push_back(d); }
     return send(telecommand::NAME_CTL_DUTY, request);
 }
 
 bool TelecommandClient::sendMarkerCorrection()
 {
-    ib2_msgs::MarkerCorrectionRequest request;
-
-    return send(telecommand::NAME_MARKER_CORRECTION, request);
+    return send(telecommand::NAME_MARKER_CORRECTION, ib2_msgs::srv::MarkerCorrection::Request());
 }
 
 bool TelecommandClient::sendLedLeftColors(const QList<QList<float>>& colors)
 {
-    ib2_msgs::LEDColors request;
-
-    for(auto i = colors.begin(); i != colors.end(); ++i)
+    ib2_msgs::msg::LEDColors request;
+    for(const auto& c : colors)
     {
-        std_msgs::ColorRGBA color;
-        if((*i).length() >= 3)
-        {
-            color.r = (*i).at(0);
-            color.g = (*i).at(1);
-            color.b = (*i).at(2);
-        }
-        else
-        {
-            LOG_CRITICAL() << __FUNCTION__ << " : There are too few elements for color specification.";
-        }
-
+        std_msgs::msg::ColorRGBA color;
+        if(c.length() >= 3) { color.r = c.at(0); color.g = c.at(1); color.b = c.at(2); }
+        else { LOG_CRITICAL() << __FUNCTION__ << " : There are too few elements for color specification."; }
         color.a = 0;
         request.colors.push_back(color);
     }
-
     return send(telecommand::NAME_LED_DISPLAY_LEFT_COLORS, request);
 }
 
 bool TelecommandClient::sendLedRightColors(const QList<QList<float>>& colors)
 {
-    ib2_msgs::LEDColors request;
-
-    for(auto i = colors.begin(); i != colors.end(); ++i)
+    ib2_msgs::msg::LEDColors request;
+    for(const auto& c : colors)
     {
-        std_msgs::ColorRGBA color;
-        if((*i).length() >= 3)
-        {
-            color.r = (*i).at(0);
-            color.g = (*i).at(1);
-            color.b = (*i).at(2);
-        }
-        else
-        {
-            LOG_CRITICAL() << __FUNCTION__ << " : There are too few elements for color specification.";
-        }
-
+        std_msgs::msg::ColorRGBA color;
+        if(c.length() >= 3) { color.r = c.at(0); color.g = c.at(1); color.b = c.at(2); }
+        else { LOG_CRITICAL() << __FUNCTION__ << " : There are too few elements for color specification."; }
         color.a = 0;
         request.colors.push_back(color);
     }
-
     return send(telecommand::NAME_LED_DISPLAY_RIGHT_COLORS, request);
 }
 
 bool TelecommandClient::sendDisplayManagerSwitch(const bool on)
 {
-    ib2_msgs::SwitchPowerRequest request;
-    request.power.status = on ? ib2_msgs::PowerStatus::ON : ib2_msgs::PowerStatus::OFF;
-
+    ib2_msgs::srv::SwitchPower::Request request;
+    request.power.status = on ? ib2_msgs::msg::PowerStatus::ON : ib2_msgs::msg::PowerStatus::OFF;
     return send(telecommand::NAME_DISPLAY_MANAGER_SWITCH, request);
 }
 
 bool TelecommandClient::sendLighting(const bool on)
 {
-    ib2_msgs::SwitchPowerRequest request;
-    request.power.status = on ? ib2_msgs::PowerStatus::ON : ib2_msgs::PowerStatus::OFF;
-
+    ib2_msgs::srv::SwitchPower::Request request;
+    request.power.status = on ? ib2_msgs::msg::PowerStatus::ON : ib2_msgs::msg::PowerStatus::OFF;
     return send(telecommand::NAME_DISPLAY_MANAGER_FLASH, request);
 }
 
 bool TelecommandClient::sendForcedRelease()
 {
-    return send(telecommand::NAME_FORCED_RELEASE, std_msgs::Empty());
+    return send(telecommand::NAME_FORCED_RELEASE, std_msgs::msg::Empty());
 }
 
 bool TelecommandClient::sendReboot()
 {
-    return send(telecommand::NAME_REBOOT, std_msgs::Empty());
+    return send(telecommand::NAME_REBOOT, std_msgs::msg::Empty());
 }
 
-bool TelecommandClient::sendSetOperationType(platform_msgs::OperationType type)
+bool TelecommandClient::sendSetOperationType(platform_msgs::msg::OperationType type)
 {
-    platform_msgs::SetOperationTypeRequest request;
+    platform_msgs::srv::SetOperationType::Request request;
     request.type = type;
-
     return send(telecommand::NAME_SET_OPERATION_TYPE, request);
 }
 
 bool TelecommandClient::sendUserNode(const bool on, const QString& user, const QString& launch, const QString& image)
 {
-    platform_msgs::UserNodeCommandRequest request;
+    platform_msgs::srv::UserNodeCommand::Request request;
     request.command = on;
     request.user = user.toStdString();
     request.launch = launch.toStdString();
     request.image = image.toStdString();
-
     return send(telecommand::NAME_USER_NODE, request);
 }
 
-bool TelecommandClient::sendUserLogic(const bool on, platform_msgs::UserLogic logic)
+bool TelecommandClient::sendUserLogic(const bool on, platform_msgs::msg::UserLogic logic)
 {
-    platform_msgs::UserLogicCommandRequest request;
+    platform_msgs::srv::UserLogicCommand::Request request;
     request.command = on;
     request.logic = logic;
-
     return send(telecommand::NAME_USER_LOGIC, request);
 }
 
-communication_software::Message TelecommandClient::createMessageBaseForDock(const dock::telecommand::Index index)
+communication_software::msg::Message TelecommandClient::createMessageBaseForDock(const dock::telecommand::Index index)
 {
-    communication_software::Message command;
+    communication_software::msg::Message command;
     command.msg_type = command.DOCK_ROW_BINARY_DATA;
-
     auto headerList = dock::telecommand::CODE.value(index);
-    for(auto i = headerList.begin(); i != headerList.end(); ++i)
-    {
-        command.data.push_back(*i);
-    }
+    for(const auto& h : headerList) { command.data.push_back(h); }
     return command;
 }
 
@@ -436,7 +376,6 @@ bool TelecommandClient::sendDockSetHostIPAddr(const QHostAddress& addr)
     command.data.push_back(static_cast<uint8_t>((addr.toIPv4Address() >> 16) & 0xFF));
     command.data.push_back(static_cast<uint8_t>((addr.toIPv4Address() >> 8) & 0xFF));
     command.data.push_back(static_cast<uint8_t>(addr.toIPv4Address() & 0xFF));
-
     return send(command);
 }
 
@@ -446,7 +385,6 @@ bool TelecommandClient::sendDockSetCommandPort(const unsigned short port)
     command.name = "Docking station: SET_COMMAND_PORT";
     command.data.push_back(static_cast<uint8_t>(port & 0xFF));
     command.data.push_back(static_cast<uint8_t>((port >> 8) & 0xFF));
-
     return send(command);
 }
 
@@ -458,7 +396,6 @@ bool TelecommandClient::sendDockSetIBIPAddr(const QHostAddress& addr)
     command.data.push_back(static_cast<uint8_t>((addr.toIPv4Address() >> 16) & 0xFF));
     command.data.push_back(static_cast<uint8_t>((addr.toIPv4Address() >> 8) & 0xFF));
     command.data.push_back(static_cast<uint8_t>(addr.toIPv4Address() & 0xFF));
-
     return send(command);
 }
 
@@ -467,7 +404,6 @@ bool TelecommandClient::sendDockMotorOnOff(const dock::telecommand::MOTOR_ON_OFF
     auto command = createMessageBaseForDock(dock::telecommand::Index::MOTOR_ON_OFF);
     command.name = "Docking station: MOTOR_ON_OFF";
     command.data.push_back(static_cast<uint8_t>(type));
-
     return send(command);
 }
 
@@ -476,6 +412,5 @@ bool TelecommandClient::sendDockChargeOnOff(const dock::telecommand::CHARGE_ON_O
     auto command = createMessageBaseForDock(dock::telecommand::Index::CHARGE_ON_OFF);
     command.name = "Docking station: CHARGE_ON_OFF";
     command.data.push_back(static_cast<uint8_t>(type));
-
     return send(command);
 }

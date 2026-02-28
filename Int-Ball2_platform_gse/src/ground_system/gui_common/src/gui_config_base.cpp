@@ -3,7 +3,7 @@
 #include <QScopedPointer>
 #include <QSettings>
 #include <QTextCodec>
-#include <ros/package.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include "gui_config_base.h"
 #include "exception/config_error.h"
 #include "qdebug_custom.h"
@@ -32,7 +32,7 @@ void Config::load(const QString& rosPackage)
 {
     if(guiConfig_.isNull())
     {
-        packagePath_ = QString::fromStdString(ros::package::getPath(rosPackage.toStdString()));
+        packagePath_ = QString::fromStdString(ament_index_cpp::get_package_share_directory(rosPackage.toStdString()));
         path_ = packagePath_ + "/config/gui_config.ini";
         LOG_INFO() << "Read the configuration file " << path_;
         QFile configFile(path_);

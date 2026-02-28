@@ -30,32 +30,29 @@
 #include <OgreFrustum.h>
 #include <OgreViewport.h>
 #include <OgreQuaternion.h>
-#include <OgreVector3.h>
+#include <OgreVector.h>
 #include <OgreSceneNode.h>
 #include <OgreSceneManager.h>
 #include <OgreCamera.h>
 
-#include "rviz/uniform_string_stream.h"
-#include "rviz/display_context.h"
-#include "rviz/viewport_mouse_event.h"
-#include "rviz/geometry.h"
-#include "rviz/ogre_helpers/shape.h"
-#include "rviz/properties/bool_property.h"
-#include "rviz/properties/float_property.h"
-#include "rviz/properties/vector_property.h"
+#include "rviz_common/uniform_string_stream.hpp"
+#include "rviz_common/display_context.hpp"
+#include "rviz_common/viewport_mouse_event.hpp"
+#include "rviz_rendering/geometry.hpp"
+#include "rviz_rendering/objects/shape.hpp"
+#include "rviz_common/properties/bool_property.hpp"
+#include "rviz_common/properties/float_property.hpp"
+#include "rviz_common/properties/vector_property.hpp"
 
 #include "main_camera_view_controller.h"
 #include "qdebug_custom.h"
 
+using rviz_common::properties::FloatProperty;
+using rviz_common::properties::VectorProperty;
+using rviz_rendering::mapAngleTo0_2Pi;
 
-
-namespace rviz
+namespace intball
 {
-
-//static const Ogre::Quaternion ROBOT_TO_CAMERA_ROTATION =
-//  Ogre::Quaternion( Ogre::Radian( -Ogre::Math::HALF_PI ), Ogre::Vector3::UNIT_X ) *
-//  Ogre::Quaternion( Ogre::Radian( -Ogre::Math::HALF_PI ), Ogre::Vector3::UNIT_Y ) *
-//  Ogre::Quaternion( Ogre::Radian( -Ogre::Math::HALF_PI ), Ogre::Vector3::UNIT_Z );
 
 static const Ogre::Quaternion ROBOT_TO_CAMERA_ROTATION =
     Ogre::Quaternion( Ogre::Radian( -Ogre::Math::HALF_PI ), Ogre::Vector3::UNIT_Y ) *
@@ -64,7 +61,7 @@ static const Ogre::Quaternion ROBOT_TO_CAMERA_ROTATION =
 static const float PITCH_LIMIT_LOW = -Ogre::Math::HALF_PI + 0.001;
 static const float PITCH_LIMIT_HIGH = Ogre::Math::HALF_PI - 0.001;
 
-ViewController* newMainCameraViewController()
+rviz_common::ViewController* newMainCameraViewController()
 {
     return new MainCameraViewController();
 }
@@ -88,7 +85,7 @@ MainCameraViewController::~MainCameraViewController()
 
 void MainCameraViewController::onInitialize()
 {
-    FramePositionTrackingViewController::onInitialize();
+    rviz_common::FramePositionTrackingViewController::onInitialize();
     dynamic_cast<Ogre::Frustum*>(camera_)->setProjectionType( Ogre::PT_PERSPECTIVE );
     invert_z_->hide();
 }
@@ -99,16 +96,12 @@ void MainCameraViewController::reset()
     camera_->lookAt( 0, 0, 0 );
     setPropertiesFromCamera( camera_ );
 
-    // Hersh says: why is the following junk necessary?  I don't know.
-    // However, without this you need to call reset() twice after
-    // switching from TopDownOrtho to FPS.  After the first call the
-    // camera is in the right position but pointing the wrong way.
     updateCamera();
     camera_->lookAt( 0, 0, 0 );
     setPropertiesFromCamera( camera_ );
 }
 
-void MainCameraViewController::handleMouseEvent(ViewportMouseEvent& event)
+void MainCameraViewController::handleMouseEvent(rviz_common::ViewportMouseEvent& event)
 {
     if ( event.shift() )
     {
@@ -169,8 +162,8 @@ void MainCameraViewController::handleMouseEvent(ViewportMouseEvent& event)
 void MainCameraViewController::setPropertiesFromCamera( Ogre::Camera* source_camera )
 {
     Ogre::Quaternion quat = source_camera->getOrientation() * ROBOT_TO_CAMERA_ROTATION.Inverse();
-    float yaw = quat.getRoll( false ).valueRadians(); // OGRE camera frame looks along -Z, so they call rotation around Z "roll".
-    float pitch = quat.getYaw( false ).valueRadians(); // OGRE camera frame has +Y as "up", so they call rotation around Y "yaw".
+    float yaw = quat.getRoll( false ).valueRadians();
+    float pitch = quat.getYaw( false ).valueRadians();
 
     Ogre::Vector3 direction = quat * Ogre::Vector3::NEGATIVE_UNIT_Z;
     if ( direction.dotProduct( Ogre::Vector3::NEGATIVE_UNIT_Z ) < 0 )
@@ -201,15 +194,15 @@ void MainCameraViewController::setPropertiesFromCamera( Ogre::Camera* source_cam
     position_property_->setVector( source_camera->getPosition() );
 }
 
-void MainCameraViewController::mimic( ViewController* source_view )
+void MainCameraViewController::mimic( rviz_common::ViewController* source_view )
 {
-    FramePositionTrackingViewController::mimic( source_view );
+    rviz_common::FramePositionTrackingViewController::mimic( source_view );
     setPropertiesFromCamera( source_view->getCamera() );
 }
 
 void MainCameraViewController::update(float dt, float ros_dt)
 {
-    FramePositionTrackingViewController::update( dt, ros_dt );
+    rviz_common::FramePositionTrackingViewController::update( dt, ros_dt );
     updateCamera();
 }
 
@@ -221,6 +214,7 @@ void MainCameraViewController::lookAt( const Ogre::Vector3& point )
 
 void MainCameraViewController::onTargetFrameChanged(const Ogre::Vector3& old_reference_position, const Ogre::Quaternion& old_reference_orientation)
 {
+    Q_UNUSED(old_reference_orientation);
     position_property_->add( old_reference_position - reference_position_ );
 }
 void MainCameraViewController::updateCamera()
@@ -256,4 +250,7 @@ void MainCameraViewController::move( float x, float y, float z )
     position_property_->add( getOrientation() * translate );
 }
 
-} // end namespace rviz
+} // end namespace intball
+
+#include <pluginlib/class_list_macros.hpp>
+PLUGINLIB_EXPORT_CLASS(intball::MainCameraViewController, rviz_common::ViewController)

@@ -4,23 +4,35 @@
 #include <QFontMetrics>
 #include <QItemSelectionModel>
 #include <QQuaternion>
+#include <QColor>
 #include <QVector3D>
-#include <tf/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Transform.h>
+#include "builtin_interfaces/msg/time.hpp"
+#include "builtin_interfaces/msg/duration.hpp"
 #include "ib2_msgs.h"
 
 namespace intball
 {
 
+inline double toSec(const builtin_interfaces::msg::Time& t) {
+    return static_cast<double>(t.sec) + static_cast<double>(t.nanosec) * 1e-9;
+}
+inline double toSec(const builtin_interfaces::msg::Duration& d) {
+    return static_cast<double>(d.sec) + static_cast<double>(d.nanosec) * 1e-9;
+}
+
 std::string demangle(const std::type_info &ti);
 bool comparisonFloat(const float a, const float b);
-QQuaternion tfToQt(const tf::Quaternion &tfQuaternion);
-tf::Quaternion qtToTf(const QQuaternion &qtQuaternion);
-QVector3D tfToQt(const tf::Vector3 &tfVector);
-tf::Vector3 qtToTf(const QVector3D &qtVector);
-tf::Vector3 geometryToTf(const geometry_msgs::Point& geometryPoint);
-tf::Quaternion geometryToTf(const geometry_msgs::Quaternion& geometryQuaternion);
-QVector3D geometryToQt(const geometry_msgs::Point& geometryPoint);
-QQuaternion geometryToQt(const geometry_msgs::Quaternion& geometryQuaternion);
+QQuaternion tfToQt(const tf2::Quaternion &tfQuaternion);
+tf2::Quaternion qtToTf(const QQuaternion &qtQuaternion);
+QVector3D tfToQt(const tf2::Vector3 &tfVector);
+tf2::Vector3 qtToTf(const QVector3D &qtVector);
+tf2::Vector3 geometryToTf(const geometry_msgs::msg::Point& geometryPoint);
+tf2::Quaternion geometryToTf(const geometry_msgs::msg::Quaternion& geometryQuaternion);
+QVector3D geometryToQt(const geometry_msgs::msg::Point& geometryPoint);
+QQuaternion geometryToQt(const geometry_msgs::msg::Quaternion& geometryQuaternion);
 void getRPY(const QQuaternion& orientation, qreal& roll, qreal& pitch, qreal& yaw);
 QQuaternion fromRPYRadian(const qreal roll, const qreal pitch, const qreal yaw);
 QQuaternion fromRPYDegree(const qreal roll, const qreal pitch, const qreal yaw);
@@ -34,11 +46,11 @@ qreal roundDegree(const qreal value);
 qreal roundPositionValue(const float value);
 qreal roundDegree(const float value);
 
-QDateTime rosToQt(const ros::Time& time, const Qt::TimeSpec timeSpec = Qt::LocalTime);
+QDateTime rosToQt(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec = Qt::LocalTime);
 QString dateTimeString(const QDateTime& time);
-QString dateTimeString(const ros::Time& time, const Qt::TimeSpec timeSpec = Qt::LocalTime);
+QString dateTimeString(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec = Qt::LocalTime);
 QString dateTimeStringWithoutYear(const QDateTime& time);
-QString dateTimeStringWithoutYear(const ros::Time& time, const Qt::TimeSpec timeSpec);
+QString dateTimeStringWithoutYear(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec);
 QString secondToTimeStringUpToHour(const unsigned int long setSecond);
 QString secondToTimeStringUpToMinute(const unsigned long setSecond);
 QString secondToRoundedTimeStringUpToHour(const unsigned long setSecond);
@@ -66,7 +78,7 @@ QString getPlatformModeString(const QVariant& qvariant);
 QString getPlatformOperationTypeString(const QVariant& qvariant);
 QString getContainerStatusString(const unsigned char status);
 
-QColor fromColorRGBA(const std_msgs::ColorRGBA& color);
+QColor fromColorRGBA(const std_msgs::msg::ColorRGBA& color);
 
 template<typename T, typename U>
 T getKeyFromValue(const QMap<T, U>& map, const U& value)

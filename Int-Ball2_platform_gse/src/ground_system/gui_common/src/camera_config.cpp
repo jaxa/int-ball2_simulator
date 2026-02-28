@@ -2,7 +2,7 @@
 #include <string>
 #include <QFile>
 #include <QString>
-#include <ros/package.h>
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <yaml-cpp/yaml.h>
 #include "exception/config_error.h"
 #include "gui_config_base.h"
@@ -16,7 +16,7 @@ const std::string CameraConfig::KEY_RESOLUTION = "resolution_settings";
 
 CameraConfig::CameraConfig()
 {
-    std::string path = ros::package::getPath(Config::valueAsStdString(KEY_CAMERA_CONFIG_PACKAGE));
+    std::string path = ament_index_cpp::get_package_share_directory(Config::valueAsStdString(KEY_CAMERA_CONFIG_PACKAGE));
     std::string file = Config::valueAsStdString(KEY_CAMERA_CONFIG_FILE_PATH);
     if(file.front() != '/')
     {

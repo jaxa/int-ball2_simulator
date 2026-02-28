@@ -37,7 +37,7 @@ TelecommandCameraMicrophoneSettingsWidget::TelecommandCameraMicrophoneSettingsWi
 {
     ui->setupUi(this);
 
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandCameraMicrophoneSettingsWidget::executed);
 
     // 画質設定の選択値を定義.
@@ -54,26 +54,26 @@ TelecommandCameraMicrophoneSettingsWidget::TelecommandCameraMicrophoneSettingsWi
 
     // ホワイトバランスの定義.
     ui->comboBoxWhiteBalance->addItem("(No change)",  QVariant(static_cast<uint8_t>(0)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::AUTO),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::AUTO)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::INCANDESCENT),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::INCANDESCENT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::FLUORESCENT),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::FLUORESCENT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::WARM_FLUORESCENT),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::WARM_FLUORESCENT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::DAYLIGHT),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::DAYLIGHT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT)),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::TWILIGHT)),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::TWILIGHT)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::SHADE)),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::SHADE)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::MANUAL)),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::MANUAL)));
-    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::MainCameraWhiteBalanceMode::OFF),
-                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::MainCameraWhiteBalanceMode::OFF)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::AUTO),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::AUTO)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::INCANDESCENT),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::INCANDESCENT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::FLUORESCENT),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::FLUORESCENT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::WARM_FLUORESCENT),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::WARM_FLUORESCENT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::DAYLIGHT),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::DAYLIGHT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT)),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::CLOUDY_DAYLIGHT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::TWILIGHT)),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::TWILIGHT)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::SHADE)),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::SHADE)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::MANUAL)),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::MANUAL)));
+    ui->comboBoxWhiteBalance->addItem(getWhiteBalanceModeAsString(ib2_msgs::msg::MainCameraWhiteBalanceMode::OFF),
+                                      QVariant::fromValue(static_cast<uint8_t>(ib2_msgs::msg::MainCameraWhiteBalanceMode::OFF)));
     ui->comboBoxWhiteBalance->setCurrentIndex(0);
 
     // ビットレートの定義を設定.

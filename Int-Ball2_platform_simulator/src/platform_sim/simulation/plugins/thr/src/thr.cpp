@@ -1,6 +1,15 @@
 
 #include "thr/thr.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
+#include <gz/sim/Model.hh>
+#include <gz/sim/Link.hh>
+#include <gz/sim/Util.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Model.hh>
+#include <gz/plugin/Register.hh>
+
 namespace
 {
 	/** 微小値 */
@@ -9,213 +18,182 @@ namespace
 
 //------------------------------------------------------------------------------
 // デフォルトコンストラクタ
-gazebo::Thr::Thr():
-	debug_   (false),
-	coeff_a_ {0.0, 0.0, 0.0},
-	coeff_b_ {0.0, 0.0, 0.0}
-	{}
+thr_plugin::Thr::Thr() = default;
 
 //------------------------------------------------------------------------------
 // デストラクタ.
-gazebo::Thr::~Thr() = default;
+thr_plugin::Thr::~Thr() = default;
 
 //------------------------------------------------------------------------------
-// プラグインのロード
-void gazebo::Thr::Load(physics::ModelPtr model, sdf::ElementPtr)
+// プラグインの初期設定
+void thr_plugin::Thr::Configure(
+	const gz::sim::Entity &_entity,
+	const std::shared_ptr<const sdf::Element> &/*_sdf*/,
+	gz::sim::EntityComponentManager &_ecm,
+	gz::sim::EventManager &/*_eventMgr*/)
 {
-
-	// Initialize ros, if it has not already be initialized
-	if(!ros::isInitialized())
+	if (!rclcpp::ok())
 	{
-		int argc    = 0;
-		char **argv = NULL;
-		ros::init(argc, argv, "thr",
-				  ros::init_options::NoSigintHandler);
+		rclcpp::init(0, nullptr);
 	}
 
-	// Create ROS node.
-	nh_ = ros::NodeHandle("thr");
+	// Store the model entity
+	model_entity_ = _entity;
 
+	// Get the first link
+	gz::sim::Model model(model_entity_);
+	auto links = model.Links(_ecm);
+	if (!links.empty())
+	{
+		link_entity_ = links[0];
+	}
 
-	// Store the model pointer
-	model_ = model;
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
 
-	// Get the first link.
-	link_  = model_->GetLinks();
+	// Create ROS node
+	ros_node_ = std::make_shared<rclcpp::Node>("thr", node_options);
 
 	// Thr Parameter Update Server
-	thr_param_server_ = nh_.advertiseService("/sim/thr/update_params", &Thr::updateParameter, this);
+	thr_param_server_ = ros_node_->create_service<sim_msgs::srv::UpdateParameter>(
+		"/sim/thr/update_params",
+		std::bind(&Thr::updateParameter, this,
+			std::placeholders::_1, std::placeholders::_2));
 
-	// Get Parameters by rosparam
+	// Get Parameters
 	getParameter();
 
-	// Set callback to add force and torque in gazebo cycle
-	update_ = event::Events::ConnectWorldUpdateBegin(
-				std::bind(&Thr::addForceAndTorque, this));
-
-	// Create a name topic, and subscribe to it.
-	if(debug_)
+	// Create subscribers and publishers based on debug mode
+	if (debug_)
 	{
-		sub_wrench_ = nh_.subscribe("/ctl/wrench", 1, &Thr::setCtlCmd,  this);
+		sub_wrench_ = ros_node_->create_subscription<geometry_msgs::msg::WrenchStamped>(
+			"/ctl/wrench", 1,
+			std::bind(&Thr::setCtlCmd, this, std::placeholders::_1));
 	}
 	else
 	{
-		sub_duty_   = nh_.subscribe("/prop/status", 1, &Thr::subFanDuty, this);
+		sub_duty_ = ros_node_->create_subscription<ib2_msgs::msg::FanStatus>(
+			"/prop/status", 1,
+			std::bind(&Thr::subFanDuty, this, std::placeholders::_1));
 
-		// Create a force of each fan topic, and publish it.	
-		pub_fan_force_ = nh_.advertise<std_msgs::Float64MultiArray>("/thr/fan_force", 1);
+		pub_fan_force_ = ros_node_->create_publisher<std_msgs::msg::Float64MultiArray>(
+			"/thr/fan_force", 1);
 	}
 
-	f_.resize(fan_num_, 0.);
+	f_.resize(fan_num_, 0.0);
 }
 
 //------------------------------------------------------------------------------
 // ROS Parameter Serverからパラメータ取得
-void gazebo::Thr::getParameter()
+void thr_plugin::Thr::getParameter()
 {
-	double x, y, z;
+	auto get_param = [this](const std::string &name, auto &value) {
+		using T = std::decay_t<decltype(value)>;
+		if (!ros_node_->has_parameter(name)) {
+			ros_node_->declare_parameter<T>(name, value);
+		}
+		ros_node_->get_parameter(name, value);
+	};
 
-	if(!nh_.getParam("/thr_parameter/debug", debug_))
-	{
-		gzerr << "Cannot Get /thr_parameter/debug in thr plugin \n";
-	}
+	double x = 0.0, y = 0.0, z = 0.0;
 
-	if(
-		!nh_.getParam("/robot_mass_property/cg/x", x) || 
-		!nh_.getParam("/robot_mass_property/cg/y", y) || 
-		!nh_.getParam("/robot_mass_property/cg/z", z)
-		)
-	{
-		gzerr << "Cannot Get /robot_mass_property/cg in thr plugin \n";
-	}
+	get_param("thr_parameter.debug", debug_);
+	get_param("robot_mass_property.cg.x", x);
+	get_param("robot_mass_property.cg.y", y);
+	get_param("robot_mass_property.cg.z", z);
 	cg_.Set(x, y, z);
 
-	if(!nh_.getParam("/thr_parameter/fan_num", fan_num_))
-	{
-		gzerr << "Cannot Get /thr_parameter/fan_num in thr plugin \n";
-	}
-	
+	get_param("thr_parameter.fan_num", fan_num_);
+
 	// Mounting Position and Thrust Vector of Fans
-	for(int i = 0; i < fan_num_; i++)
+	for (int i = 0; i < fan_num_; i++)
 	{
-		ignition::math::Vector3d fp;
-		ignition::math::Vector3d tv;
-		double                   tf;
-		double                   sd;
-		double                   k;
-		double                   kprop;
+		gz::math::Vector3d fp;
+		gz::math::Vector3d tv;
+		double tf = 0.0, sd = 0.0, k = 0.0, kprop = 0.0;
 
-		std::string fan = "/thr_parameter/fan";
-		fan            += std::to_string(i + 1);
+		std::string fan = "thr_parameter.fan" + std::to_string(i + 1);
 
-		if(
-			!nh_.getParam(fan + "/pos/x", x) || 
-			!nh_.getParam(fan + "/pos/y", y) || 
-			!nh_.getParam(fan + "/pos/z", z)
-		)
-		{
-			gzerr << "Cannot Get " + fan + "/pos in thr plugin \n";
-		}
+		x = 0.0; y = 0.0; z = 0.0;
+		get_param(fan + ".pos.x", x);
+		get_param(fan + ".pos.y", y);
+		get_param(fan + ".pos.z", z);
 		fp.Set(x, y, z);
 		fan_pos_.push_back(fp);
 
-		if(
-			!nh_.getParam(fan + "/vec/x", x) || 
-			!nh_.getParam(fan + "/vec/y", y) || 
-			!nh_.getParam(fan + "/vec/z", z)
-		)
-		{
-			gzerr << "Cannot Get " + fan + "/vec in thr plugin \n";
-		}
+		x = 0.0; y = 0.0; z = 0.0;
+		get_param(fan + ".vec.x", x);
+		get_param(fan + ".vec.y", y);
+		get_param(fan + ".vec.z", z);
 		tv.Set(x, y, z);
 		fan_frc_vec_.push_back(tv);
 
-		if(!nh_.getParam(fan + "/force", tf))
-		{
-			gzerr << "Cannot Get " + fan + "/force in thr plugin \n";
-		}
+		get_param(fan + ".force", tf);
 		fan_frc_.push_back(tf);
 
-		if(!nh_.getParam(fan + "/stddev", sd))
-		{
-			gzerr << "Cannot Get " + fan + "/stddev in thr plugin \n";
-		}
+		get_param(fan + ".stddev", sd);
 		stddev_.push_back(sd);
 
-		if(!nh_.getParam(fan + "/kappa", k))
-		{
-			gzerr << "Cannot Get " + fan + "/kappa in thr plugin \n";
-		}
+		get_param(fan + ".kappa", k);
 		fan_k_.push_back(k);
-		
-		if(!nh_.getParam(fan + "/Kprop", kprop))
-		{
-			gzerr << "Cannot Get " + fan + "/Kprop in thr plugin \n";
-		}
+
+		get_param(fan + ".Kprop", kprop);
 		k_prop_.push_back(kprop);
 
 		// Set fan's torque vector(unit)
-		ignition::math::Vector3d tarm;
-		ignition::math::Vector3d trqv;
-		ignition::math::Vector3d dtrq;
-
-		tarm = fan_pos_[i] - cg_;
-		trqv = tarm.Cross(fan_frc_vec_[i]);
-		dtrq = fan_k_[i] * fan_frc_vec_[i];
+		gz::math::Vector3d tarm = fan_pos_[i] - cg_;
+		gz::math::Vector3d trqv = tarm.Cross(fan_frc_vec_[i]);
+		gz::math::Vector3d dtrq = fan_k_[i] * fan_frc_vec_[i];
 		fan_trq_vec_.push_back(trqv + dtrq);
 	}
 
 	// 2nd Order Filter Coefficient
-	if(
-		!nh_.getParam("/thr_parameter/filter/coeff_a/a0", x) || 
-		!nh_.getParam("/thr_parameter/filter/coeff_a/a1", y) || 
-		!nh_.getParam("/thr_parameter/filter/coeff_a/a2", z)
-		)
-	{
-		gzerr << "Cannot Get /thr_parameter/filter/coeff_a in thr plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("thr_parameter.filter.coeff_a.a0", x);
+	get_param("thr_parameter.filter.coeff_a.a1", y);
+	get_param("thr_parameter.filter.coeff_a.a2", z);
 	coeff_a_.Set(x, y, z);
 
-	if(
-		!nh_.getParam("/thr_parameter/filter/coeff_b/b0", x) || 
-		!nh_.getParam("/thr_parameter/filter/coeff_b/b1", y) || 
-		!nh_.getParam("/thr_parameter/filter/coeff_b/b2", z)
-		)
-	{
-		gzerr << "Cannot Get /thr_parameter/filter/coeff_b in thr plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("thr_parameter.filter.coeff_b.b0", x);
+	get_param("thr_parameter.filter.coeff_b.b1", y);
+	get_param("thr_parameter.filter.coeff_b.b2", z);
 	coeff_b_.Set(x, y, z);
 
 	// 2nd Order Filter Buffer Initialization
-	in_.reserve (fan_num_);
+	in_.reserve(fan_num_);
 	out_.reserve(fan_num_);
-	for(int i = 0; i < fan_num_; i++)
+	for (int i = 0; i < fan_num_; i++)
 	{
-		in_.push_back ({0.0, 0.0});
+		in_.push_back({0.0, 0.0});
 		out_.push_back({0.0, 0.0});
 	}
 
 	// 乱数のシード値が設定されている場合は読み込む
 	int seed = -1;
-	if (nh_.getParam("/sim_common/random_seed", seed))
+	get_param("sim_common.random_seed", seed);
+	if (seed >= 0)
 	{
-		if(seed >= 0)
-		{
-			gazebo::common::Console::msg(__FILE__, __LINE__) << "Set the random seed value " << seed << "\n";
-			ignition::math::Rand::Seed(static_cast<unsigned int>(seed));
-		}
-	}
-	else
-	{
-		gzerr << "Could not read the parameters of \"/sim_common/random_seed\".\n";
+		RCLCPP_INFO(ros_node_->get_logger(), "Set the random seed value %d", seed);
+		gz::math::Rand::Seed(static_cast<unsigned int>(seed));
 	}
 
 	logParameter();
 }
 
 //------------------------------------------------------------------------------
-// ROS Parameter Serverからパラメータを取得
-bool gazebo::Thr::updateParameter(sim_msgs::UpdateParameter::Request& req, sim_msgs::UpdateParameter::Response& res)
+// パラメータ更新サービス
+void thr_plugin::Thr::updateParameter(
+	const std::shared_ptr<sim_msgs::srv::UpdateParameter::Request> /*req*/,
+	std::shared_ptr<sim_msgs::srv::UpdateParameter::Response> res)
 {
 	fan_pos_.clear();
 	fan_frc_vec_.clear();
@@ -226,149 +204,160 @@ bool gazebo::Thr::updateParameter(sim_msgs::UpdateParameter::Request& req, sim_m
 
 	getParameter();
 
-	res.result = true;
-	return true;
+	res->result = true;
 }
-
 
 //------------------------------------------------------------------------------
 // ファン駆動デューティ比をサブスクライブ
-void gazebo::Thr::subFanDuty(const ib2_msgs::FanStatus& msg)
+void thr_plugin::Thr::subFanDuty(const ib2_msgs::msg::FanStatus::SharedPtr msg)
 {
-	int size = msg.duty.data.size();
+	int size = static_cast<int>(msg->duty.data.size());
 
-	// Check the number of fans
 	assert(size == fan_num_);
-	
-	// Calculate required force
-	for(int i = 0; i < size; i++)
+
+	for (int i = 0; i < size; i++)
 	{
 		assert(std::abs(k_prop_[i]) > EPS);
 
-		double t(msg.duty.data[i] / k_prop_[i]);
+		double t = msg->duty.data[i] / k_prop_[i];
 		f_.at(i) = std::min(t * t, fan_frc_[i]);
 	}
 }
 
 //------------------------------------------------------------------------------
-// 制御コマンドを直接Gazeboへ設定
-void gazebo::Thr::setCtlCmd(const geometry_msgs::WrenchStamped& ctl)
+// 制御コマンドを直接設定
+void thr_plugin::Thr::setCtlCmd(const geometry_msgs::msg::WrenchStamped::SharedPtr ctl)
 {
-	force_.X()  = ctl.wrench.force.x;
-	force_.Y()  = ctl.wrench.force.y;
-	force_.Z()  = ctl.wrench.force.z;
-	torque_.X() = ctl.wrench.torque.x;
-	torque_.Y() = ctl.wrench.torque.y;
-	torque_.Z() = ctl.wrench.torque.z;
+	force_.X()  = ctl->wrench.force.x;
+	force_.Y()  = ctl->wrench.force.y;
+	force_.Z()  = ctl->wrench.force.z;
+	torque_.X() = ctl->wrench.torque.x;
+	torque_.Y() = ctl->wrench.torque.y;
+	torque_.Z() = ctl->wrench.torque.z;
+}
+
+//------------------------------------------------------------------------------
+// 物理ステップ前の更新
+void thr_plugin::Thr::PreUpdate(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
+{
+	if (_info.paused)
+		return;
+
+	if (link_entity_ == gz::sim::kNullEntity)
+		return;
+
+	// Process pending ROS callbacks
+	rclcpp::spin_some(ros_node_);
+
+	addForceAndTorque(_ecm);
 }
 
 //------------------------------------------------------------------------------
 // 力・トルクのGazeboへの設定
-void gazebo::Thr::addForceAndTorque()
+void thr_plugin::Thr::addForceAndTorque(gz::sim::EntityComponentManager &_ecm)
 {
-	if(!debug_)
+	gz::sim::Link link(link_entity_);
+
+	if (!debug_)
 	{
 		// Initialize force and torque
 		force_.Set();
 		torque_.Set();
 
-		// Sum up all fan's force and torque
 		int size = static_cast<int>(f_.size());
 
-		std_msgs::Float64MultiArray fanforce;
-		fanforce.layout.dim.push_back(std_msgs::MultiArrayDimension());
+		std_msgs::msg::Float64MultiArray fanforce;
+		fanforce.layout.dim.push_back(std_msgs::msg::MultiArrayDimension());
 		fanforce.layout.dim[0].size   = size;
 		fanforce.layout.dim[0].stride = 1;
 		fanforce.layout.dim[0].label  = "fan_force";
 		fanforce.layout.data_offset   = 0;
-		fanforce.data.resize(size, 0.);
-	
-		for(int i = 0; i < size; i++)
+		fanforce.data.resize(size, 0.0);
+
+		for (int i = 0; i < size; i++)
 		{
-			double f_fltrd   = biQuadFilter(coeff_a_, coeff_b_, f_[i], in_[i].data(), out_[i].data(), false);
+			double f_fltrd = biQuadFilter(coeff_a_, coeff_b_, f_[i],
+				in_[i].data(), out_[i].data(), false);
 
 			double ratio     = stddev_[i] / fan_frc_[i];
-			double fanNoise  = ignition::math::Rand::DblNormal(0.0, f_fltrd * ratio);   // 推力立上り時に、ノイズ重畳により推力が負になるのを防ぐため、割合でsigmaを設定する
+			double fanNoise  = gz::math::Rand::DblNormal(0.0, f_fltrd * ratio);
 			fanforce.data[i] = f_fltrd + fanNoise;
 			force_           = force_  + fanforce.data[i] * fan_frc_vec_[i];
 			torque_          = torque_ + fanforce.data[i] * fan_trq_vec_[i];
 		}
 
 		// Publish fan force Message
-		pub_fan_force_.publish(fanforce);
+		pub_fan_force_->publish(fanforce);
 	}
 
-	link_[0]->AddRelativeForce(force_);
-	link_[0]->AddRelativeTorque(torque_);
+	// Convert body-frame force/torque to world-frame
+	auto worldPose = link.WorldPose(_ecm);
+	if (!worldPose)
+		return;
+
+	auto worldForce  = worldPose->Rot().RotateVector(force_);
+	auto worldTorque = worldPose->Rot().RotateVector(torque_);
+
+	link.AddWorldWrench(_ecm, worldForce, worldTorque);
 }
 
 //------------------------------------------------------------------------------
 // 双二次フィルタ
-double gazebo::Thr::biQuadFilter(const ignition::math::Vector3d& a, const ignition::math::Vector3d& b, const double& in, double* ibuf, double* obuf, bool rst)
+double thr_plugin::Thr::biQuadFilter(
+	const gz::math::Vector3d& a, const gz::math::Vector3d& b,
+	const double& in, double* ibuf, double* obuf, bool rst)
 {
 	assert(std::abs(a[0]) > EPS);
 
-	// Filter Reset
-	if(rst)
+	if (rst)
 	{
 		ibuf[0] = ibuf[1] = 0.0;
 		obuf[0] = obuf[1] = 0.0;
 	}
 
-	double output = (b[0] * in + b[1] * ibuf[0] + b[2] * ibuf[1] - a[1] * obuf[0] - a[2] * obuf[1]) / a[0];
+	double output = (b[0] * in + b[1] * ibuf[0] + b[2] * ibuf[1]
+		- a[1] * obuf[0] - a[2] * obuf[1]) / a[0];
 
 	ibuf[1] = ibuf[0]; ibuf[0] = in;
-	obuf[1] = obuf[0]; obuf[0] = output; 
+	obuf[1] = obuf[0]; obuf[0] = output;
 
 	return output;
 }
 
 //------------------------------------------------------------------------------
 // 推力プラグインパラメータログ作成
-void gazebo::Thr::logParameter()
+void thr_plugin::Thr::logParameter()
 {
-	gzlog << "***************** Thr Parameter \n";
-	gzlog << "/thr_parameter/debug             : " << debug_   << "\n";
-	gzlog << "/robot_mass_property/cg/x        : " << cg_.X()  << "\n";
-	gzlog << "/robot_mass_property/cg/y        : " << cg_.Y()  << "\n";
-	gzlog << "/robot_mass_property/cg/z        : " << cg_.Z()  << "\n";
-	gzlog << "/thr_parameter/fan_num           : " << fan_num_ << "\n";
-	
-	for(int i = 0; i < fan_num_; i++)
+	RCLCPP_INFO(ros_node_->get_logger(), "***************** Thr Parameter");
+	RCLCPP_INFO(ros_node_->get_logger(), "thr_parameter.debug             : %d", debug_);
+	RCLCPP_INFO(ros_node_->get_logger(), "robot_mass_property.cg          : %f %f %f", cg_.X(), cg_.Y(), cg_.Z());
+	RCLCPP_INFO(ros_node_->get_logger(), "thr_parameter.fan_num           : %d", fan_num_);
+
+	for (int i = 0; i < fan_num_; i++)
 	{
-		std::string fan = "/thr_parameter/fan";
-		fan            += std::to_string(i + 1);
-
-		gzlog << fan << "/pos/x        : " << fan_pos_[i].X()   << "\n";
-		gzlog << fan << "/pos/y        : " << fan_pos_[i].Y()   << "\n";
-		gzlog << fan << "/pos/z        : " << fan_pos_[i].Z()   << "\n";
-		gzlog << fan << "/vec/x        : " << fan_frc_vec_[i].X() << "\n";
-		gzlog << fan << "/vec/y        : " << fan_frc_vec_[i].Y() << "\n";
-		gzlog << fan << "/vec/z        : " << fan_frc_vec_[i].Z() << "\n";
-		gzlog << fan << "/force        : " << fan_frc_[i]       << "\n";
-		gzlog << fan << "/stddev       : " << stddev_[i]        << "\n";
-		gzlog << fan << "/kappa        : " << fan_k_[i]         << "\n";
-		gzlog << fan << "/Kprop        : " << k_prop_[i]        << "\n";
-
-		gzlog << "fan" << i + 1 << " Fx                          : " << fan_frc_[i] * fan_frc_vec_[i].X() << "\n";
-		gzlog << "fan" << i + 1 << " Fy                          : " << fan_frc_[i] * fan_frc_vec_[i].Y() << "\n";
-		gzlog << "fan" << i + 1 << " Fz                          : " << fan_frc_[i] * fan_frc_vec_[i].Z() << "\n";
-		gzlog << "fan" << i + 1 << " Tx                          : " << fan_frc_[i] * fan_trq_vec_[i].X() << "\n";
-		gzlog << "fan" << i + 1 << " Ty                          : " << fan_frc_[i] * fan_trq_vec_[i].Y() << "\n";
-		gzlog << "fan" << i + 1 << " Tz                          : " << fan_frc_[i] * fan_trq_vec_[i].Z() << "\n";
+		std::string fan = "fan" + std::to_string(i + 1);
+		RCLCPP_INFO(ros_node_->get_logger(), "%s pos   : %f %f %f", fan.c_str(), fan_pos_[i].X(), fan_pos_[i].Y(), fan_pos_[i].Z());
+		RCLCPP_INFO(ros_node_->get_logger(), "%s vec   : %f %f %f", fan.c_str(), fan_frc_vec_[i].X(), fan_frc_vec_[i].Y(), fan_frc_vec_[i].Z());
+		RCLCPP_INFO(ros_node_->get_logger(), "%s force : %f", fan.c_str(), fan_frc_[i]);
+		RCLCPP_INFO(ros_node_->get_logger(), "%s stddev: %f", fan.c_str(), stddev_[i]);
+		RCLCPP_INFO(ros_node_->get_logger(), "%s kappa : %f", fan.c_str(), fan_k_[i]);
+		RCLCPP_INFO(ros_node_->get_logger(), "%s Kprop : %f", fan.c_str(), k_prop_[i]);
 	}
 
-	gzlog << "/thr_parameter/filter/coeff_a/a0 : " << coeff_a_.X() << "\n";
-	gzlog << "/thr_parameter/filter/coeff_a/a1 : " << coeff_a_.Y() << "\n";
-	gzlog << "/thr_parameter/filter/coeff_a/a2 : " << coeff_a_.Z() << "\n";
-	gzlog << "/thr_parameter/filter/coeff_b/b0 : " << coeff_b_.X() << "\n";
-	gzlog << "/thr_parameter/filter/coeff_b/b1 : " << coeff_b_.Y() << "\n";
-	gzlog << "/thr_parameter/filter/coeff_b/b2 : " << coeff_b_.Z() << "\n";
-	
+	RCLCPP_INFO(ros_node_->get_logger(), "filter coeff_a: %f %f %f", coeff_a_.X(), coeff_a_.Y(), coeff_a_.Z());
+	RCLCPP_INFO(ros_node_->get_logger(), "filter coeff_b: %f %f %f", coeff_b_.X(), coeff_b_.Y(), coeff_b_.Z());
 }
 
 //------------------------------------------------------------------------------
-// Gazeboのモデルプラグインとして登録
-GZ_REGISTER_MODEL_PLUGIN(gazebo::Thr)
+// gz-simのシステムプラグインとして登録
+GZ_ADD_PLUGIN(
+	thr_plugin::Thr,
+	gz::sim::System,
+	gz::sim::ISystemConfigure,
+	gz::sim::ISystemPreUpdate)
+
+GZ_ADD_PLUGIN_ALIAS(thr_plugin::Thr, "thr::Thr")
 
 // End Of File -----------------------------------------------------------------

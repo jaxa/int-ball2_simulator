@@ -1,26 +1,19 @@
 #ifndef INTBALL_ROUTE_PANEL_H
 #define INTBALL_ROUTE_PANEL_H
 
-
-#include <boost/shared_ptr.hpp>
+#include <memory>
 #include <QWidget>
 #include <QVector3D>
 #include <QQuaternion>
 #include <QVBoxLayout>
-#include <rviz/visualization_manager.h>
-#include <ros/ros.h>
+#include <rviz_common/visualization_manager.hpp>
+#include <rclcpp/rclcpp.hpp>
 
-namespace rviz
+namespace rviz_common
 {
 class Display;
 class RenderPanel;
-} // namespace rviz
-
-namespace tf
-{
-class TransformListener;
-class StampedTransform;
-} // namespace tf
+} // namespace rviz_common
 
 namespace intball
 {
@@ -31,6 +24,10 @@ public:
     explicit IntBallRoutePanel(QWidget *parent);
     virtual ~IntBallRoutePanel() {}
     void initialize(const QString pathRvizConfig);
+    void createRenderPanel();
+    void initializeVisualizationManager(const QString pathRvizConfig);
+    void startRendering();
+    void stopRendering();
     void setFocalPoint(const QVector3D& position);
     void setCameraSettings(const float distance, const float pitchRad, const float yawRad);
 
@@ -46,9 +43,9 @@ public slots:
 private:
     QWidget* buttonWidget_;
     QVBoxLayout* layout_;
-    QScopedPointer<rviz::VisualizationManager> manager_;
-    rviz::RenderPanel* renderPanel_;
-    rviz::Display *displayRouteMarker_;
+    QScopedPointer<rviz_common::VisualizationManager> manager_;
+    rviz_common::RenderPanel* renderPanel_;
+    rviz_common::Display *displayRouteMarker_;
 
     void setCamera(const QString& keyPosition, const QString& keyDistance, const QString& keyPitchYaw);
 };

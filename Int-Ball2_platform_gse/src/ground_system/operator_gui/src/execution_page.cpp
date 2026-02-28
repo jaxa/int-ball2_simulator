@@ -105,7 +105,8 @@ void ExecutionPage::initialize(const QString& pathRvizConfig,
 //    transform.scale(5, -5);
     ui->goalSideView->initialize(transform);
     ui->goalTopDownView->initialize(transform);
-    ui->goalBirdEyeView->initialize(pathRvizConfig);
+    // RenderPanelのみ作成（VisualizationManagerはinitializeRviz()で後から初期化する）.
+    ui->goalBirdEyeView->createRenderPanel();
 
     // 経路のデータモデル登録.
     ui->goalSideView->setModel(routeInformation_);
@@ -123,6 +124,21 @@ void ExecutionPage::initialize(const QString& pathRvizConfig,
 
     // その他下位Widgetの初期化.
     ui->crewSupportWidget->initialize(intballTelemetry_, telecommandClient_);
+}
+
+void ExecutionPage::initializeRviz(const QString& pathRvizConfig)
+{
+    ui->goalBirdEyeView->initializeVisualizationManager(pathRvizConfig);
+}
+
+void ExecutionPage::startRendering()
+{
+    ui->goalBirdEyeView->startRendering();
+}
+
+void ExecutionPage::stopRendering()
+{
+    ui->goalBirdEyeView->stopRendering();
 }
 
 void ExecutionPage::setVideoArea(QWidget* video)
@@ -206,7 +222,7 @@ void ExecutionPage::TelemetryMonitor_detected(TelemetryMonitor::Event event, QVa
         auto result = value.value<unsigned char>();
         if(stateMachine_.isActive("TargetGuidanceControl.Processing"))
         {
-            if(result == ib2_msgs::CtlCommandResult::Type::TERMINATE_SUCCESS)
+            if(result == ib2_msgs::action::CtlCommand_Result::TERMINATE_SUCCESS)
             {
                 // 目標点に到達.
                 stateMachine_.submitEvent("TargetGuidanceControl.Arrived");

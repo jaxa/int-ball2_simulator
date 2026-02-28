@@ -6,13 +6,12 @@
 int main(int argc, char **argv)
 {
 	// ROS初期化
-	ros::init(argc, argv, "prop");
+	rclcpp::init(argc, argv);
 
-	ros::NodeHandle nh("prop");
+	auto node = std::make_shared<PropManager>();
 
-	// 管理機能実行
-	PropManager     prop_manager(nh);
-	prop_manager.start();
+	rclcpp::spin(node);
+	rclcpp::shutdown();
 
 	return 0;
 }

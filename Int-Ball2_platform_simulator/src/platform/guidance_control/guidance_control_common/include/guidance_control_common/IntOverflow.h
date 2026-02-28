@@ -1,6 +1,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include <string>
 
 #define ADDABLE(l, r, throws) \

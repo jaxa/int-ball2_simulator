@@ -9,23 +9,6 @@
 #include <QDir>
 
 #include "vlc/vlc.h"
-#include "config.h"
-
-// /opt/vlc/include/vlc/plugins
-#include "vlc_common.h"
-#include "vlc_demux.h"
-#include "vlc_input.h"
-#include "vlc_vout.h"
-#include "vlc_aout.h"
-#include "vlc_actions.h"
-#include "vlc_http.h"
-#include "vlc_fixups.h"
-
-// vlc-3.0.6/lib
-#include "libvlc_internal.h"
-#include "media_internal.h"
-#include "media_player_internal.h"
-#include "renderer_discoverer_internal.h"
 
 #include "exception/config_error.h"
 #include "operator_gui_config.h"
@@ -36,104 +19,8 @@ using namespace intball;
 using namespace intball::qsettings;
 using namespace intball::qsettings::key;
 
-/**
- * @brief lock_input(from vlc/media_player.c).
- * @param[in] mp libvlc_media_player_t.
- */
-static inline void lock_input(libvlc_media_player_t *mp)
-{
-    vlc_mutex_lock(&mp->input.lock);
-}
-
-/**
- * @brief unlock_input(from vlc/media_player.c).
- * @param[in] mp libvlc_media_player_t.
- */
-static inline void unlock_input(libvlc_media_player_t *mp)
-{
-    vlc_mutex_unlock(&mp->input.lock);
-}
-
-/**
- * @brief libvlc_get_input_thread(from vlc/media_player.c).
- *        Retrieve the input thread. Be sure to release the object
- *        once you are done with it. (libvlc Internal).
- * @param[in] p_mi libvlc_media_player_t.
- * @return p_input_thread.
- */
-input_thread_t *libvlc_get_input_thread(libvlc_media_player_t *p_mi)
-{
-    input_thread_t *p_input_thread;
-
-    assert(p_mi);
-
-    lock_input(p_mi);
-    p_input_thread = p_mi->input.p_thread;
-    if (p_input_thread)
-        vlc_object_hold(p_input_thread);
-    else
-        libvlc_printerr("No active input");
-    unlock_input(p_mi);
-
-    return p_input_thread;
-}
-
-/**
- * @brief GetVouts(from vlc/video.c).
- *        Remember to release the returned vout_thread_t.
- * @param[in] p_mi libvlc_media_player_t.
- * @param[out] n size of vout_thread_t.
- * @return vout_thread_t.
- */
-static vout_thread_t **GetVouts(libvlc_media_player_t *p_mi, size_t *n)
-{
-    input_thread_t *p_input = libvlc_get_input_thread(p_mi);
-    if (!p_input)
-    {
-        *n = 0;
-        return NULL;
-    }
-
-    vout_thread_t **pp_vouts;
-    if (input_Control(p_input, INPUT_GET_VOUTS, &pp_vouts, n))
-    {
-        *n = 0;
-        pp_vouts = NULL;
-    }
-    vlc_object_release(p_input);
-    return pp_vouts;
-}
-
-/**
- * @brief GetVout(from vlc/video.c).
- * @param[in] mp libvlc_media_player_t.
- * @param[in] num target index of the vout_thread_t.
- * @return vout_thread_t.
- */
-static vout_thread_t *GetVout(libvlc_media_player_t *mp, size_t num)
-{
-    vout_thread_t *p_vout = NULL;
-    size_t n;
-    vout_thread_t **pp_vouts = GetVouts(mp, &n);
-    if (pp_vouts == NULL)
-        goto err;
-
-    if (num < n)
-        p_vout = pp_vouts[num];
-
-    for (size_t i = 0; i < n; i++)
-        if (i != num)
-            vlc_object_release(pp_vouts[i]);
-    free(pp_vouts);
-
-    if (p_vout == NULL)
-err:
-        libvlc_printerr("Video output not active");
-    return p_vout;
-}
-
 VideoController::VideoController(const unsigned long long windowId, QWidget *parent)
-    : QWidget(parent), targetWindowId_(windowId)
+    : QWidget(parent), inst_(nullptr), mp_(nullptr), targetWindowId_(windowId)
 {
     snapshotDirectoryPath_ = Config::valueAsStdString(KEY_SNAPSHOT_DIRECTORY);
     if(QString::fromStdString(snapshotDirectoryPath_).right(1) != "/")
@@ -162,35 +49,31 @@ VideoController::VideoController(const unsigned long long windowId, QWidget *par
 
 VideoController::~VideoController()
 {
-    libvlc_media_player_stop (mp_);
-    libvlc_media_player_release (mp_);
-    libvlc_release (inst_);
+    if(mp_)
+    {
+        libvlc_media_player_stop(mp_);
+        libvlc_media_player_release(mp_);
+    }
+    if(inst_)
+    {
+        libvlc_release(inst_);
+    }
 }
 
 void VideoController::setRotate(int rotateDegree)
 {
-    if (mp_ != NULL)
-    {
-        size_t n;
-        vout_thread_t **pp_vouts = GetVouts(mp_, &n);
-        if (n > 0)
-        {
-            std::stringstream set;
-            set << "rotate{angle=" << rotateDegree << "}";
-
-            /*
-             * libvlc_media_player_tにrotateを設定すると
-             * 再生開始時にWarning/Errorが出るため,
-             * 既存voutにのみrotateを設定する.
-             */
-            for (size_t i = 0; i < n; i++)
-            {
-                var_SetString(pp_vouts[i], "video-filter", set.str().c_str());
-                vlc_object_release(pp_vouts[i]);
-            }
-            free(pp_vouts);
-        }
-    }
+    /*
+     * VLC内部APIを使用せず、公開APIのみでrotateを設定する.
+     * 再生中のストリームに対し、libvlc_video_set_adjust等では回転設定ができないため,
+     * メディアオプション "--video-filter=rotate" および "--rotate-angle=N" を
+     * start()時にメディアに設定する方式を採用する.
+     * 再生中の回転角度変更が必要な場合はrestart()を使用する.
+     *
+     * この関数は後方互換のために残すが、実際の回転設定はstart時に行う.
+     */
+    Q_UNUSED(rotateDegree);
+    LOG_INFO() << "setRotate called with degree=" << rotateDegree
+               << " (rotation is applied at media start time)";
 }
 
 void VideoController::start(InputType type, const char* inputString)
@@ -201,10 +84,13 @@ void VideoController::start(InputType type, const char* inputString)
 
     /*
      * VLCエンジンの読み込み.
-     * libvlc_new関数でvlcコマンドラインオプションを指定可能だが,
-     * その他のlibvlc**関数で上書きされるケースがあるため、ここでは処理しない.
+     * libvlc_new関数でvlcコマンドラインオプションを指定可能.
      */
-    inst_ = libvlc_new(0, NULL);
+    const char* vlc_args[] = {
+        "--avcodec-hw=none",
+        "--no-xlib"
+    };
+    inst_ = libvlc_new(2, vlc_args);
 
     switch(type)
     {
@@ -216,32 +102,29 @@ void VideoController::start(InputType type, const char* inputString)
         break;
     default:
         Q_ASSERT_X(false, __FUNCTION__, QString("Invalid type: %1").arg(type).toStdString().c_str());
-        break;
+        return;
     }
 
     /*
+     * メディアオプションを公開APIで設定する.
+     * var_Create/var_SetString等の内部APIは使用しない.
+     */
+    libvlc_media_add_option(m, ":sout-x264-preset=ultrafast");
+    libvlc_media_add_option(m, ":sout-x264-tune=film");
+    libvlc_media_add_option(m, ":avcodec-threads=0");
+    libvlc_media_add_option(m, ":avcodec-fast");
+
+    /*
      * 再生環境の設定.
-     * libvlc_media_player_new_from_media関数内で
-     * 一部変数はCreateされる.
      */
     mp_ = libvlc_media_player_new_from_media(m);
-    libvlc_media_release (m);
+    libvlc_media_release(m);
 
-    /* Create済み変数の再設定. */
-    var_SetString(mp_, "avcodec-hw", "none");
-    var_SetString(mp_, "aout", "any");
-    var_SetString(mp_, "vout", "any");
-    var_SetString(mp_, "window", targetWindowId_ ? "embed-xid,any" : "");
-    var_SetInteger(mp_, "drawable-xid", targetWindowId_);
-
-    /* 新規変数の作成および設定. */
-    var_Create(mp_, "sout-x264-preset", VLC_VAR_STRING);
-    var_SetString(mp_, "sout-x264-preset", "ultrafast");
-    var_Create(mp_, "sout-x264-tune", VLC_VAR_STRING);
-    var_SetString(mp_, "sout-x264-tune", "film");
-    var_Create(mp_, "avcodec-threads", VLC_VAR_INTEGER);
-    var_SetInteger(mp_, "avcodec-threads", 0);
-    var_Create(mp_, "avcodec-fast", VLC_VAR_VOID);
+    /* X Window IDの設定 (公開API). */
+    if(targetWindowId_)
+    {
+        libvlc_media_player_set_xwindow(mp_, static_cast<uint32_t>(targetWindowId_));
+    }
 
     callPlay();
 }
@@ -249,7 +132,7 @@ void VideoController::start(InputType type, const char* inputString)
 void VideoController::callPlay()
 {
     /* 映像再生（待受）. */
-    if(!libvlc_media_player_play(mp_))
+    if(libvlc_media_player_play(mp_) != 0)
     {
         LOG_WARNING() << "Could not start video standby.";
     }

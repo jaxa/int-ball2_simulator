@@ -1,7 +1,8 @@
 #ifndef ROS_RELATED_TYPE_DEFINITIONS_H
 #define ROS_RELATED_TYPE_DEFINITIONS_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include "builtin_interfaces/msg/time.hpp"
 
 namespace intball
 {
@@ -20,14 +21,14 @@ struct RosParam
     std::string id;
     std::string value;
     RosParamType type;
-    ros::Time stamp;
+    builtin_interfaces::msg::Time stamp;
 };
 
 struct NodeStatus
 {
     std::string node;
     std::string value;
-    ros::Time stamp;
+    builtin_interfaces::msg::Time stamp;
 };
 
 struct ContainerStatus
@@ -35,7 +36,7 @@ struct ContainerStatus
     std::string id;
     std::string image;
     unsigned char status;
-    ros::Time stamp;
+    builtin_interfaces::msg::Time stamp;
 };
 }
 

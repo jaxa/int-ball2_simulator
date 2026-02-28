@@ -18,7 +18,7 @@ TelecommandCameraMicrophoneWidget::TelecommandCameraMicrophoneWidget(QWidget *pa
 {
     ui->setupUi(this);
 
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandCameraMicrophoneWidget::executed);
 }
 

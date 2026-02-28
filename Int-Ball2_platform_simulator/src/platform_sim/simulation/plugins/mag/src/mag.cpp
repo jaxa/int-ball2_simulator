@@ -1,346 +1,329 @@
 
 #include "mag/mag.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
+#include <gz/sim/Model.hh>
+#include <gz/sim/Link.hh>
+#include <gz/sim/Util.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Model.hh>
+#include <gz/plugin/Register.hh>
+
 namespace
 {
-	/** 単位変換係数DEG->RAD */
 	const double DEG2RAD(M_PI / 180.0);
-
-	/** 許容誤差 */
 	const double TOL(0.1);
-
-	/** Publishカウンタ */
-	int pub_cnt(0);
-
-	/** 磁力ON/OFFサービス名 */
 	std::string SERVICE_SWITCH_POWER("/mag/switch_power");
 }
 
 //------------------------------------------------------------------------------
-// デフォルトコンストラクタ
-gazebo::Mag::Mag() = default;
+mag_plugin::Mag::Mag() = default;
+mag_plugin::Mag::~Mag() = default;
 
 //------------------------------------------------------------------------------
-// デストラクタ.
-gazebo::Mag::~Mag() = default;
-
-//------------------------------------------------------------------------------
-// プラグインのロード
-void gazebo::Mag::Load(physics::WorldPtr world, sdf::ElementPtr)
+void mag_plugin::Mag::Configure(
+	const gz::sim::Entity &/*_entity*/,
+	const std::shared_ptr<const sdf::Element> &/*_sdf*/,
+	gz::sim::EntityComponentManager &/*_ecm*/,
+	gz::sim::EventManager &/*_eventMgr*/)
 {
-
-	// Initialize ros, if it has not already be initialized
-	if(!ros::isInitialized())
+	if (!rclcpp::ok())
 	{
-		int argc    = 0;
-		char **argv = NULL;
-		ros::init(argc, argv, "mag",
-		ros::init_options::NoSigintHandler);
+		rclcpp::init(0, nullptr);
 	}
 
-	// Store the World Pointer
-	world_  = world;
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
 
-	// Create ROS node.
-	nh_     = ros::NodeHandle("mag");
+	ros_node_ = std::make_shared<rclcpp::Node>("mag", node_options);
 
-	// Publisher
-	pub_mag_          = nh_.advertise<geometry_msgs::WrenchStamped>("/mag/wrench_stamped", 1);
-	pub_power_status_ = nh_.advertise<ib2_msgs::PowerStatus>("/mag/power_status", 1);
+	pub_mag_ = ros_node_->create_publisher<geometry_msgs::msg::WrenchStamped>(
+		"/mag/wrench_stamped", 1);
+	pub_power_status_ = ros_node_->create_publisher<ib2_msgs::msg::PowerStatus>(
+		"/mag/power_status", 1);
 
-	// Magnet Force ON/OFF Service Server
-	switch_power_server_ = nh_.advertiseService(SERVICE_SWITCH_POWER, &Mag::switchPower, this);
+	switch_power_server_ = ros_node_->create_service<ib2_msgs::srv::SwitchPower>(
+		SERVICE_SWITCH_POWER,
+		std::bind(&Mag::switchPower, this,
+			std::placeholders::_1, std::placeholders::_2));
 
-	// Mag Parameter Update Server
-	mag_param_server_ = nh_.advertiseService("/sim/mag/update_params", &Mag::updateParameter, this);
+	mag_param_server_ = ros_node_->create_service<sim_msgs::srv::UpdateParameter>(
+		"/sim/mag/update_params",
+		std::bind(&Mag::updateParameter, this,
+			std::placeholders::_1, std::placeholders::_2));
 
-	// Get Parameters
 	getParameter();
-
-	// Set callback to add force in gazebo cycle
-	update_ = event::Events::ConnectWorldUpdateBegin(
-				std::bind(&Mag::magCallBack, this));
 }
 
 //------------------------------------------------------------------------------
-// ROS Timerのコールバック関数
-void gazebo::Mag::magCallBack()
+void mag_plugin::Mag::magCallBack(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
 {
-	auto fmag_ds = ignition::math::Vector3d::Zero;
-	auto fmag_bd = ignition::math::Vector3d::Zero;
-	auto tmag_bd = ignition::math::Vector3d::Zero;
-	auto r_ds    = ignition::math::Vector3d::Zero;
-	auto q_ds    = ignition::math::Quaterniond(1.0, 0.0, 0.0, 0.0);
-	
-	getModels();
-	getDsPose(r_ds, q_ds);
+	auto fmag_ds = gz::math::Vector3d::Zero;
+	auto fmag_bd = gz::math::Vector3d::Zero;
+	auto tmag_bd = gz::math::Vector3d::Zero;
+	auto r_ds    = gz::math::Vector3d::Zero;
+	auto q_ds    = gz::math::Quaterniond(1.0, 0.0, 0.0, 0.0);
+
+	getModels(_ecm);
+
+	if (iss_link_ == gz::sim::kNullEntity || ib2_link_ == gz::sim::kNullEntity)
+		return;
+
+	getDsPose(_ecm, r_ds, q_ds);
 	getForce(r_ds, q_ds, fmag_ds, fmag_bd);
 	getTorque(fmag_bd, tmag_bd);
 
-	if(!power_status_.status){
-		fmag_ds = ignition::math::Vector3d::Zero; 
-		fmag_bd = ignition::math::Vector3d::Zero;
-		tmag_bd = ignition::math::Vector3d::Zero;
+	if (!power_status_.status)
+	{
+		fmag_ds = gz::math::Vector3d::Zero;
+		fmag_bd = gz::math::Vector3d::Zero;
+		tmag_bd = gz::math::Vector3d::Zero;
 	}
 
-	addForceAndTorque(fmag_bd, tmag_bd);
-	pubForceAndTorque(fmag_ds, tmag_bd);
+	addForceAndTorque(_ecm, fmag_bd, tmag_bd);
+	pubForceAndTorque(_info, fmag_ds, tmag_bd);
 }
 
 //------------------------------------------------------------------------------
-// ROS Parameter Serverからパラメータを取得
-void gazebo::Mag::getParameter()
+void mag_plugin::Mag::getParameter()
 {
-	double x, y, z;
+	auto get_param = [this](const std::string &name, auto &value) {
+		using T = std::decay_t<decltype(value)>;
+		if (!ros_node_->has_parameter(name)) {
+			ros_node_->declare_parameter<T>(name, value);
+		}
+		ros_node_->get_parameter(name, value);
+	};
 
-	// Model Name
-	if(!nh_.getParam("/model_name/iss_name", iss_name_))
-	{
-		gzerr << "Cannot Get /model_name/iss_name in mag plugin \n";
-	}
-	if(!nh_.getParam("/model_name/ib2_name", ib2_name_))
-	{
-		gzerr << "Cannot Get /model_name/ib2_name in mag plugin \n";
-	}
+	double x = 0.0, y = 0.0, z = 0.0;
+
+	get_param("model_name.iss_name", iss_name_);
+	get_param("model_name.ib2_name", ib2_name_);
 
 	// JPM Pose
-	if(
-		!nh_.getParam("/jpm_pose/pos/x", x) ||
-		!nh_.getParam("/jpm_pose/pos/y", y) ||
-		!nh_.getParam("/jpm_pose/pos/z", z)
-	)
-	{
-		gzerr << "Cannot Get /jpm_pose/pos/ in mag plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("jpm_pose.pos.x", x);
+	get_param("jpm_pose.pos.y", y);
+	get_param("jpm_pose.pos.z", z);
 	jpm_pos_.Set(x, y, z);
-	if(
-		!nh_.getParam("/jpm_pose/att/r", x) ||
-		!nh_.getParam("/jpm_pose/att/p", y) ||
-		!nh_.getParam("/jpm_pose/att/y", z)
-	)
-	{
-		gzerr << "Cannot Get /jpm_pose/att/ in mag plugin \n";
-	}
+
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("jpm_pose.att.r", x);
+	get_param("jpm_pose.att.p", y);
+	get_param("jpm_pose.att.y", z);
 	jpm_att_.Set(x, y, z);
 	jpm_att_ = jpm_att_ * DEG2RAD;
 
 	// DS Pose
-	if(
-		!nh_.getParam("/ds_pose/pos/x", x) ||
-		!nh_.getParam("/ds_pose/pos/y", y) ||
-		!nh_.getParam("/ds_pose/pos/z", z)
-	)
-	{
-		gzerr << "Cannot Get /ds_pose/pos/ in mag plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("ds_pose.pos.x", x);
+	get_param("ds_pose.pos.y", y);
+	get_param("ds_pose.pos.z", z);
 	ds_pos_.Set(x, y, z);
-	if(
-		!nh_.getParam("/ds_pose/att/r", x) ||
-		!nh_.getParam("/ds_pose/att/p", y) ||
-		!nh_.getParam("/ds_pose/att/y", z)
-	)
-	{
-		gzerr << "Cannot Get /ds_pose/att/ in mag plugin \n";
-	}
+
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("ds_pose.att.r", x);
+	get_param("ds_pose.att.p", y);
+	get_param("ds_pose.att.y", z);
 	ds_att_.Set(x, y, z);
 	ds_att_ = ds_att_ * DEG2RAD;
 
 	// Power Status
-	bool ps;
-	if(!nh_.getParam("/mag_parameter/power_status", ps)){
-		power_status_.status = ib2_msgs::PowerStatus::OFF;
-		gzerr << "Cannot Get /mag_parameter/power_status in mag plugin \n";
-	}
+	bool ps = false;
+	get_param("mag_parameter.power_status", ps);
 	power_status_.status = ps;
 
 	// Mag IF
-	if(
-		!nh_.getParam("/mag_parameter/robo_if/x", x) ||
-		!nh_.getParam("/mag_parameter/robo_if/y", y) ||
-		!nh_.getParam("/mag_parameter/robo_if/z", z)
-	)
-	{
-		gzerr << "Cannot Get /mag_parameter/robo_if/ in mag plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("mag_parameter.robo_if.x", x);
+	get_param("mag_parameter.robo_if.y", y);
+	get_param("mag_parameter.robo_if.z", z);
 	rrif_.Set(x, y, z);
-	if(
-		!nh_.getParam("/mag_parameter/ds_if/x", x) ||
-		!nh_.getParam("/mag_parameter/ds_if/y", y) ||
-		!nh_.getParam("/mag_parameter/ds_if/z", z)
-	)
-	{
-		gzerr << "Cannot Get /mag_parameter/ds_if/ in mag plugin \n";
-	}
+
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("mag_parameter.ds_if.x", x);
+	get_param("mag_parameter.ds_if.y", y);
+	get_param("mag_parameter.ds_if.z", z);
 	rdif_.Set(x, y, z);
 
 	// CG
-	if(
-		!nh_.getParam("/robot_mass_property/cg/x", x) || 
-		!nh_.getParam("/robot_mass_property/cg/y", y) || 
-		!nh_.getParam("/robot_mass_property/cg/z", z)
-		)
-	{
-		gzerr << "Cannot Get /robot_mass_property/cg in mag plugin \n";
-	}
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("robot_mass_property.cg.x", x);
+	get_param("robot_mass_property.cg.y", y);
+	get_param("robot_mass_property.cg.z", z);
 	cg_.Set(x, y, z);
 
 	// Threshold
-	if(!nh_.getParam("/mag_parameter/threshold", d_threshold_))
-	{
-		gzerr << "Cannot Get /mag_parameter/threshold in mag plugin \n";
-	}
+	get_param("mag_parameter.threshold", d_threshold_);
 
-	// Coefficient
-	if(
-		!nh_.getParam("/mag_parameter/coeff_far/a", afar_) ||
-		!nh_.getParam("/mag_parameter/coeff_far/b", bfar_) ||
-		!nh_.getParam("/mag_parameter/coeff_far/c", cfar_)
-	)
-	{
-		gzerr << "Cannot Get /mag_parameter/coeff_far/ in mag plugin \n";
-	}
-	if(
-		!nh_.getParam("/mag_parameter/coeff_prox/a", aprox_) ||
-		!nh_.getParam("/mag_parameter/coeff_prox/b", bprox_) ||
-		!nh_.getParam("/mag_parameter/coeff_prox/c", cprox_)
-	)
-	{
-		gzerr << "Cannot Get /mag_parameter/coeff_prox/ in mag plugin \n";
-	}
+	// Coefficients
+	get_param("mag_parameter.coeff_far.a", afar_);
+	get_param("mag_parameter.coeff_far.b", bfar_);
+	get_param("mag_parameter.coeff_far.c", cfar_);
+	get_param("mag_parameter.coeff_prox.a", aprox_);
+	get_param("mag_parameter.coeff_prox.b", bprox_);
+	get_param("mag_parameter.coeff_prox.c", cprox_);
 
 	// Standard Deviation
-	if(!nh_.getParam("/mag_parameter/stddev", stddev_))
-	{
-		gzerr << "Cannot Get /mag_parameter/stddev in mag plugin \n";
-	}
+	get_param("mag_parameter.stddev", stddev_);
 
 	// Cycle
-	if(!nh_.getParam("/mag_parameter/cycle", cycle_))
-	{
-		gzerr << "Cannot Get /mag_parameter/cycle in mag plugin \n";
-	}
+	get_param("mag_parameter.cycle", cycle_);
 
-	// 乱数のシード値が設定されている場合は読み込む
+	// Random seed
 	int seed = -1;
-	if (nh_.getParam("/sim_common/random_seed", seed))
+	get_param("sim_common.random_seed", seed);
+	if (seed >= 0)
 	{
-		if(seed >= 0)
-		{
-			gazebo::common::Console::msg(__FILE__, __LINE__) << "Set the random seed value " << seed << "\n";
-			ignition::math::Rand::Seed(static_cast<unsigned int>(seed));
-		}
-	}
-	else
-	{
-		gzerr << "Could not read the parameters of \"/sim_common/random_seed\".\n";
+		RCLCPP_INFO(ros_node_->get_logger(), "Set the random seed value %d", seed);
+		gz::math::Rand::Seed(static_cast<unsigned int>(seed));
 	}
 
 	logParameter();
 }
 
 //------------------------------------------------------------------------------
-// ROS Parameter Serverからパラメータを取得
-bool gazebo::Mag::updateParameter(sim_msgs::UpdateParameter::Request& req, sim_msgs::UpdateParameter::Response& res)
+void mag_plugin::Mag::updateParameter(
+	const std::shared_ptr<sim_msgs::srv::UpdateParameter::Request> /*req*/,
+	std::shared_ptr<sim_msgs::srv::UpdateParameter::Response> res)
 {
 	getParameter();
-
-	res.result = true;
-	return true;
+	res->result = true;
 }
 
 //------------------------------------------------------------------------------
-// Model取得
-void gazebo::Mag::getModels()
+void mag_plugin::Mag::getModels(gz::sim::EntityComponentManager &_ecm)
 {
-	if(!iss_model_)
+	if (iss_model_ == gz::sim::kNullEntity)
 	{
-		iss_model_ = world_->ModelByName(iss_name_);
-		if(iss_model_)
+		iss_model_ = _ecm.EntityByComponents(
+			gz::sim::components::Name(iss_name_),
+			gz::sim::components::Model());
+		if (iss_model_ != gz::sim::kNullEntity)
 		{
-			iss_link_ = iss_model_->GetLinks();
+			gz::sim::Model issModel(iss_model_);
+			auto links = issModel.Links(_ecm);
+			if (!links.empty())
+				iss_link_ = links[0];
 		}
 	}
-	if(!ib2_model_)
+	if (ib2_model_ == gz::sim::kNullEntity)
 	{
-		ib2_model_ = world_->ModelByName(ib2_name_);
-		if(ib2_model_)
+		ib2_model_ = _ecm.EntityByComponents(
+			gz::sim::components::Name(ib2_name_),
+			gz::sim::components::Model());
+		if (ib2_model_ != gz::sim::kNullEntity)
 		{
-			ib2_link_ = ib2_model_->GetLinks();
+			gz::sim::Model ib2Model(ib2_model_);
+			auto links = ib2Model.Links(_ecm);
+			if (!links.empty())
+				ib2_link_ = links[0];
 		}
 	}
 }
 
 //------------------------------------------------------------------------------
-// ドッキングステーション座標系(ホーム座標系)でのロボット位置・姿勢を取得
-void gazebo::Mag::getDsPose(ignition::math::Vector3d& r_ds, ignition::math::Quaterniond& q_ds)
+void mag_plugin::Mag::getDsPose(
+	gz::sim::EntityComponentManager &_ecm,
+	gz::math::Vector3d& r_ds, gz::math::Quaterniond& q_ds)
 {
-	auto ib2_pose  = ib2_link_[0]->WorldCoGPose();
-	auto iss_pose  = iss_link_[0]->WorldCoGPose();
-	auto iss_cg    = ignition::math::Vector3d(iss_pose.Pos().X(), iss_pose.Pos().Y(), iss_pose.Pos().Z());
+	gz::sim::Link ib2Link(ib2_link_);
+	gz::sim::Link issLink(iss_link_);
+
+	auto ib2_pose_opt = ib2Link.WorldPose(_ecm);
+	auto iss_pose_opt = issLink.WorldPose(_ecm);
+	if (!ib2_pose_opt || !iss_pose_opt)
+		return;
+
+	auto ib2_pose = ib2_pose_opt.value();
+	auto iss_pose = iss_pose_opt.value();
+
+	auto iss_cg = gz::math::Vector3d(iss_pose.Pos().X(), iss_pose.Pos().Y(), iss_pose.Pos().Z());
 	coord_transformer_.set(iss_cg, jpm_pos_, jpm_att_, ds_pos_, ds_att_);
 
-	// CG Pos
-	auto iss_qtn   = ignition::math::Quaterniond(iss_pose.Rot().W(), iss_pose.Rot().X(), iss_pose.Rot().Y(), iss_pose.Rot().Z());
+	auto iss_qtn   = gz::math::Quaterniond(iss_pose.Rot().W(), iss_pose.Rot().X(), iss_pose.Rot().Y(), iss_pose.Rot().Z());
 	auto world_pos = ib2_pose.Pos();
 	r_ds           = coord_transformer_.getDsPosFromWorld(world_pos, iss_qtn);
 
-	// Quaternion
 	auto world_qtn = ib2_pose.Rot();
 	q_ds           = coord_transformer_.getDsQtnFromWorld(world_qtn, iss_qtn);
 }
 
 //------------------------------------------------------------------------------
-// 磁石による吸引力を取得
-void gazebo::Mag::getForce(
-	const ignition::math::Vector3d& r_ds,   const ignition::math::Quaterniond& q_ds,
-	      ignition::math::Vector3d& fmag_ds,      ignition::math::Vector3d&    fmag_bd
-)
+void mag_plugin::Mag::getForce(
+	const gz::math::Vector3d& r_ds,   const gz::math::Quaterniond& q_ds,
+	      gz::math::Vector3d& fmag_ds,      gz::math::Vector3d&    fmag_bd)
 {
-	auto   dif   = rdif_ - r_ds;                   // ロボット重心       to DS側磁力IF点(ホーム座標系)
-	auto   rif   = q_ds.RotateVector(rrif_);       // ロボット重心       to ロボット側磁力IF点(ホーム座標系)
-	auto   rrifd = r_ds  + rif;                    // DS原点             to ロボット側磁力IF点(ホーム座標系)
-	auto   rho   = rdif_ - rrifd;                  // ロボット側磁力IF点 to DS側磁力IF点(ホーム座標系)
+	auto   dif   = rdif_ - r_ds;
+	auto   rif   = q_ds.RotateVector(rrif_);
+	auto   rrifd = r_ds  + rif;
+	auto   rho   = rdif_ - rrifd;
 	double rhon  = rho.Length();
 	double inn   = dif.Dot(rif);
 
-	double nx    = ignition::math::Rand::DblNormal(0.0, 1.0);
-	double ny    = ignition::math::Rand::DblNormal(0.0, 1.0);
-	double nz    = ignition::math::Rand::DblNormal(0.0, 1.0);
+	double nx    = gz::math::Rand::DblNormal(0.0, 1.0);
+	double ny    = gz::math::Rand::DblNormal(0.0, 1.0);
+	double nz    = gz::math::Rand::DblNormal(0.0, 1.0);
 	fmag_ds      = U(inn) * H(rhon) * rho.Normalize();
 	fmag_ds.X()  = fmag_ds.X() * (1.0 + stddev_ * nx);
 	fmag_ds.Y()  = fmag_ds.Y() * (1.0 + stddev_ * ny);
 	fmag_ds.Z()  = fmag_ds.Z() * (1.0 + stddev_ * nz);
-	
+
 	fmag_bd      = q_ds.RotateVectorReverse(fmag_ds);
 }
 
 //------------------------------------------------------------------------------
-//  磁石によるトルクを取得
-void gazebo::Mag::getTorque(const ignition::math::Vector3d& fmag_bd, ignition::math::Vector3d& tmag_bd)
+void mag_plugin::Mag::getTorque(
+	const gz::math::Vector3d& fmag_bd, gz::math::Vector3d& tmag_bd)
 {
 	auto arm = rrif_ - cg_;
 	tmag_bd  = arm.Cross(fmag_bd);
 }
 
 //------------------------------------------------------------------------------
-// 吸引力・トルクを印加
-void gazebo::Mag::addForceAndTorque(const ignition::math::Vector3d& fmag_bd, const ignition::math::Vector3d& tmag_bd)
+void mag_plugin::Mag::addForceAndTorque(
+	gz::sim::EntityComponentManager &_ecm,
+	const gz::math::Vector3d& fmag_bd, const gz::math::Vector3d& tmag_bd)
 {
-	ib2_link_[0]->AddRelativeForce(fmag_bd);
-	ib2_link_[0]->AddRelativeTorque(tmag_bd);
+	gz::sim::Link ib2Link(ib2_link_);
+
+	// Convert body-frame force/torque to world-frame
+	auto worldPose = ib2Link.WorldPose(_ecm);
+	if (!worldPose)
+		return;
+
+	auto worldForce  = worldPose->Rot().RotateVector(fmag_bd);
+	auto worldTorque = worldPose->Rot().RotateVector(tmag_bd);
+
+	ib2Link.AddWorldWrench(_ecm, worldForce, worldTorque);
 }
 
 //------------------------------------------------------------------------------
-// 吸引力・トルクをパブリッシュ
-void gazebo::Mag::pubForceAndTorque(const ignition::math::Vector3d& fmag_ds, const ignition::math::Vector3d& tmag_bd)
+void mag_plugin::Mag::pubForceAndTorque(
+	const gz::sim::UpdateInfo &_info,
+	const gz::math::Vector3d& fmag_ds, const gz::math::Vector3d& tmag_bd)
 {
-	if(pub_cnt == 0)
+	if (pub_cnt_ == 0)
 	{
-		double sim_time = world_->SimTime().Double();
+		auto sim_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+			_info.simTime).count();
 
-		geometry_msgs::WrenchStamped wrench_stamped;
-		wrench_stamped.header.seq      = 0;
-		wrench_stamped.header.stamp    = ros::Time(sim_time);
+		geometry_msgs::msg::WrenchStamped wrench_stamped;
+		wrench_stamped.header.stamp.sec =
+			static_cast<int32_t>(sim_time_ns / 1000000000LL);
+		wrench_stamped.header.stamp.nanosec =
+			static_cast<uint32_t>(sim_time_ns % 1000000000LL);
 		wrench_stamped.header.frame_id = "";
 		wrench_stamped.wrench.force.x  = fmag_ds.X();
 		wrench_stamped.wrench.force.y  = fmag_ds.Y();
@@ -349,63 +332,63 @@ void gazebo::Mag::pubForceAndTorque(const ignition::math::Vector3d& fmag_ds, con
 		wrench_stamped.wrench.torque.y = tmag_bd.Y();
 		wrench_stamped.wrench.torque.z = tmag_bd.Z();
 
-		pub_mag_.publish(wrench_stamped);
-		pub_power_status_.publish(power_status_);
+		pub_mag_->publish(wrench_stamped);
+		pub_power_status_->publish(power_status_);
 	}
-	else if(pub_cnt >= static_cast<int>(cycle_ * 1000 + TOL) - 1)
+	else if (pub_cnt_ >= static_cast<int>(cycle_ * 1000 + TOL) - 1)
 	{
-		pub_cnt = -1;
+		pub_cnt_ = -1;
 	}
-	pub_cnt++;
+	pub_cnt_++;
 }
 
 //------------------------------------------------------------------------------
-// 磁力ON/OFF
-bool gazebo::Mag::switchPower
-(ib2_msgs::SwitchPower::Request&   req, 
- ib2_msgs::SwitchPower::Response&  res)
+void mag_plugin::Mag::switchPower(
+	const std::shared_ptr<ib2_msgs::srv::SwitchPower::Request> req,
+	std::shared_ptr<ib2_msgs::srv::SwitchPower::Response> res)
 {
-	power_status_.status     = req.power.status;
-	res.current_power.status = power_status_.status;
-
-	return true;
+	power_status_.status     = req->power.status;
+	res->current_power.status = power_status_.status;
 }
 
 //------------------------------------------------------------------------------
-// 磁力プラグインパラメータログ作成
-void gazebo::Mag::logParameter()
+void mag_plugin::Mag::PreUpdate(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
+{
+	if (_info.paused)
+		return;
+
+	// Process pending ROS callbacks (for service servers)
+	rclcpp::spin_some(ros_node_);
+
+	magCallBack(_info, _ecm);
+}
+
+//------------------------------------------------------------------------------
+void mag_plugin::Mag::logParameter()
 {
 	int ps = power_status_.status;
 
-	gzlog << "***************** Mag Parameter \n";
-	gzlog << "/mag_parameter/power_status          : " << ps                   << "\n";
-	gzlog << "/mag_parameter/robo_if/x             : " << rrif_.X()            << "\n";
-	gzlog << "/mag_parameter/robo_if/y             : " << rrif_.Y()            << "\n";
-	gzlog << "/mag_parameter/robo_if/z             : " << rrif_.Z()            << "\n";
-	gzlog << "/mag_parameter/ds_if/x               : " << rdif_.X()            << "\n";
-	gzlog << "/mag_parameter/ds_if/y               : " << rdif_.Y()            << "\n";
-	gzlog << "/mag_parameter/ds_if/z               : " << rdif_.Z()            << "\n";
-	gzlog << "/mag_parameter/threshold             : " << d_threshold_         << "\n";
-	gzlog << "/mag_parameter/coeff_far/a           : " << afar_                << "\n";
-	gzlog << "/mag_parameter/coeff_far/b           : " << bfar_                << "\n";
-	gzlog << "/mag_parameter/coeff_far/c           : " << cfar_                << "\n";
-	gzlog << "/mag_parameter/coeff_prox/a          : " << aprox_               << "\n";
-	gzlog << "/mag_parameter/coeff_prox/b          : " << bprox_               << "\n";
-	gzlog << "/mag_parameter/coeff_prox/c          : " << cprox_               << "\n";
-	gzlog << "/mag_parameter/stddev                : " << stddev_              << "\n";
-	gzlog << "/mag_parameter/cycle                 : " << cycle_               << "\n";
+	RCLCPP_INFO(ros_node_->get_logger(), "***************** Mag Parameter");
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.power_status          : %d", ps);
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.robo_if               : %f %f %f", rrif_.X(), rrif_.Y(), rrif_.Z());
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.ds_if                 : %f %f %f", rdif_.X(), rdif_.Y(), rdif_.Z());
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.threshold             : %f", d_threshold_);
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.coeff_far             : %f %f %f", afar_, bfar_, cfar_);
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.coeff_prox            : %f %f %f", aprox_, bprox_, cprox_);
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.stddev                : %f", stddev_);
+	RCLCPP_INFO(ros_node_->get_logger(), "mag_parameter.cycle                 : %f", cycle_);
 }
 
 //------------------------------------------------------------------------------
-// 単位ステップ関数
-bool gazebo::Mag::U(double x)
+bool mag_plugin::Mag::U(double x)
 {
-	return ((x > 0.0)? true : false);
+	return (x > 0.0);
 }
 
 //------------------------------------------------------------------------------
-// 吸引力関数
-double gazebo::Mag::H(double dist)
+double mag_plugin::Mag::H(double dist)
 {
 	dist = std::fabs(dist);
 
@@ -413,7 +396,7 @@ double gazebo::Mag::H(double dist)
 	double b = bfar_;
 	double c = cfar_;
 
-	if(dist <= d_threshold_)
+	if (dist <= d_threshold_)
 	{
 		a = aprox_;
 		b = bprox_;
@@ -426,9 +409,12 @@ double gazebo::Mag::H(double dist)
 }
 
 //------------------------------------------------------------------------------
-// Gazeboのモデルプラグインとして登録
-GZ_REGISTER_WORLD_PLUGIN(gazebo::Mag)
+GZ_ADD_PLUGIN(
+	mag_plugin::Mag,
+	gz::sim::System,
+	gz::sim::ISystemConfigure,
+	gz::sim::ISystemPreUpdate)
+
+GZ_ADD_PLUGIN_ALIAS(mag_plugin::Mag, "mag::Mag")
 
 // End Of File -----------------------------------------------------------------
-
-

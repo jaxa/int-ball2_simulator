@@ -12,7 +12,7 @@
     </visual>
     <collision>
       <geometry>
-        <mesh filename="model://ib2/media/meshes/int-ball2/Int-Ball2_20241105_v2.dae" />
+        <sphere radius="0.15"/>
       </geometry>
     </collision>
     <inertial>
@@ -50,37 +50,76 @@
     <origin xyz=" 0.0 0.0 0.0 " rpy="0 0 0"/>
   </joint>
 
+  <!-- Thruster plugin (gz-sim system plugin) -->
   <gazebo>
-    <plugin name="thr"  filename="libthr.so"  />
+    <plugin filename="libthr.so" name="thr::Thr"/>
   </gazebo>
 
+  <!-- Custom IMU sensor plugin (gz-sim system plugin) -->
+  <gazebo>
+    <plugin filename="libib2_imu_sensor_plugin.so" name="ib2_imu_sensor::Ib2ImuSensor"/>
+  </gazebo>
+
+  <!-- Pose publisher (publishes model pose to gz-transport for ros_gz_bridge) -->
+  <!-- Note: publish_nested_model_pose=true is a workaround for gz-sim#2690
+       where publish_model_pose is ignored and publish_nested_model_pose is
+       checked instead. This causes the model's own world pose to be published. -->
+  <gazebo>
+    <plugin filename="gz-sim-pose-publisher-system"
+            name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>false</publish_link_pose>
+      <publish_model_pose>true</publish_model_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <update_frequency>50.0</update_frequency>
+    </plugin>
+  </gazebo>
+
+  <!-- IMU sensor -->
   <link name="imu_link"/>
   <gazebo reference="imu_link">
-    <gravity>true</gravity>
     <sensor name="imu_sensor" type="imu">
       <always_on>true</always_on>
       <update_rate>100</update_rate>
       <visualize>true</visualize>
-      <topic>__default_topic__</topic>
-      <plugin filename="libib2_imu_sensor_plugin.so" name="ib2_imu_sensor_plugin">
-        <topicName>imu</topicName>
-        <bodyName>imu_link</bodyName>
-        <updateRateHZ>10.0</updateRateHZ>
-        <gaussianNoise>0.0</gaussianNoise>
-        <xyzOffset>0 0 0</xyzOffset>
-        <rpyOffset>0 0 0</rpyOffset>
-        <frameName>imu_link</frameName>
-        <initialOrientationAsReference>false</initialOrientationAsReference>
-      </plugin>
-      <pose>0 0 0 0 0 0</pose>
+      <topic>imu</topic>
+      <gz_frame_id>imu_link</gz_frame_id>
+      <!-- In Gazebo Harmonic, the built-in IMU sensor system is used.
+           The custom ib2_imu_sensor_plugin is replaced by:
+           1. gz-sim's built-in imu system plugin (added in the world SDF)
+           2. ros_gz_bridge to bridge /imu topic to ROS 2
+
+           Add to world SDF:
+             <plugin filename="gz-sim-imu-system"
+                     name="gz::sim::systems::Imu"/>
+
+           Bridge config (ros_gz_bridge):
+             - topic: /imu
+               type: sensor_msgs/msg/Imu
+               direction: GZ_TO_ROS
+      -->
+      <imu>
+        <angular_velocity>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></z>
+        </angular_velocity>
+        <linear_acceleration>
+          <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></x>
+          <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></y>
+          <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0</stddev></noise></z>
+        </linear_acceleration>
+      </imu>
     </sensor>
   </gazebo>
 
+  <!-- Front camera -->
   <link name="cameraF_link"/>
   <gazebo reference="cameraF_link">
     <sensor type="camera" name="cameraF">
       <update_rate>30.0</update_rate>
-      <camera name="head">
+      <topic>/camera_main/image_raw</topic>
+      <gz_frame_id>cameraF_link</gz_frame_id>
+      <camera name="camera_front">
         <horizontal_fov>1.3962634</horizontal_fov>
         <image>
           <width>800</width>
@@ -97,28 +136,34 @@
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>camera_front</cameraName>
-        <imageTopicName>/camera_main/image_raw</imageTopicName>
-        <cameraInfoTopicName>/camera_main/camera_info</cameraInfoTopicName>
-        <frameName>cameraF_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!--
+        Gazebo Harmonic uses built-in sensor system + ros_gz_bridge.
+
+        Add to world SDF:
+          <plugin filename="gz-sim-sensors-system"
+                  name="gz::sim::systems::Sensors">
+            <render_engine>ogre2</render_engine>
+          </plugin>
+
+        Bridge config (ros_gz_bridge):
+          - topic: /camera_main/image_raw
+            type: sensor_msgs/msg/Image
+            direction: GZ_TO_ROS
+          - topic: /camera_main/camera_info
+            type: sensor_msgs/msg/CameraInfo
+            direction: GZ_TO_ROS
+      -->
     </sensor>
   </gazebo>
 
+  <!-- Left camera -->
   <link name="cameraL_link"/>
   <gazebo reference="cameraL_link">
     <sensor type="camera" name="cameraL">
       <update_rate>30.0</update_rate>
-      <camera name="head">
+      <topic>/camera_left/image_raw</topic>
+      <gz_frame_id>cameraL_link</gz_frame_id>
+      <camera name="camera_left">
         <horizontal_fov>1.3962634</horizontal_fov>
         <image>
           <width>800</width>
@@ -135,28 +180,26 @@
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>camera_left</cameraName>
-        <imageTopicName>/camera_left/image_raw</imageTopicName>
-        <cameraInfoTopicName>/camera_left/camera_info</cameraInfoTopicName>
-        <frameName>cameraL_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
+      <!--
+        Bridge config (ros_gz_bridge):
+          - topic: /camera_left/image_raw
+            type: sensor_msgs/msg/Image
+            direction: GZ_TO_ROS
+          - topic: /camera_left/camera_info
+            type: sensor_msgs/msg/CameraInfo
+            direction: GZ_TO_ROS
+      -->
     </sensor>
   </gazebo>
 
+  <!-- Right camera -->
   <link name="cameraR_link"/>
   <gazebo reference="cameraR_link">
     <sensor type="camera" name="cameraR">
       <update_rate>30.0</update_rate>
-      <camera name="head">
+      <topic>/camera_right/image_raw</topic>
+      <gz_frame_id>cameraR_link</gz_frame_id>
+      <camera name="camera_right">
         <horizontal_fov>1.3962634</horizontal_fov>
         <image>
           <width>800</width>
@@ -173,30 +216,24 @@
           <stddev>0.007</stddev>
         </noise>
       </camera>
-      <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>camera_right</cameraName>
-        <imageTopicName>/camera_right/image_raw</imageTopicName>
-        <cameraInfoTopicName>/camera_right/camera_info</cameraInfoTopicName>
-        <frameName>cameraR_link</frameName>
-        <hackBaseline>0.07</hackBaseline>
-        <distortionK1>0.0</distortionK1>
-        <distortionK2>0.0</distortionK2>
-        <distortionK3>0.0</distortionK3>
-        <distortionT1>0.0</distortionT1>
-        <distortionT2>0.0</distortionT2>
-      </plugin>
     </sensor>
   </gazebo>
 
-  <gazebo>
-    <plugin name="ib2_ground_truth" filename="libgazebo_ros_p3d.so">
-      <frameName>world</frameName>
-      <bodyName>body</bodyName>
-      <topicName>/ib2_tracker</topicName>
-      <updateRate>50.0</updateRate>
+  <!-- Ground truth pose publisher (replaces libgazebo_ros_p3d.so) -->
+  <!--
+    In Gazebo Harmonic, use the PosePublisher system plugin in the world SDF:
+
+    <plugin filename="gz-sim-pose-publisher-system"
+            name="gz::sim::systems::PosePublisher">
+      <publish_link_pose>true</publish_link_pose>
+      <publish_nested_model_pose>true</publish_nested_model_pose>
+      <update_frequency>50.0</update_frequency>
     </plugin>
-  </gazebo>
+
+    Then bridge to ROS 2 via ros_gz_bridge:
+      - topic: /ib2_tracker
+        type: geometry_msgs/msg/PoseStamped
+        direction: GZ_TO_ROS
+  -->
 
 </robot>

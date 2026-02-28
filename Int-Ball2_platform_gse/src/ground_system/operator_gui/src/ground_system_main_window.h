@@ -3,30 +3,23 @@
 
 #include <QItemSelectionModel>
 #include <QMainWindow>
-#include <boost/shared_ptr.hpp>
-#include <geometry_msgs/TransformStamped.h>
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <visualization_msgs/MarkerArray.h>
-#include "communication_software/Telemetry.h"
+#include <memory>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include "communication_software/msg/telemetry.hpp"
 #include "common_log_object.h"
 #include "model/intball_telemetry.h"
 #include "model/route_information.h"
 #include "operator_gui_common.h"
 #include "telemetry_monitor.h"
 
-namespace rviz
+namespace rviz_common
 {
 class Display;
 class VisualizationManager;
-} // namespace rviz
-
-namespace tf
-{
-class StampedTransform;
-class TransformListener;
-class TransformBroadcaster;
-} // namespace tf
+} // namespace rviz_common
 
 namespace intball
 {
@@ -80,6 +73,12 @@ public:
     explicit GroundSystemMainWindow(QWidget *parent = nullptr);
 
     /**
+     * @brief rviz2パネルを含む各ページの初期化.
+     * ウィンドウ表示後に呼び出す必要がある（Ogre SceneManagerの遅延初期化のため）.
+     */
+    void initializePages();
+
+    /**
      * @brief ~GroundSystemMainWindowデストラクタ.
      */
     virtual ~GroundSystemMainWindow();
@@ -115,9 +114,8 @@ private:
     int statusDefaultFixedWidth_;
     qreal videoAreaAspectRatio_;
 
-    ros::Subscriber telemetrySubscriber;
-    tf::TransformBroadcaster tfBroadcaster_;
-    QScopedPointer<rviz::VisualizationManager> rvizVisualizationManager_;
+    tf2_ros::TransformBroadcaster tfBroadcaster_;
+    QScopedPointer<rviz_common::VisualizationManager> rvizVisualizationManager_;
 
     intball::VideoController* videoController_;
 
@@ -136,15 +134,22 @@ private:
 
     intball::StatusWidget* statusAreaWidget_;
 
-    ros::Publisher publisherRoute_;
-    visualization_msgs::MarkerArray markerArrayView_;
-    visualization_msgs::MarkerArray markerArrayDelete_;
+    rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr publisherRoute_;
+    visualization_msgs::msg::MarkerArray markerArrayView_;
+    visualization_msgs::msg::MarkerArray markerArrayDelete_;
     QVector3D intballPositionBeforeMoving_;
+
+    // rviz遅延初期化用.
+    QString pathRvizConfig_;
+    QString pathRvizConfigCamera_;
+    bool editPageRvizInitialized_ = false;
+    bool execPageRvizInitialized_ = false;
 
     void updateRoute(const int lastToBeRemoved = -1);
     void switchToMainPage();
     void switchToEditPage();
     void switchToExecutionPage();
+    void stopCurrentPageRendering();
     void publishRouteMarkerArray(const int firstToBeRemoved = -1, const int lastToBeRemoved = -1);
 
 };

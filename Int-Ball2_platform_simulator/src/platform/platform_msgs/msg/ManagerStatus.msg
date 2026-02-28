@@ -1,4 +1,4 @@
-time stamp
+builtin_interfaces/Time stamp
 platform_msgs/OperationType type
 platform_msgs/Mode mode
 bool start_container

@@ -1,8 +1,8 @@
 
 #include "ctl/pos_att_profiler.h"
 #include "ctl/ctl_body.h"
-#include "ib2_msgs/Navigation.h"
-#include "ib2_msgs/CtlStatusType.h"
+#include "ib2_msgs/msg/navigation.hpp"
+#include "ib2_msgs/msg/ctl_status_type.hpp"
 #include "guidance_control_common/Constants.h"
 #include "guidance_control_common/Utility.h"
 #include "guidance_control_common/RangeChecker.h"
@@ -21,7 +21,7 @@ namespace
 	 * @return 姿勢移動量[ND]
 	 */
 	std::pair<Eigen::Vector3d, Eigen::Quaterniond> maneuver
-	(const ib2_msgs::CtlCommandGoalConstPtr& goal)
+	(const std::shared_ptr<const ib2_msgs::action::CtlCommand::Goal>& goal)
 	{
 		using namespace ib2_mss;
 		auto& drg(goal->target.pose.position);
@@ -53,7 +53,7 @@ namespace
 			dq.coeffs() *= -1.;
 		return std::make_pair(dr, dq);
 	}
-	
+
 	/** Bang-Bang制御時刻計算
 	 * @param [in] r 移動量
 	 * @param [in] v 最大速度
@@ -118,10 +118,10 @@ namespace
 ib2::PosAttProfiler::PosAttProfiler() = default;
 
 //------------------------------------------------------------------------------
-// rosparamによるコンストラクタ
-ib2::PosAttProfiler::PosAttProfiler(const ros::NodeHandle& nh) : msg_seq_(0)
+// パラメータによるコンストラクタ
+ib2::PosAttProfiler::PosAttProfiler(rclcpp::Node* node) : t0_(0, 0)
 {
-	setMember(nh);
+	setMember(node);
 }
 
 //------------------------------------------------------------------------------
@@ -129,7 +129,7 @@ ib2::PosAttProfiler::PosAttProfiler(const ros::NodeHandle& nh) : msg_seq_(0)
 ib2::PosAttProfiler::PosAttProfiler
 (const ib2::PosProfiler& pos, const ib2::AttProfiler& att,
  const ib2::ThrustAllocator& thr) :
-	pos_(pos), att_(att), thr_(thr), msg_seq_(0)
+	t0_(0, 0), pos_(pos), att_(att), thr_(thr)
 {
 }
 
@@ -152,16 +152,16 @@ ib2::PosAttProfiler::PosAttProfiler(PosAttProfiler&&) = default;
 
 //------------------------------------------------------------------------------
 // ムーブ代入演算子
-ib2::PosAttProfiler& 
+ib2::PosAttProfiler&
 ib2::PosAttProfiler::operator=(PosAttProfiler&&) = default;
 
 //------------------------------------------------------------------------------
 // メンバ設定
-bool ib2::PosAttProfiler::setMember(const ros::NodeHandle& nh)
+bool ib2::PosAttProfiler::setMember(rclcpp::Node* node)
 {
-	pos_ = ib2::PosProfiler(nh);
-	att_ = ib2::AttProfiler(nh);
-	thr_ = ib2::ThrustAllocator    (nh);
+	pos_ = ib2::PosProfiler(node);
+	att_ = ib2::AttProfiler(node);
+	thr_ = ib2::ThrustAllocator(node);
 	return true;
 }
 
@@ -191,8 +191,8 @@ bool ib2::PosAttProfiler::setConfigThr(const ib2::ThrustAllocator& thr)
 
 //------------------------------------------------------------------------------
 // 位置姿勢誘導プロファイル作成
-ib2_msgs::CtlProfile ib2::PosAttProfiler::setProfile
-(const ib2_msgs::Navigation& nav)
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::setProfile
+(const ib2_msgs::msg::Navigation& nav)
 {
 	// 初期位置姿勢設定
 	setPose(nav);
@@ -220,9 +220,10 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::setProfile
 
 //------------------------------------------------------------------------------
 // 位置姿勢誘導プロファイル作成
-ib2_msgs::CtlProfile ib2::PosAttProfiler::setProfile
-(const ib2_msgs::Navigation& nav,
- const ib2_msgs::CtlCommandGoalConstPtr& goal, const ib2::CtlBody& b) 
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::setProfile
+(const ib2_msgs::msg::Navigation& nav,
+ const std::shared_ptr<const ib2_msgs::action::CtlCommand::Goal>& goal,
+ const ib2::CtlBody& b)
 {
 	// 初期位置姿勢設定
 	setPose(nav);
@@ -231,23 +232,23 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::setProfile
 	Eigen::Vector3d dr;
 	Eigen::Quaterniond dq;
 	std::tie(dr, dq) = maneuver(goal);
-	if (goal->type.type == ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
+	if (goal->type.type == ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
 		std::tie(dr, dq) = maneuver(r0_, q0_, dr, dq);
 
 	// 目標位置設定
 	setProfilePos(dr, b.m());
-	
+
 	// 目標姿勢設定
 	setProfileAtt(dq, b.Is());
-	
+
 	seq_ = SEQUENCE::POS_ATT;
 	return message();
 }
 
 //------------------------------------------------------------------------------
 // 位置姿勢停止誘導プロファイル作成
-ib2_msgs::CtlProfile ib2::PosAttProfiler::stoppingProfile
-(const ib2_msgs::Navigation& nav, const ib2::CtlBody& b)
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::stoppingProfile
+(const ib2_msgs::msg::Navigation& nav, const ib2::CtlBody& b)
 {
 	// 初期位置姿勢設定
 	setPose(nav);
@@ -264,7 +265,7 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::stoppingProfile
 	qtt_  = w / wdmax_;
 	qm_ = 0.5 * wdmax_ * qtt_ * qtt_;
 	q1_ = q0_ * Eigen::AngleAxisd(qm_, axis_);
-	
+
 	// 並進の停止
 	double v(v0_.norm());
 	dh_   = v > pos_.epsRm() ? v0_.normalized() : Eigen::Vector3d::UnitX();
@@ -282,8 +283,8 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::stoppingProfile
 
 //------------------------------------------------------------------------------
 // ホーミングモードプロファイル作成
-ib2_msgs::CtlProfile ib2::PosAttProfiler::dockingProfile
-(const ib2_msgs::Navigation& nav, const DOCKING_POS& pos, const DOCKING_ATT& att,
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::dockingProfile
+(const ib2_msgs::msg::Navigation& nav, const DOCKING_POS& pos, const DOCKING_ATT& att,
  const ib2::CtlBody& b)
 {
 	// 初期位置姿勢設定
@@ -296,18 +297,18 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::dockingProfile
 
 	// 目標位置設定
 	setProfilePos(dr, b.m());
-	
+
 	// 目標姿勢設定
 	setProfileAtt(dq, b.Is());
-	
+
 	seq_ = SEQUENCE::POS_ATT;
 	return message();
 }
 
 //------------------------------------------------------------------------------
 // スキャンモードプロファイル作成
-ib2_msgs::CtlProfile ib2::PosAttProfiler::scanProfile
-(const ib2_msgs::Navigation& nav, size_t iaxis, const ib2::CtlBody& b)
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::scanProfile
+(const ib2_msgs::msg::Navigation& nav, size_t iaxis, const ib2::CtlBody& b)
 {
 	// 初期位置姿勢設定
 	setPose(nav);
@@ -321,21 +322,21 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::scanProfile
 	axis_.normalize();
 	Eigen::Quaterniond dq(Eigen::AngleAxisd(ib2_mss::TWOPI, axis_));
 	setProfileAtt(dq, b.Is());
-	
+
 	seq_ = SEQUENCE::POS_ATT;
 	return message();
 }
 
 //------------------------------------------------------------------------------
 // 初期位置姿勢の設定
-void ib2::PosAttProfiler::setPose(const ib2_msgs::Navigation& nav)
+void ib2::PosAttProfiler::setPose(const ib2_msgs::msg::Navigation& nav)
 {
 	auto& tn(nav.pose.header.stamp);
 	auto& rn(nav.pose.pose.position);
 	auto& vn(nav.twist.linear);
 	auto& qn(nav.pose.pose.orientation);
-	
-	t0_ = tn;
+
+	t0_ = rclcpp::Time(tn, RCL_ROS_TIME);
 	r0_ = Eigen::Vector3d(rn.x, rn.y, rn.z);
 	v0_ = Eigen::Vector3d(vn.x, vn.y, vn.z);
 	q0_ = Eigen::Quaterniond(qn.w, qn.x, qn.y, qn.z);
@@ -380,16 +381,16 @@ size_t ib2::PosAttProfiler::nscan() const
 
 //------------------------------------------------------------------------------
 // プロファイル終了時刻の取得
-ros::Time ib2::PosAttProfiler::te() const
+rclcpp::Time ib2::PosAttProfiler::te() const
 {
 	double dur(seq_ == SEQUENCE::PARALLEL ? std::max(xtt_, qtt_) : xtt_ + qtt_);
-	ros::Duration d(dur);
+	auto d = rclcpp::Duration::from_seconds(dur);
 	return t0_ + d;
 }
 
 //------------------------------------------------------------------------------
 // 誘導制御プロファイルメッセージの取得
-ib2_msgs::CtlProfile ib2::PosAttProfiler::message() const
+ib2_msgs::msg::CtlProfile ib2::PosAttProfiler::message() const
 {
 	std::vector<double> dtx{xcb_, xce_, xtt_};
 	std::vector<double> dtq{qcb_, qce_, qtt_};
@@ -422,29 +423,26 @@ ib2_msgs::CtlProfile ib2::PosAttProfiler::message() const
 	}
 
 	auto n(dt.size());
-	ib2_msgs::CtlProfile p;
-	p.header.seq = ++msg_seq_;
+	ib2_msgs::msg::CtlProfile p;
 	p.header.stamp = t0_;
 	p.header.frame_id = FRAME_ISS;
 	p.poses.resize(n);
 	for (size_t i = 0; i < n; ++i)
 	{
-		ros::Duration d(dt.at(i));
+		auto d = rclcpp::Duration::from_seconds(dt.at(i));
 		auto s(posAttProfile(t0_ + d).status(0));
 		p.poses[i] = s.pose;
-		p.poses[i].header.seq = static_cast<uint32_t>(i);
 	}
 	return p;
 }
 
 //------------------------------------------------------------------------------
 // 位置姿勢誘導プロファイルに基づき基準値計算
-CtlElements ib2::PosAttProfiler::posAttProfile(const ros::Time& t_stamp) const
+CtlElements ib2::PosAttProfiler::posAttProfile(const rclcpp::Time& t_stamp) const
 {
 	// プロファイル開始からの経過秒
-	ros::Duration d(t_stamp - t0_);
-	double t(d.toSec());
-//TODO	ROS_INFO("interval = %f\n",t);
+	rclcpp::Duration d = t_stamp - t0_;
+	double t(d.seconds());
 
 	// 位置誘導プロファイル計算
 	Eigen::Vector3d r, v, a;
@@ -460,21 +458,21 @@ CtlElements ib2::PosAttProfiler::posAttProfile(const ros::Time& t_stamp) const
 
 //------------------------------------------------------------------------------
 // 制御目標までの状態量計算
-ib2_msgs::CtlCommandFeedback ib2::PosAttProfiler::statesToGoal
-(const ib2_msgs::Navigation& nav) const
+ib2_msgs::action::CtlCommand::Feedback ib2::PosAttProfiler::statesToGoal
+(const ib2_msgs::msg::Navigation& nav) const
 {
 	using namespace ib2_mss;
 	auto& tn(nav.pose.header.stamp);
 	auto& rn(nav.pose.pose.position);
 	auto& qn(nav.pose.pose.orientation);
 
-	ib2_msgs::CtlCommandFeedback fb;
+	ib2_msgs::action::CtlCommand::Feedback fb;
 
 	// 制御終了までの時間
-	ros::Duration d(tn - t0_);
-	double t(d.toSec());
+	rclcpp::Duration d = rclcpp::Time(tn, RCL_ROS_TIME) - t0_;
+	double t(d.seconds());
 	double dur(seq_ == SEQUENCE::PARALLEL ? std::max(xtt_, qtt_) : xtt_ + qtt_);
-	ros::Duration dp(dur);
+	auto dp = rclcpp::Duration::from_seconds(dur);
 	fb.time_to_go = dp - d;
 
 	// 目標位置までの距離

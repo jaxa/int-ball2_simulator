@@ -1,145 +1,219 @@
 
 #include "issdyn/issdyn.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
+#include <gz/sim/Model.hh>
+#include <gz/sim/Link.hh>
+#include <gz/sim/Util.hh>
+#include <gz/sim/components/Name.hh>
+#include <gz/sim/components/Model.hh>
+#include <gz/sim/components/Inertial.hh>
+#include <gz/sim/components/AngularVelocityCmd.hh>
+#include <gz/plugin/Register.hh>
+
 namespace
 {
 	/** 単位変換係数DEG->RAD */
 	const double DEG2RAD(M_PI / 180.0);
 
-	/** 2PI*/
+	/** 2PI */
 	const double PI2(2.0 * M_PI);
-
-	/** 本ノード開始フラグ */
-	bool start_flag = false;
-
-	/** 本ノード開始時シミュレーション時刻 */
-	double start_time = 0;
 
 	const std::string FRAME_ISS("iss_body");
 }
 
 //------------------------------------------------------------------------------
 // デフォルトコンストラクタ
-gazebo::Issdyn::Issdyn() = default;
+issdyn_plugin::Issdyn::Issdyn() = default;
 
 //------------------------------------------------------------------------------
 // デストラクタ.
-gazebo::Issdyn::~Issdyn() = default;
+issdyn_plugin::Issdyn::~Issdyn() = default;
 
 //------------------------------------------------------------------------------
-// プラグインのロード
-void gazebo::Issdyn::Load(physics::ModelPtr model, sdf::ElementPtr)
+// プラグインの初期設定
+void issdyn_plugin::Issdyn::Configure(
+	const gz::sim::Entity &_entity,
+	const std::shared_ptr<const sdf::Element> &/*_sdf*/,
+	gz::sim::EntityComponentManager &_ecm,
+	gz::sim::EventManager &/*_eventMgr*/)
 {
-
-	// Initialize ros, if it has not already be initialized
-	if(!ros::isInitialized())
+	// Initialize rclcpp if it has not already been initialized
+	if (!rclcpp::ok())
 	{
-		int argc    = 0;
-		char **argv = NULL;
-		ros::init(argc, argv, "issdyn",
-		ros::init_options::NoSigintHandler);
+		rclcpp::init(0, nullptr);
 	}
 
-	// Store the Model Pointer
-	model_ = model;
+	// Store the Model Entity
+	model_entity_ = _entity;
 
-	// Get the first link.
-	link_iss_body_  = model_->GetLinks();
+	// Get the first link
+	gz::sim::Model model(model_entity_);
+	auto links = model.Links(_ecm);
+	if (!links.empty())
+	{
+		iss_link_ = links[0];
+	}
 
-	// Create a Navigation topic, and publish it.
-	pub_nav_ = nh_.advertise<ib2_msgs::Navigation>("/sim/iss_navigation", 1);
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
+	// Create ROS node
+	ros_node_ = std::make_shared<rclcpp::Node>("issdyn", node_options);
+
+	// Create a Navigation topic, and publish it
+	pub_nav_ = ros_node_->create_publisher<ib2_msgs::msg::Navigation>(
+		"/sim/iss_navigation", 1);
 
 	// Get ISS Attitude Fluctuation Parameter
 	getParameter();
-
-	// Set callback to move the link in gazebo cycle
-	update_  = event::Events::ConnectWorldUpdateBegin(
-				std::bind(&Issdyn::setIssAttitude, this));
-
-	// Timer for callback
-	pub_timer_ = nh_.createTimer(ros::Duration(pub_cycle_), &Issdyn::pubIssNav, this, false, true);
 }
 
 //------------------------------------------------------------------------------
-// URDFからISS姿勢変動パラメータを取得
-void gazebo::Issdyn::getParameter()
+//  ROS Parameter Serverからパラメータ取得
+void issdyn_plugin::Issdyn::getParameter()
 {
-	double x, y, z;
+	auto get_param = [this](const std::string &name, auto &value) {
+		using T = std::decay_t<decltype(value)>;
+		if (!ros_node_->has_parameter(name)) {
+			ros_node_->declare_parameter<T>(name, value);
+		}
+		ros_node_->get_parameter(name, value);
+	};
 
-	if(!nh_.getParam("/issdyn_parameter/cycle", pub_cycle_))
-	{
-		gzerr << "Cannot Get /issdyn_parameter/cycle in issdyn plugin \n";
-	}
-	if(
-		!nh_.getParam("/issdyn_parameter/slope/x", x) ||
-		!nh_.getParam("/issdyn_parameter/slope/y", y) ||
-		!nh_.getParam("/issdyn_parameter/slope/z", z)
-		)
-	{
-		gzerr << "Cannot Get /issdyn_parameter/slope in issdyn plugin \n";
-	}
+	get_param("issdyn_parameter.cycle", pub_cycle_);
+
+	double x = 0.0, y = 0.0, z = 0.0;
+
+	get_param("issdyn_parameter.slope.x", x);
+	get_param("issdyn_parameter.slope.y", y);
+	get_param("issdyn_parameter.slope.z", z);
 	att_bias_slope_.Set(x, y, z);
 	att_bias_slope_ = att_bias_slope_ * DEG2RAD;
-	if(
-		!nh_.getParam("/issdyn_parameter/gain/x", x) ||
-		!nh_.getParam("/issdyn_parameter/gain/y", y) ||
-		!nh_.getParam("/issdyn_parameter/gain/z", z)
-		)
-	{
-		gzerr << "Cannot Get /issdyn_parameter/gain in issdyn plugin \n";
-	}
+
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("issdyn_parameter.gain.x", x);
+	get_param("issdyn_parameter.gain.y", y);
+	get_param("issdyn_parameter.gain.z", z);
 	att_fluc_gain_.Set(x, y, z);
 	att_fluc_gain_ = att_fluc_gain_ * DEG2RAD;
-	if(
-		!nh_.getParam("/issdyn_parameter/freq/x", x) ||
-		!nh_.getParam("/issdyn_parameter/freq/y", y) ||
-		!nh_.getParam("/issdyn_parameter/freq/z", z)
-		)
-	{
-		gzerr << "Cannot Get /issdyn_parameter/freq in issdyn plugin \n";
-	}
+
+	x = 0.0; y = 0.0; z = 0.0;
+	get_param("issdyn_parameter.freq.x", x);
+	get_param("issdyn_parameter.freq.y", y);
+	get_param("issdyn_parameter.freq.z", z);
 	att_fluc_freq_.Set(x, y, z);
 }
 
 //------------------------------------------------------------------------------
-// ISSの姿勢変動を設定
-void gazebo::Issdyn::setIssAttitude()
+// 物理ステップ前の更新
+void issdyn_plugin::Issdyn::PreUpdate(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
 {
-	ignition::math::Vector3d w;
-	gazebo::common::Time  sim_time = model_->GetWorld()->SimTime();
+	if (_info.paused)
+		return;
 
-	if(start_flag)
+	if (iss_link_ == gz::sim::kNullEntity)
+		return;
+
+	gz::sim::Link issLink(iss_link_);
+
+	// Enable velocity checks if not already done
+	if (!velocity_checks_enabled_)
 	{
-		double t = sim_time.Double() - start_time;
-		w.X()    = PI2 * att_fluc_freq_.X() * att_fluc_gain_.X() * cos(PI2 * att_fluc_freq_.X() * t) + att_bias_slope_.X();
-		w.Y()    = PI2 * att_fluc_freq_.Y() * att_fluc_gain_.Y() * cos(PI2 * att_fluc_freq_.Y() * t) + att_bias_slope_.Y();
-		w.Z()    = PI2 * att_fluc_freq_.Z() * att_fluc_gain_.Z() * cos(PI2 * att_fluc_freq_.Z() * t) + att_bias_slope_.Z();
+		issLink.EnableVelocityChecks(_ecm, true);
+		velocity_checks_enabled_ = true;
+	}
 
-		link_iss_body_[0]->SetAngularVel(w);
+	setIssAttitude(_info, _ecm);
+	pubIssNav(_info, _ecm);
+}
+
+//------------------------------------------------------------------------------
+// ISSの姿勢変動を設定
+void issdyn_plugin::Issdyn::setIssAttitude(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
+{
+	double sim_time = std::chrono::duration<double>(_info.simTime).count();
+
+	if (start_flag_)
+	{
+		double t = sim_time - start_time_;
+		gz::math::Vector3d w;
+		w.X() = PI2 * att_fluc_freq_.X() * att_fluc_gain_.X() * cos(PI2 * att_fluc_freq_.X() * t) + att_bias_slope_.X();
+		w.Y() = PI2 * att_fluc_freq_.Y() * att_fluc_gain_.Y() * cos(PI2 * att_fluc_freq_.Y() * t) + att_bias_slope_.Y();
+		w.Z() = PI2 * att_fluc_freq_.Z() * att_fluc_gain_.Z() * cos(PI2 * att_fluc_freq_.Z() * t) + att_bias_slope_.Z();
+
+		// Set angular velocity via WorldAngularVelocityCmd component
+		auto *angVelCmd = _ecm.Component<gz::sim::components::WorldAngularVelocityCmd>(iss_link_);
+		if (angVelCmd)
+		{
+			*angVelCmd = gz::sim::components::WorldAngularVelocityCmd(w);
+		}
+		else
+		{
+			_ecm.CreateComponent(iss_link_,
+				gz::sim::components::WorldAngularVelocityCmd(w));
+		}
 	}
 	else
 	{
-		start_time  = sim_time.Double();
-		start_flag  = true;
+		start_time_ = sim_time;
+		start_flag_ = true;
 	}
 }
 
 //------------------------------------------------------------------------------
-// ROS Timerのコールバック関数
-void gazebo::Issdyn::pubIssNav(const ros::TimerEvent&)
+// ISS航法値のパブリッシュ
+void issdyn_plugin::Issdyn::pubIssNav(
+	const gz::sim::UpdateInfo &_info,
+	gz::sim::EntityComponentManager &_ecm)
 {
-	ros::Time now                   = ros::Time::now();
+	double sim_time = std::chrono::duration<double>(_info.simTime).count();
 
-	auto p_iss (link_iss_body_[0]->WorldCoGPose());
-	auto v_iss (link_iss_body_[0]->WorldCoGLinearVel());
-	auto wb_iss(link_iss_body_[0]->RelativeAngularVel());
+	// Check publish rate
+	if (last_pub_time_ >= 0.0 && (sim_time - last_pub_time_) < pub_cycle_)
+		return;
+	last_pub_time_ = sim_time;
 
-	// Publis ISS Navigation
-	static uint32_t seq(0);
-	ib2_msgs::Navigation iss_nav;
+	gz::sim::Link issLink(iss_link_);
 
-	iss_nav.pose.header.seq         = ++seq;
-	iss_nav.pose.header.stamp       = now;
+	auto pose_opt    = issLink.WorldPose(_ecm);
+	auto lin_vel_opt = issLink.WorldLinearVelocity(_ecm);
+	auto ang_vel_opt = issLink.WorldAngularVelocity(_ecm);
+
+	if (!pose_opt || !lin_vel_opt || !ang_vel_opt)
+		return;
+
+	auto p_iss  = pose_opt.value();
+	auto v_iss  = lin_vel_opt.value();
+	auto w_world = ang_vel_opt.value();
+
+	// Convert world angular velocity to body-frame
+	auto wb_iss = p_iss.Rot().RotateVectorReverse(w_world);
+
+	// Build sim time stamp
+	auto sim_time_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(
+		_info.simTime).count();
+	builtin_interfaces::msg::Time stamp;
+	stamp.sec = static_cast<int32_t>(sim_time_ns / 1000000000LL);
+	stamp.nanosec = static_cast<uint32_t>(sim_time_ns % 1000000000LL);
+
+	// Publish ISS Navigation
+	ib2_msgs::msg::Navigation iss_nav;
+
+	iss_nav.pose.header.stamp       = stamp;
 	iss_nav.pose.header.frame_id    = FRAME_ISS;
 	iss_nav.pose.pose.position.x    = p_iss.Pos().X();
 	iss_nav.pose.pose.position.y    = p_iss.Pos().Y();
@@ -157,15 +231,19 @@ void gazebo::Issdyn::pubIssNav(const ros::TimerEvent&)
 	iss_nav.a.x                     = 0.0;
 	iss_nav.a.y                     = 0.0;
 	iss_nav.a.z                     = 0.0;
-	iss_nav.status.status           = ib2_msgs::NavigationStatus::NAV_FUSION;
+	iss_nav.status.status           = ib2_msgs::msg::NavigationStatus::NAV_FUSION;
 
-	pub_nav_.publish(iss_nav);
+	pub_nav_->publish(iss_nav);
 }
 
 //------------------------------------------------------------------------------
-// Gazeboのモデルプラグインとして登録
-GZ_REGISTER_MODEL_PLUGIN(gazebo::Issdyn)
+// gz-simのシステムプラグインとして登録
+GZ_ADD_PLUGIN(
+	issdyn_plugin::Issdyn,
+	gz::sim::System,
+	gz::sim::ISystemConfigure,
+	gz::sim::ISystemPreUpdate)
+
+GZ_ADD_PLUGIN_ALIAS(issdyn_plugin::Issdyn, "issdyn::Issdyn")
 
 // End Of File -----------------------------------------------------------------
-
-
