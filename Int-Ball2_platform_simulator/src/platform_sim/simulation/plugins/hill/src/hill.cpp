@@ -1,6 +1,8 @@
 
 #include "hill/hill.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -43,8 +45,19 @@ void hill_plugin::Hill::Configure(
 		rclcpp::init(0, nullptr);
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("hill");
+	ros_node_ = std::make_shared<rclcpp::Node>("hill", node_options);
 
 	// Publish Hill Force
 	pub_hill_force_ = ros_node_->create_publisher<geometry_msgs::msg::WrenchStamped>(

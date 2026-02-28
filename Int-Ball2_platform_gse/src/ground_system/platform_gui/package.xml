@@ -1,33 +1,24 @@
-<package format="2">
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
   <name>platform_gui</name>
-  <version>0.0.0</version>
-  <description> The platform_gui package.
-  </description>
+  <version>0.1.0</version>
+  <description>The platform_gui package.</description>
   <maintainer email="aaa@aaa.org">aaa</maintainer>
   <license>GPL</license>
 
-  <url>TODO</url>
-  <author>TODO</author>
+  <buildtool_depend>ament_cmake</buildtool_depend>
 
-  <buildtool_depend>catkin</buildtool_depend>
+  <depend>rclcpp</depend>
+  <depend>ib2_msgs</depend>
+  <depend>platform_msgs</depend>
+  <depend>communication_software</depend>
+  <depend>gui_common</depend>
+  <depend>ament_index_cpp</depend>
 
   <build_depend>qtbase5-dev</build_depend>
-  <build_depend>roscpp</build_depend>
-  <build_depend>ib2_msgs</build_depend>
-  <build_depend>platform_msgs</build_depend>
-  <build_depend>communication_software</build_depend>
-  <build_depend>gui_common</build_depend>
-
-  <exec_depend>libqt5-core</exec_depend>
-  <exec_depend>libqt5-gui</exec_depend>
-  <exec_depend>libqt5-widgets</exec_depend>
-  <exec_depend>roscpp</exec_depend>
-  <exec_depend>ib2_msgs</exec_depend>
-  <exec_depend>platform_msgs</exec_depend>
-  <exec_depend>communication_software</exec_depend>
-  <exec_depend>gui_common</exec_depend>
 
   <export>
-      <rosdoc config="${prefix}/rosdoc.yaml"/>
+    <build_type>ament_cmake</build_type>
   </export>
 </package>

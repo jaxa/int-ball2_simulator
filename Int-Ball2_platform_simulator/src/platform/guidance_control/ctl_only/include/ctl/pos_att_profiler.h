@@ -219,7 +219,7 @@ namespace ib2
 		// メンバ変数
 	private:
 		/** プロファイル作成時刻 */
-		rclcpp::Time t0_;
+		rclcpp::Time t0_{0, 0, RCL_ROS_TIME};
 
 		/** 位置誘導プロファイルパラメータ */
 		PosProfiler pos_;

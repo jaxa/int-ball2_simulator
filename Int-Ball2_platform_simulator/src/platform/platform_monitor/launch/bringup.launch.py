@@ -11,7 +11,7 @@ def generate_launch_description():
     default_config = os.path.join(pkg_share, 'config', 'config.yml')
 
     return LaunchDescription([
-        DeclareLaunchArgument('rate', default_value='1'),
+        DeclareLaunchArgument('rate', default_value='1.0'),
         DeclareLaunchArgument('config_path', default_value=default_config),
 
         Node(

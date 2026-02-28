@@ -8,6 +8,8 @@ import threading
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.executors import MultiThreadedExecutor
 
 from geometry_msgs.msg import (
     Point,
@@ -183,6 +185,9 @@ class UserProgramInterface(Node):
         # Store goal handle for cancellation
         self.__ctl_command_goal_handle = None
 
+        # Use ReentrantCallbackGroup for action clients to avoid deadlocks
+        self._action_cb_group = ReentrantCallbackGroup()
+
         # Publisher
         self.__status_publisher = self.create_publisher(
             UserNodeStatus, '/ib2_user/status', 1)
@@ -202,21 +207,49 @@ class UserProgramInterface(Node):
         self.__stop_processing_server = self.create_service(
             StopProcessingUserNode, '/ib2_user/stop', self.__stop_processing)
 
-        # Action client
+        # Action client (with ReentrantCallbackGroup)
         self.__ctl_command_client = ActionClient(
-            self, CtlCommand, '/ctl/command')
+            self, CtlCommand, '/ctl/command',
+            callback_group=self._action_cb_group)
         self.__navigation_start_up_client = ActionClient(
-            self, NavigationStartUp, '/sensor_fusion/navigation_start_up')
+            self, NavigationStartUp, '/sensor_fusion/navigation_start_up',
+            callback_group=self._action_cb_group)
+
+        # Status publishing timer (1 Hz)
+        self.__status_timer = self.create_timer(1.0, self.__publish_status)
 
         # __process_count_up
         self.__status_count = 0
+
+    def __wait_future(self, future, timeout_sec=120.0):
+        """Poll-wait for a future to complete without calling spin."""
+        start = time.monotonic()
+        while not future.done():
+            if time.monotonic() - start > timeout_sec:
+                self.get_logger().warn(
+                    'Future wait timed out after {} seconds'.format(timeout_sec))
+                return False
+            time.sleep(0.05)
+        return True
+
+    def __publish_status(self):
+        """Timer callback: publish status at 1 Hz."""
+        msg = list(self.__status.encode(
+            encoding='utf-8')[:UserProgramInterface.MAX_MSG_SIZE])
+        if len(msg) < UserProgramInterface.MAX_MSG_SIZE:
+            msg.extend(
+                [0] * (UserProgramInterface.MAX_MSG_SIZE - len(msg)))
+        self.__status_publisher.publish(UserNodeStatus(
+            stamp=self.get_clock().now().to_msg(),
+            msg=msg
+        ))
 
     def __generate_ctl_command_goal(self, goal_type, position, orientation):
         """
             Generate a request for /ctl/command
         """
         goal_msg = CtlCommand.Goal()
-        goal_msg.type = CtlStatus(type=CtlStatusType(type=goal_type))
+        goal_msg.type = CtlStatusType(type=goal_type)
         goal_msg.target = PoseStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             pose=Pose(position=position, orientation=orientation)
@@ -229,7 +262,7 @@ class UserProgramInterface(Node):
             position and orientation specifications (e.g. KEEP_POSE).
         """
         goal_msg = CtlCommand.Goal()
-        goal_msg.type = CtlStatus(type=CtlStatusType(type=goal_type))
+        goal_msg.type = CtlStatusType(type=goal_type)
         # Even in cases where the Pose value is not used (e.g. KEEP_POSE),
         # it is necessary to set a valid quaternion value.
         goal_msg.target.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
@@ -241,14 +274,15 @@ class UserProgramInterface(Node):
             Returns the goal handle, or None if not accepted.
         """
         goal_handle_future = action_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not self.__wait_future(goal_handle_future, timeout_sec=10.0):
+            return None
         goal_handle = goal_handle_future.result()
         if not goal_handle.accepted:
             self.get_logger().warning('Goal was rejected by action server')
             return None
 
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        self.__wait_future(result_future, timeout_sec=120.0)
         return goal_handle
 
     def __cancel_ctl_command(self):
@@ -257,7 +291,7 @@ class UserProgramInterface(Node):
         """
         if self.__ctl_command_goal_handle is not None:
             cancel_future = self.__ctl_command_goal_handle.cancel_goal_async()
-            rclpy.spin_until_future_complete(self, cancel_future)
+            self.__wait_future(cancel_future, timeout_sec=10.0)
             self.__ctl_command_goal_handle = None
             self.get_logger().info('Successfully canceled action of ctl.')
 
@@ -277,15 +311,29 @@ class UserProgramInterface(Node):
             Stores the goal handle for potential cancellation.
         """
         goal_handle_future = self.__ctl_command_client.send_goal_async(goal_msg)
-        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not self.__wait_future(goal_handle_future, timeout_sec=10.0):
+            self.get_logger().error('Ctl command send_goal timed out')
+            return
         goal_handle = goal_handle_future.result()
         if not goal_handle.accepted:
             self.get_logger().warning('Ctl command goal was rejected')
             return
         self.__ctl_command_goal_handle = goal_handle
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        self.__wait_future(result_future, timeout_sec=120.0)
         self.__ctl_command_goal_handle = None
+
+    def __process_keep_pose(self):
+        """
+            KEEP_POSE only
+        """
+        self.__status = 'KEEP_POSE'
+        if not self.__wait_for_ctl_command():
+            return
+        self.__send_ctl_command_goal_and_wait(
+            self.__generate_ctl_command_goal_with_type_only(
+                CtlStatusType.KEEP_POSE)
+        )
 
     def __process_absolute_target_origin(self):
         """
@@ -527,6 +575,7 @@ class UserProgramInterface(Node):
         while True:
             if self.__stop_requested:
                 break
+            time.sleep(0.1)
         self.get_logger().info('Call {}'.format(process.__name__))
         process()
 
@@ -535,6 +584,7 @@ class UserProgramInterface(Node):
 
         # Start navigation node
         waiting_time_for_action_server = 20
+        self.get_logger().info('Waiting for navigation_start_up server...')
         wait_result = self.__navigation_start_up_client.wait_for_server(
                           timeout_sec=float(waiting_time_for_action_server))
         if not wait_result:
@@ -542,32 +592,45 @@ class UserProgramInterface(Node):
                                 '/sensor_fusion/navigation_start_up',
                                 waiting_time_for_action_server)
             self.get_logger().error(self.__status)
-            self.__process_complete
+            self.__process_complete()
             return
 
+        self.get_logger().info('Navigation server found, sending ON goal...')
         navigation_request = NavigationStartUp.Goal()
         navigation_request.command = NavigationStartUp.Goal.ON
 
         goal_handle_future = self.__navigation_start_up_client.send_goal_async(
             navigation_request)
-        rclpy.spin_until_future_complete(self, goal_handle_future)
+        if not self.__wait_future(goal_handle_future, timeout_sec=10.0):
+            self.__status = 'Navigation start up send_goal timed out.'
+            self.get_logger().error(self.__status)
+            self.__process_complete()
+            return
         goal_handle = goal_handle_future.result()
         if not goal_handle.accepted:
             self.__status = 'Navigation start up goal was rejected.'
             self.get_logger().error(self.__status)
-            self.__process_complete
+            self.__process_complete()
             return
 
+        self.get_logger().info('Navigation goal accepted, waiting for result...')
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        if not self.__wait_future(result_future, timeout_sec=30.0):
+            self.__status = 'Navigation start up result timed out.'
+            self.get_logger().error(self.__status)
+            self.__process_complete()
+            return
         navigation_start_up_result = result_future.result().result
+        self.get_logger().info('Navigation result: type={}'.format(
+            navigation_start_up_result.type if navigation_start_up_result else 'None'))
 
         if not (navigation_start_up_result and
                 navigation_start_up_result.type == NavigationStartUp.Result.ON_READY):
             self.__status = 'Navigation node could not be started.'
             self.get_logger().error(self.__status)
-            self.__process_complete
+            self.__process_complete()
             return
+        self.get_logger().info('Navigation started, dispatching id={}'.format(msg.id))
 
         if self.__logic_in_progress:
             self.__status = 'Another logic is running: {}'.format(
@@ -583,7 +646,8 @@ class UserProgramInterface(Node):
                 self.__process_complete,
             ]
             self.__thread = threading.Thread(
-                target=self.__process_idling, args=[process_list])
+                target=self.__process_idling, args=[process_list],
+                daemon=True)
             self.__thread.start()
 
         elif msg.id == 2:
@@ -594,19 +658,19 @@ class UserProgramInterface(Node):
                 self.__process_complete,
             ]
             self.__thread = threading.Thread(
-                target=self.__process_idling, args=[process_list])
+                target=self.__process_idling, args=[process_list],
+                daemon=True)
             self.__thread.start()
 
         elif msg.id == 3:
-            if self.__wait_for_ctl_command():
-                # KEEP_POSE only
-                self.__status = 'KEEP_POSE'
-                self.__send_ctl_command_goal_and_wait(
-                    self.__generate_ctl_command_goal_with_type_only(
-                        CtlStatusType.KEEP_POSE)
-                )
-            else:
-                self.__status = "/ctl/command did not start op"
+            process_list = [
+                self.__process_keep_pose,
+                self.__process_complete,
+            ]
+            self.__thread = threading.Thread(
+                target=self.__process_execution, args=[process_list],
+                daemon=True)
+            self.__thread.start()
 
         elif msg.id == 4:
             # Count up test
@@ -615,7 +679,8 @@ class UserProgramInterface(Node):
                 self.__process_complete,
             ]
             self.__thread = threading.Thread(
-                target=self.__process_execution, args=[process_list])
+                target=self.__process_execution, args=[process_list],
+                daemon=True)
             self.__thread.start()
 
         elif msg.id == 5:
@@ -631,7 +696,8 @@ class UserProgramInterface(Node):
                 self.__process_complete,
             ]
             self.__thread = threading.Thread(
-                target=self.__process_execution, args=[process_list])
+                target=self.__process_execution, args=[process_list],
+                daemon=True)
             self.__thread.start()
 
         elif msg.id == 6:
@@ -643,7 +709,8 @@ class UserProgramInterface(Node):
                 self.__process_complete,
             ]
             self.__thread = threading.Thread(
-                target=self.__process_execution, args=[process_list])
+                target=self.__process_execution, args=[process_list],
+                daemon=True)
             self.__thread.start()
 
         else:
@@ -658,7 +725,7 @@ class UserProgramInterface(Node):
         self.__stop_requested = True
         self.__cancel_ctl_command()
         if self.__thread:
-            self.__thread.join()
+            self.__thread.join(timeout=10.0)
             self.__thread = None
 
         # Finish processing
@@ -690,25 +757,14 @@ class UserProgramInterface(Node):
             f'{torque_gain[1]}, {torque_gain[2]}]')
         self.get_logger().info(self.__status)
 
-    def run(self):
-        while rclpy.ok():
-            msg = list(self.__status.encode(
-                encoding='utf-8')[:UserProgramInterface.MAX_MSG_SIZE])
-            if len(msg) < UserProgramInterface.MAX_MSG_SIZE:
-                msg.extend(
-                    [0] * (UserProgramInterface.MAX_MSG_SIZE - len(msg)))
-            self.__status_publisher.publish(UserNodeStatus(
-                stamp=self.get_clock().now().to_msg(),
-                msg=msg
-            ))
-            time.sleep(1.0)
-
 
 def main(args=None):
     rclpy.init(args=args)
     node = UserProgramInterface()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        node.run()
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

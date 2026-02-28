@@ -1,12 +1,12 @@
 #include <QAbstractListModel>
 #include <QDebug>
+#include <rclcpp/rclcpp.hpp>
 #include "ib2_msgs.h"
 #include "model/intball_telemetry.h"
 #include "qdebug_custom.h"
 #include "utils.h"
 
 using namespace intball;
-using namespace ib2_msgs;
 
 IntBallTelemetry::IntBallTelemetry(QObject* parent) : QAbstractListModel(parent)
 {
@@ -138,7 +138,7 @@ bool IntBallTelemetry::setData(const QMap<telemetry::Index, QVariant>& data)
     return true;
 }
 
-void IntBallTelemetry::setReceivedTimestamp(const ros::Time& receivedTimestamp)
+void IntBallTelemetry::setReceivedTimestamp(const builtin_interfaces::msg::Time& receivedTimestamp)
 {
     receivedTimestamp_ = rosToQt(receivedTimestamp);
 }
@@ -150,7 +150,7 @@ QString IntBallTelemetry::getReceivedTimestampString() const
 
 QString IntBallTelemetry::getTimestampString() const
 {
-    return dateTimeString(data<ros::Time>(telemetry::Index::TIMESTAMP));
+    return dateTimeString(data<builtin_interfaces::msg::Time>(telemetry::Index::TIMESTAMP));
 }
 
 QString IntBallTelemetry::getLastExecutedCommandString() const
@@ -176,18 +176,18 @@ unsigned char IntBallTelemetry::getSendingPortIndex() const
 
 QVector3D IntBallTelemetry::getPosition(const telemetry::Index item) const
 {
-    return geometryToQt(data<geometry_msgs::Point>(item));
+    return geometryToQt(data<geometry_msgs::msg::Point>(item));
 }
 
 void IntBallTelemetry::getOrientationAsRPY(const telemetry::Index item, qreal& roll, qreal& pitch, qreal& yaw) const
 {
-    auto orientation = data<geometry_msgs::Quaternion>(item);
+    auto orientation = data<geometry_msgs::msg::Quaternion>(item);
     getRPY(geometryToQt(orientation), roll, pitch, yaw);
 }
 
 bool IntBallTelemetry::getMarkerStatus() const
 {
-    auto status = data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS);
+    auto status = data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS);
     return status.marker;
 }
 
@@ -218,18 +218,20 @@ QString IntBallTelemetry::getModeAsString() const
 
 bool IntBallTelemetry::isGuidanceControlRunning() const
 {
-    auto lastResultTimestamp = data<ros::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP);
-    auto lastFeedbackTimestamp = data<ros::Time>(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP);
-    ros::Duration diff = lastFeedbackTimestamp - lastResultTimestamp;
-    return (diff.toSec() > 0);
+    auto lastResultTimestamp = data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP);
+    auto lastFeedbackTimestamp = data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP);
+    rclcpp::Time resultTime(lastResultTimestamp);
+    rclcpp::Time feedbackTime(lastFeedbackTimestamp);
+    return (feedbackTime - resultTime).seconds() > 0;
 }
 
 bool IntBallTelemetry::isGuidanceControlStopped() const
 {
-    auto lastResultTimestamp = data<ros::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP);
-    auto lastFeedbackTimestamp = data<ros::Time>(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP);
-    ros::Duration diff = lastResultTimestamp - lastFeedbackTimestamp;
-    return (diff.toSec() > 0);
+    auto lastResultTimestamp = data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP);
+    auto lastFeedbackTimestamp = data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_ACTION_FEEDBACK_STATUS_GOAL_STAMP);
+    rclcpp::Time resultTime(lastResultTimestamp);
+    rclcpp::Time feedbackTime(lastFeedbackTimestamp);
+    return (resultTime - feedbackTime).seconds() > 0;
 }
 
 bool IntBallTelemetry::isFlightSoftwareStarted() const
@@ -259,7 +261,7 @@ unsigned char IntBallTelemetry::getPlatformOperationType() const
 
 QDateTime IntBallTelemetry::getPlatformMonitorCheckTimeAsQDateTime() const
 {
-    auto checkTime = data<ros::Time>(telemetry::Index::PLATFORM_MONITOR_CHECK_TIME);
+    auto checkTime = data<builtin_interfaces::msg::Time>(telemetry::Index::PLATFORM_MONITOR_CHECK_TIME);
     return rosToQt(checkTime);
 }
 
@@ -285,7 +287,7 @@ QVector<ContainerStatus> IntBallTelemetry::getPlatformMonitorContainers() const
 
 QString IntBallTelemetry::getUserNodeStatusTimestampString() const
 {
-    return dateTimeString(data<ros::Time>(telemetry::Index::USER_NODE_STATUS_TIMESTAMP));
+    return dateTimeString(data<builtin_interfaces::msg::Time>(telemetry::Index::USER_NODE_STATUS_TIMESTAMP));
 }
 
 QVector<char> IntBallTelemetry::getUserNodeStatusMessage() const

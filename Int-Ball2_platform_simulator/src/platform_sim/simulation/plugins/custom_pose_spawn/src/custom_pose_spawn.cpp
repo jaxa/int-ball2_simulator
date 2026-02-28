@@ -1,4 +1,6 @@
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/System.hh>
 #include <gz/sim/Entity.hh>
 #include <gz/sim/EntityComponentManager.hh>
@@ -37,7 +39,18 @@ public:
 			rclcpp::init(0, nullptr);
 		}
 
-		auto ros_node = std::make_shared<rclcpp::Node>("custom_pose_spawn");
+		// Load simulation parameter files
+		rclcpp::NodeOptions node_options;
+		try {
+			std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+			node_options.arguments({
+				"--ros-args",
+				"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+				"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+			});
+		} catch (...) {}
+
+		auto ros_node = std::make_shared<rclcpp::Node>("custom_pose_spawn", node_options);
 
 		// 乱数のシード値
 		int seed = -1;

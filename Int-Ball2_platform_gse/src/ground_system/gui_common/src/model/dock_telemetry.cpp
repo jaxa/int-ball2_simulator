@@ -1,4 +1,5 @@
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include "builtin_interfaces/msg/time.hpp"
 #include "dock_telemetry.h"
 #include "telemetry_telecommand_config.h"
 #include "utils.h"
@@ -80,7 +81,7 @@ bool DockTelemetry::setData(const QMap<dock::telemetry::Index, QVariant>& data)
     return true;
 }
 
-void DockTelemetry::setReceivedTimestamp(const ros::Time& receivedTimestamp)
+void DockTelemetry::setReceivedTimestamp(const builtin_interfaces::msg::Time& receivedTimestamp)
 {
     receivedTimestamp_ = rosToQt(receivedTimestamp);
 }

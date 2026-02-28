@@ -7,11 +7,12 @@ telecommand:
       data_class:       "ib2_msgs/UpdateParameter"
       maintenance_mode: false
     # cancel ctl action
-    - id:               161
-      type:             "topic"
-      name:             "/ctl/command/cancel"
-      data_class:       "actionlib_msgs/GoalID"
-      maintenance_mode: false
+    # NOTE: ROS 2 action cancellation is done via the action client API, not via topic
+    #- id:               161
+    #  type:             "topic"
+    #  name:             "/ctl/command/cancel"
+    #  data_class:       "actionlib_msgs/GoalID"
+    #  maintenance_mode: false
     # control prop node
     # fan
     - id:               201
@@ -39,11 +40,12 @@ telecommand:
       data_class:       "ib2_msgs/MarkerCorrection"
       maintenance_mode: false
     # switch sensor_fusion
-    - id:               302
-      type:             "topic"
-      name:             "/sensor_fusion/navigation_start_up/goal"
-      data_class:       "ib2_msgs/NavigationStartUpActionGoal"
-      maintenance_mode: false
+    # NOTE: ROS 2 action goals are sent via the action client API, not via topic
+    #- id:               302
+    #  type:             "topic"
+    #  name:             "/sensor_fusion/navigation_start_up/goal"
+    #  data_class:       "ib2_msgs/NavigationStartUpActionGoal"
+    #  maintenance_mode: false
     # update navigation parameter
     - id:               360
       type:             "service/request"
@@ -139,11 +141,12 @@ telecommand:
       maintenance_mode: false
     # control task_manager node
     # guidance control
-    - id:               5001
-      type:             "topic"
-      name:             "/trans_communication/action_goal" 
-      data_class:       "ib2_msgs/CtlCommandGoal"
-      maintenance_mode: false
+    # NOTE: ROS 2 action Goal type not available in msg module
+    #- id:               5001
+    #  type:             "topic"
+    #  name:             "/trans_communication/action_goal"
+    #  data_class:       "ib2_msgs/CtlCommandGoal"
+    #  maintenance_mode: false
     # reboot
     - id:               5002
       type:             "topic"
@@ -220,16 +223,17 @@ telemetry:
           name:             "/ctl/status"
           data_class:       "ib2_msgs/CtlStatus"
           bind_port_index:  1
-        - id:               102
-          type:             "topic"
-          name:             "/ctl/command/feedback"
-          data_class:       "ib2_msgs/CtlCommandActionFeedback"
-          bind_port_index:  1
-        - id:               103
-          type:             "topic"
-          name:             "/ctl/command/result"
-          data_class:       "ib2_msgs/CtlCommandActionResult"
-          bind_port_index:  1
+        # NOTE: ROS 2 action feedback/result are not regular topics
+        #- id:               102
+        #  type:             "topic"
+        #  name:             "/ctl/command/feedback"
+        #  data_class:       "ib2_msgs/CtlCommandActionFeedback"
+        #  bind_port_index:  1
+        #- id:               103
+        #  type:             "topic"
+        #  name:             "/ctl/command/result"
+        #  data_class:       "ib2_msgs/CtlCommandActionResult"
+        #  bind_port_index:  1
         - id:               104
           type:             "topic"
           name:             "/ctl/wrench"
@@ -269,16 +273,17 @@ telemetry:
           name:             "/sensor_fusion/navigation_debug"
           data_class:       "ib2_msgs/NavigationDebug"
           bind_port_index:  1
-        - id:               304
-          type:             "topic"
-          name:             "/sensor_fusion/navigation_start_up/feedback"
-          data_class:       "ib2_msgs/NavigationStartUpActionFeedback"
-          bind_port_index:  1
-        - id:               305
-          type:             "topic"
-          name:             "/sensor_fusion/navigation_start_up/result"
-          data_class:       "ib2_msgs/NavigationStartUpActionResult"
-          bind_port_index:  1
+        # NOTE: ROS 2 action feedback/result are not regular topics
+        #- id:               304
+        #  type:             "topic"
+        #  name:             "/sensor_fusion/navigation_start_up/feedback"
+        #  data_class:       "ib2_msgs/NavigationStartUpActionFeedback"
+        #  bind_port_index:  1
+        #- id:               305
+        #  type:             "topic"
+        #  name:             "/sensor_fusion/navigation_start_up/result"
+        #  data_class:       "ib2_msgs/NavigationStartUpActionResult"
+        #  bind_port_index:  1
         - id:               306
           type:             "topic"
           name:             "/sensor_fusion/navigation_status"

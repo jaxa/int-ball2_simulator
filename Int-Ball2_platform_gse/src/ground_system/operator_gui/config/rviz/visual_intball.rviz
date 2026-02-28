@@ -1,7 +1,7 @@
 Class: ""
 Displays:
   - Alpha: 1
-    Class: rviz/RobotModel
+    Class: rviz_default_plugins/RobotModel
     Collision Enabled: false
     Enabled: true
     Links:
@@ -24,13 +24,14 @@ Displays:
         Show Axes: false
         Show Trail: false
         Value: true
+    Description Source: Topic
+    Description Topic: robot_description
     Name: RobotModel
-    Robot Description: robot_description
     TF Prefix: ""
     Update Interval: 0
     Value: true
     Visual Enabled: true
-  - Class: rviz/MarkerArray
+  - Class: rviz_default_plugins/MarkerArray
     Enabled: true
     Marker Topic: marker_route
     Name: RouteMarkerArray
@@ -38,14 +39,14 @@ Displays:
       {}
     Queue Size: 100
     Value: true
-  - Class: rviz/Axes
+  - Class: rviz_default_plugins/Axes
     Enabled: true
     Length: 1
     Name: AxesBody
     Radius: 0.050000001
     Reference Frame: body
     Value: true
-  - Class: rviz/Axes
+  - Class: rviz_default_plugins/Axes
     Enabled: true
     Length: 0.5
     Name: AxesIssBody
@@ -60,11 +61,11 @@ Global Options:
   Frame Rate: 30
 Name: root
 Tools:
-  - Class: rviz/MoveCamera
+  - Class: rviz_default_plugins/MoveCamera
 Views:
   # Current settings are overwritten with the settings described in the gui_config file.
   Current:
-    Class: rviz/Orbit
+    Class: rviz_default_plugins/Orbit
     Distance: 10
     Enable Stereo Rendering:
       Stereo Eye Separation: 0.0599999987

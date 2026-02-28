@@ -1,6 +1,8 @@
 
 #include "airflow/airflow.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -44,8 +46,19 @@ void airflow_plugin::Airflow::Configure(
 		rclcpp::init(0, nullptr);
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("airflow");
+	ros_node_ = std::make_shared<rclcpp::Node>("airflow", node_options);
 
 	// Publishers
 	pub_drag_ = ros_node_->create_publisher<geometry_msgs::msg::WrenchStamped>("/airflow/drag", 1);
@@ -127,6 +140,16 @@ void airflow_plugin::Airflow::getParameter()
 
 	plugin_path_ = "";
 	get_param("airflow_parameter.plugin_path", plugin_path_);
+
+	// Auto-detect plugin data path from ament package if not specified
+	if (plugin_path_.empty())
+	{
+		try {
+			plugin_path_ = ament_index_cpp::get_package_share_directory("airflow");
+		} catch (...) {
+			RCLCPP_WARN(ros_node_->get_logger(), "Cannot find airflow package share directory");
+		}
+	}
 
 	// 乱数のシード値
 	int seed = -1;

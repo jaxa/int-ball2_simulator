@@ -7,6 +7,7 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(ib2_msgs REQUIRED)
 find_package(sim_msgs REQUIRED)
@@ -29,6 +30,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
+  ament_index_cpp
   rclcpp_action
   ib2_msgs
   sim_msgs
@@ -50,6 +52,11 @@ install(TARGETS ${PROJECT_NAME}
 
 install(DIRECTORY include/
   DESTINATION include
+)
+
+# Install navigation error CSV data files
+install(DIRECTORY nav_error/
+  DESTINATION share/${PROJECT_NAME}/nav_error
 )
 
 ament_package()

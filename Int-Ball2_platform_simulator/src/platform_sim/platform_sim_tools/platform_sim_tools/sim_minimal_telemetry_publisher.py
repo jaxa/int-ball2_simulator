@@ -3,17 +3,15 @@
 from ib2_msgs.msg import BatteryChargeInfo
 from logging import getLogger, basicConfig, INFO
 from std_msgs.msg import Bool
-from telemetry import TelemetryHeaderBuilder
-import io
+from trans_communication.telemetry_header_builder import TelemetryHeaderBuilder
 import os
 import pickle
 import rclpy
 from rclpy.node import Node
-from rclpy.clock import Clock
+from rclpy.serialization import serialize_message
 import socket
 import subprocess
 import sys
-import time
 import yaml
 
 
@@ -80,15 +78,13 @@ class SimMinimalTelemetryPublisher(Node):
             # Battery
             battery_charge_info = BatteryChargeInfo()
             battery_charge_info.battery_remain = 100
-            temp_buf = io.BytesIO()
-            battery_charge_info.serialize(temp_buf)
-            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_BATTERY_CHARGE_INFO] = temp_buf.getvalue()
+            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_BATTERY_CHARGE_INFO] = \
+                serialize_message(battery_charge_info)
 
             # State of the normal flight software (ROS)
             normal_flight_software_status = Bool(data=False)
-            temp_buf = io.BytesIO()
-            normal_flight_software_status.serialize(temp_buf)
-            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_NORMAL_FLIGHT_SOFTWARE_STATUS] = temp_buf.getvalue()
+            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_NORMAL_FLIGHT_SOFTWARE_STATUS] = \
+                serialize_message(normal_flight_software_status)
 
             # State of the platform flight software (ROS)
             platform_flight_software_status = Bool()
@@ -102,9 +98,8 @@ class SimMinimalTelemetryPublisher(Node):
             platform_flight_software_status.data = (cmd_return
                                                     and cmd_return.isdecimal()
                                                     and int(cmd_return) != 0)
-            temp_buf = io.BytesIO()
-            platform_flight_software_status.serialize(temp_buf)
-            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_PLATFORM_FLIGHT_SOFTWARE_STATUS] = temp_buf.getvalue()
+            data_dict[SimMinimalTelemetryPublisher.TELEMETRY_ID_PLATFORM_FLIGHT_SOFTWARE_STATUS] = \
+                serialize_message(platform_flight_software_status)
 
             # Format the data for transmission
             pickled_telemetry = pickle.dumps(data_dict, protocol=3)

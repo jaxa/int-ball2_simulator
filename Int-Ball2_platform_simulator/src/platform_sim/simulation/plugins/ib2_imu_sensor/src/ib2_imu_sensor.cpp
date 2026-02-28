@@ -1,6 +1,8 @@
 
 #include "ib2_imu_sensor/ib2_imu_sensor.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -36,8 +38,19 @@ void ib2_imu_sensor_plugin::Ib2ImuSensor::Configure(
 		link_entity_ = links[0];
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("ib2_imu_sensor");
+	ros_node_ = std::make_shared<rclcpp::Node>("ib2_imu_sensor", node_options);
 
 	// Publisher
 	pub_ = ros_node_->create_publisher<ib2_msgs::msg::IMU>("/imu/imu", 1);

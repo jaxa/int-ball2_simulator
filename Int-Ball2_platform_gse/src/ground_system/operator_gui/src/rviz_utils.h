@@ -3,7 +3,7 @@
 
 #include <QQuaternion>
 #include <QVector3D>
-#include <rviz/view_controller.h>
+#include <rviz_common/view_controller.hpp>
 #include "main_camera_view_controller.h"
 
 namespace intball {
@@ -19,7 +19,7 @@ static const int RVIZ_VIEW_CONTROLLER_DEFAULT_CAMERA_DISTANCE = 10;
  * @param position 座標.
  * @param quaternion 向き.
  */
-void issBodyValuesToBaseFrameCameraPosition(rviz::MainCameraViewController* controller, const QVector3D& position, const QQuaternion& quaternion);
+void issBodyValuesToBaseFrameCameraPosition(MainCameraViewController* controller, const QVector3D& position, const QQuaternion& quaternion);
 
 /**
  * @brief iss_body座標系の値を,iss_body座標系ViewControllerのFocal point（フォーカスする座標）に反映する.
@@ -27,27 +27,27 @@ void issBodyValuesToBaseFrameCameraPosition(rviz::MainCameraViewController* cont
  * @param position 座標.
  * @param quaternion 向き.
  */
-void issBodyValuesToIssBodyFrameCameraFocalPoint(rviz::ViewController* controller, const QVector3D& position);
+void issBodyValuesToIssBodyFrameCameraFocalPoint(rviz_common::ViewController* controller, const QVector3D& position);
 
 /**
  * @brief ViewControllerの表示をリセットする.
  * @param controller rvizのViewController.
  */
-void resetViewController(rviz::MainCameraViewController* controller);
+void resetViewController(MainCameraViewController* controller);
 
 /**
  * @brief ViewControllerの表示をリセットする.
  * @param controller rvizのViewController.
  * @param targetFrame ViewControllerのTarget frame(フォーカス対象).
  */
-void resetViewController(rviz::ViewController* controller, const QString& targetFrame);
+void resetViewController(rviz_common::ViewController* controller, const QString& targetFrame);
 
 /**
  * @brief ViewControllerのTarget frameを変更する.
  * @param controller rvizのViewController.
  * @param targetFrame ViewControllerのTarget frame.
  */
-void changeTargetFrame(rviz::ViewController* controller, const QString& targetFrame);
+void changeTargetFrame(rviz_common::ViewController* controller, const QString& targetFrame);
 
 } // namespace intball
 

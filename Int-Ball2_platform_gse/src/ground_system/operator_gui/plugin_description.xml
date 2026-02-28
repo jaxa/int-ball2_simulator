@@ -1,0 +1,12 @@
+<library path="operator_gui_rviz_plugins">
+  <class name="operator_gui/MainCamera"
+         type="intball::MainCameraViewController"
+         base_class_type="rviz_common::ViewController">
+    <description>Int-Ball2 main camera first-person view controller</description>
+  </class>
+  <class name="operator_gui/SetTargetOrientation"
+         type="intball::SetTargetOrientationTool"
+         base_class_type="rviz_common::Tool">
+    <description>Int-Ball2 set target orientation tool</description>
+  </class>
+</library>

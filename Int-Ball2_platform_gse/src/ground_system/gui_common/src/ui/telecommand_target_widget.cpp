@@ -17,7 +17,7 @@ TelecommandTargetWidget::TelecommandTargetWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandTargetWidget::executed);
 
     for(auto i = telecommand::CTL_ACTION_TYPE_LABEL.keyBegin(); i != telecommand::CTL_ACTION_TYPE_LABEL.keyEnd(); ++i)
@@ -34,8 +34,8 @@ TelecommandTargetWidget::~TelecommandTargetWidget()
 
 void TelecommandTargetWidget::on_comboBoxCtlCommandType_currentIndexChanged(const QString &arg1)
 {
-    if((arg1 == telecommand::CTL_ACTION_TYPE_LABEL[ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET]) ||
-            (arg1 == telecommand::CTL_ACTION_TYPE_LABEL[ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET]))
+    if((arg1 == telecommand::CTL_ACTION_TYPE_LABEL[ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET]) ||
+            (arg1 == telecommand::CTL_ACTION_TYPE_LABEL[ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET]))
     {
         ui->groupBoxTarget->setEnabled(true);
     }
@@ -55,18 +55,18 @@ void TelecommandTargetWidget::on_pushButtonSendAction_clicked()
     QVector3D position(static_cast<float>(ui->targetInputX->value()),
                        static_cast<float>(ui->targetInputY->value()),
                        static_cast<float>(ui->targetInputZ->value()));
-    QQuaternion attitude(tfToQt(tf::createQuaternionFromRPY(
-                                    qDegreesToRadians(static_cast<double>(ui->targetInputRoll->value())),
-                                    qDegreesToRadians(static_cast<double>(ui->targetInputPitch->value())),
-                                    qDegreesToRadians(static_cast<double>(ui->targetInputYaw->value())))));
+    QQuaternion attitude = fromRPYDegree(
+                                    static_cast<qreal>(ui->targetInputRoll->value()),
+                                    static_cast<qreal>(ui->targetInputPitch->value()),
+                                    static_cast<qreal>(ui->targetInputYaw->value()));
 
     bool result = false;
     int type = getKeyFromValue(telecommand::CTL_ACTION_TYPE_LABEL, ui->comboBoxCtlCommandType->currentText());
-    if(type == ib2_msgs::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
+    if(type == ib2_msgs::msg::CtlStatusType::MOVE_TO_ABSOLUTE_TARGET)
     {
         result = client_->sendTargetGoalAbsolute(position, attitude);
     }
-    else if(type == ib2_msgs::CtlStatusType::MOVE_TO_RELATIVE_TARGET)
+    else if(type == ib2_msgs::msg::CtlStatusType::MOVE_TO_RELATIVE_TARGET)
     {
         result = client_->sendTargetGoalRelative(position, attitude);
     }

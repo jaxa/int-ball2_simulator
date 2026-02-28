@@ -1,5 +1,5 @@
 #include <QApplication>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
 #include "debug_main_window.h"
 #include "debug_gui_config.h"
 #include "gui_color.h"
@@ -17,6 +17,7 @@ namespace  {
 
 void logHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    Q_UNUSED(context);
     QByteArray local_msg = msg.toLocal8Bit();
     switch (type)
     {
@@ -70,8 +71,9 @@ void setLogger()
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, THIS_PACKAGE_NAME.toStdString(), ros::init_options::AnonymousName);
-    intball::getNodeHandle();
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<rclcpp::Node>(THIS_PACKAGE_NAME.toStdString());
+    intball::setNode(node);
 
     Config::load(THIS_PACKAGE_NAME);
 
@@ -95,13 +97,14 @@ int main(int argc, char *argv[])
     w.setWindowFlags(Qt::WindowType::CustomizeWindowHint | Qt::WindowType::WindowCloseButtonHint | Qt::WindowType::WindowMaximizeButtonHint);
     w.showMaximized();
 
-    ros::Rate rate(30);
-    while(ros::ok())
+    rclcpp::Rate rate(30);
+    while(rclcpp::ok())
     {
-        ros::spinOnce();
+        rclcpp::spin_some(node);
         a.processEvents();
         rate.sleep();
     }
 
+    rclcpp::shutdown();
     return 0;
 }

@@ -95,8 +95,8 @@ void CrewSupportCommandWidget::IntBall2Telemetry_dataChanged(const QModelIndex &
     // カメラ状態を受信済みであれば,ボタンにステータス値を反映する.
     if(intballTelemetry_->getInsertStatus(telemetry::Index::CAMERA_MIC_CAMERA_POWER))
     {
-        auto cameraPowerStatus = intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_CAMERA_POWER).status;
-        if(cameraPowerStatus == ib2_msgs::PowerStatus::ON)
+        auto cameraPowerStatus = intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_CAMERA_POWER).status;
+        if(cameraPowerStatus == ib2_msgs::msg::PowerStatus::ON)
         {
             ui->controltoggleMainCamera->setStatus(CommandToggleSlider::STATUS::ON);
         }
@@ -105,8 +105,8 @@ void CrewSupportCommandWidget::IntBall2Telemetry_dataChanged(const QModelIndex &
             ui->controltoggleMainCamera->setStatus(CommandToggleSlider::STATUS::OFF);
         }
 
-        auto microphonePowerStatus = intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER).status;
-        if(microphonePowerStatus == ib2_msgs::PowerStatus::ON)
+        auto microphonePowerStatus = intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER).status;
+        if(microphonePowerStatus == ib2_msgs::msg::PowerStatus::ON)
         {
             ui->controltoggleMicrophone->setStatus(CommandToggleSlider::STATUS::ON);
         }
@@ -115,18 +115,18 @@ void CrewSupportCommandWidget::IntBall2Telemetry_dataChanged(const QModelIndex &
             ui->controltoggleMicrophone->setStatus(CommandToggleSlider::STATUS::OFF);
         }
 
-        auto streamingStatus = intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_STREAMING_STATUS).status;
-        ui->controlStreamingButton->setStatus(streamingStatus == ib2_msgs::PowerStatus::ON);
+        auto streamingStatus = intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_STREAMING_STATUS).status;
+        ui->controlStreamingButton->setStatus(streamingStatus == ib2_msgs::msg::PowerStatus::ON);
 
-        auto recordStatus = intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_RECORDING_STATUS).status;
-        ui->controlRecordMovieButton->setStatus(recordStatus == ib2_msgs::PowerStatus::ON);
+        auto recordStatus = intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_RECORDING_STATUS).status;
+        ui->controlRecordMovieButton->setStatus(recordStatus == ib2_msgs::msg::PowerStatus::ON);
     }
 
     // 表示管理の状態を受信済みであればステータスを反映する.
     if(intballTelemetry_->getInsertStatus(telemetry::Index::DISPLAY_MANAGER_STATUS_MODE))
     {
-        auto lightingStatus = intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status;
-        if(lightingStatus == ib2_msgs::PowerStatus::ON)
+        auto lightingStatus = intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status;
+        if(lightingStatus == ib2_msgs::msg::PowerStatus::ON)
         {
            ui->controltoggleLighting->setStatus(CommandToggleSlider::STATUS::ON);
         }

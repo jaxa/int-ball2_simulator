@@ -1,6 +1,6 @@
 # request
 communication_software/Message command
----------------
+---
 # result
 uint8 SUCCESS = 0
 uint8 INVALID_COMMAND = 1

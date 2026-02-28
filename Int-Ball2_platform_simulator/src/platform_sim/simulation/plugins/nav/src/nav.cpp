@@ -1,6 +1,8 @@
 
 #include "nav/nav.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -50,8 +52,19 @@ void nav_plugin::Nav::Configure(
 		rclcpp::init(0, nullptr);
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("nav");
+	ros_node_ = std::make_shared<rclcpp::Node>("nav", node_options);
 
 	// Get Parameters
 	if (getParameter() != 0)
@@ -265,6 +278,16 @@ int nav_plugin::Nav::getParameter()
 
 	plugin_path_ = "";
 	get_param("nav_parameter.plugin_path", plugin_path_);
+
+	// Auto-detect plugin data path from ament package if not specified
+	if (plugin_path_.empty())
+	{
+		try {
+			plugin_path_ = ament_index_cpp::get_package_share_directory("nav");
+		} catch (...) {
+			RCLCPP_WARN(ros_node_->get_logger(), "Cannot find nav package share directory");
+		}
+	}
 
 	x1 = 0.0; y1 = 0.0; z1 = 0.0; x2 = 0.0; y2 = 0.0; z2 = 0.0;
 	get_param("nav_parameter.error.pos.mean.x",   x1);

@@ -2,7 +2,9 @@
 #include "ui_intball_telemetry_widget.h"
 #include <QFormLayout>
 #include <QTableWidget>
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include "builtin_interfaces/msg/time.hpp"
+#include "builtin_interfaces/msg/duration.hpp"
 #include "camera_config.h"
 #include "model/intball_telemetry.h"
 #include "qdebug_custom.h"
@@ -166,7 +168,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
      */
     if(thisModel()->getInsertStatus(telemetry::Index::SYSTEM_MONITOR_TIMESTAMP))
     {
-        ui->labelSystemMonitorCheckTimeValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::SYSTEM_MONITOR_TIMESTAMP)));
+        ui->labelSystemMonitorCheckTimeValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::SYSTEM_MONITOR_TIMESTAMP)));
         auto diskSpacesMap = thisModel()->data<QMap<QString, float>>(telemetry::Index::SYSTEM_MONITOR_DISK_SPACES);
         for(auto i = diskSpacesMap.keyBegin(); i != diskSpacesMap.keyEnd(); ++i)
         {
@@ -208,7 +210,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // Topic.
     if(thisModel()->getInsertStatus(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC))
     {
-        auto aliveStatusMapTopic = thisModel()->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
+        auto aliveStatusMapTopic = thisModel()->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_TOPIC);
         for(auto i = aliveStatusMapTopic.keyBegin(); i != aliveStatusMapTopic.keyEnd(); ++i)
         {
 
@@ -248,7 +250,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // Service.
     if(thisModel()->getInsertStatus(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE))
     {
-        auto aliveStatusMapService = thisModel()->data<QMap<QString, ib2_msgs::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE);
+        auto aliveStatusMapService = thisModel()->data<QMap<QString, ib2_msgs::msg::AliveStatus>>(telemetry::Index::ALIVE_MONITOR_STATUSES_SERVICE);
         for(auto i = aliveStatusMapService.keyBegin(); i != aliveStatusMapService.keyEnd(); ++i)
         {
             auto itemList = ui->tableWidgetAliveStatuses->findItems(*i, Qt::MatchFlag::MatchFixedString);
@@ -293,14 +295,14 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // Action result.
     if(thisModel()->getInsertStatus(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP))
     {
-        ui->labelActionResultStampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP)));
+        ui->labelActionResultStampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_ACTION_RESULT_TIMESTAMP)));
         ui->labelActionResultTypeValue->setText(getCtlCommandResultAsString(thisModel()->data(telemetry::Index::CTL_ACTION_RESULT_TYPE)));
     }
 
     // Action feedback.
     if(thisModel()->getInsertStatus(telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO))
     {
-        ui->labelActionFeedbackTTGValue->setText(QString("%1 sec.").arg(thisModel()->data<ros::Duration>(telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO).toSec()));
+        ui->labelActionFeedbackTTGValue->setText(QString("%1 sec.").arg(toSec(thisModel()->data<builtin_interfaces::msg::Duration>(telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO))));
 
         auto feedbackPosition = thisModel()->getPosition(telemetry::Index::CTL_ACTION_FEEDBACK_POSE_POSITION);
         ui->labelActionFeedbackPositionXValue->setNum(static_cast<double>(feedbackPosition.x()));
@@ -308,7 +310,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
         ui->labelActionFeedbackPositionZValue->setNum(static_cast<double>(feedbackPosition.z()));
 
         thisModel()->getOrientationAsRPY(telemetry::Index::CTL_ACTION_FEEDBACK_POSE_ORIENTATION, roll, pitch, yaw);
-        auto ctlCommandFeedbackOrientation = geometryToQt(thisModel()->data<geometry_msgs::Quaternion>(telemetry::Index::CTL_ACTION_FEEDBACK_POSE_ORIENTATION));
+        auto ctlCommandFeedbackOrientation = geometryToQt(thisModel()->data<geometry_msgs::msg::Quaternion>(telemetry::Index::CTL_ACTION_FEEDBACK_POSE_ORIENTATION));
         ui->labelActionFeedbackOrientationQuaternionXValue->setNum(static_cast<double>(ctlCommandFeedbackOrientation.x()));
         ui->labelActionFeedbackOrientationQuaternionYValue->setNum(static_cast<double>(ctlCommandFeedbackOrientation.y()));
         ui->labelActionFeedbackOrientationQuaternionZValue->setNum(static_cast<double>(ctlCommandFeedbackOrientation.x()));
@@ -321,7 +323,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     if(thisModel()->getInsertStatus(telemetry::Index::CTL_STATUS_HEADER_SEQ))
     {
         ui->labelCtlStatusSequenceValue->setText(QString("%1").arg(thisModel()->data<unsigned int>(telemetry::Index::CTL_STATUS_HEADER_SEQ)));
-        ui->labelCtlStatusStampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::CTL_STATUS_HEADER_STAMP)));
+        ui->labelCtlStatusStampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_STATUS_HEADER_STAMP)));
         ui->labelCtlStatusFrameIDValue->setText(QString::fromStdString(thisModel()->data<std::string>(telemetry::Index::CTL_STATUS_HEADER_FRAME_ID)));
         ui->labelCtlStatusStatusValue->setText(getCtlStatusAsString(thisModel()->data(telemetry::Index::CTL_STATUS_TYPE)));
 
@@ -331,17 +333,17 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
                 .arg(static_cast<double>(ctlStatusPosition.y()))
                 .arg(static_cast<double>(ctlStatusPosition.z())));
 
-        auto ctlStatusOrientation = geometryToQt(thisModel()->data<geometry_msgs::Quaternion>(telemetry::Index::CTL_STATUS_POSE_ORIENTATION));
+        auto ctlStatusOrientation = geometryToQt(thisModel()->data<geometry_msgs::msg::Quaternion>(telemetry::Index::CTL_STATUS_POSE_ORIENTATION));
         ui->labelCtlStatusOrientationQuaternionValue->setText(getQuaternionAsString(ctlStatusOrientation));
         ui->labelCtlStatusOrientationDegreeValue->setText(getDegreeAsString(ctlStatusOrientation));
 
-        auto ctlStatusA = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::CTL_STATUS_A);
+        auto ctlStatusA = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::CTL_STATUS_A);
         ui->labelCtlStatusAValue->setText(QString("%1, %2, %3").arg(ctlStatusA.x).arg(ctlStatusA.y).arg(ctlStatusA.z));
 
-        auto ctlStatusLinear = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::CTL_STATUS_TWIST_LINEAR);
+        auto ctlStatusLinear = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::CTL_STATUS_TWIST_LINEAR);
         ui->labelCtlStatusLinearValue->setText(QString("%1, %2, %3").arg(ctlStatusLinear.x).arg(ctlStatusLinear.y).arg(ctlStatusLinear.z));
 
-        auto ctlStatusAngular = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::CTL_STATUS_TWIST_ANGULAR);
+        auto ctlStatusAngular = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::CTL_STATUS_TWIST_ANGULAR);
         ui->labelCtlStatusAngularValue->setText(QString("%1, %2, %3").arg(ctlStatusAngular.x).arg(ctlStatusAngular.y).arg(ctlStatusAngular.z));
     }
 
@@ -349,18 +351,18 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     if(thisModel()->getInsertStatus(telemetry::Index::CTL_WRENCH_HEADER_SEQ))
     {
         ui->labelWrenchSequenceValue->setText(QString("%1").arg(thisModel()->data<unsigned int>(telemetry::Index::CTL_WRENCH_HEADER_SEQ)));
-        ui->labelWrenchTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::CTL_WRENCH_HEADER_STAMP)));
+        ui->labelWrenchTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_WRENCH_HEADER_STAMP)));
         ui->labelWrenchFrameIDValue->setText(QString::fromStdString(thisModel()->data<std::string>(telemetry::Index::CTL_WRENCH_HEADER_FRAME_ID)));
-        auto wrenchForce = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::CTL_WRENCH_FORCE);
+        auto wrenchForce = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::CTL_WRENCH_FORCE);
         ui->labelWrenchForceValue->setText(QString("%1, %2, %3").arg(wrenchForce.x).arg(wrenchForce.y).arg(wrenchForce.z));
-        auto wrenchTorque = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::CTL_WRENCH_TORQUE);
+        auto wrenchTorque = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::CTL_WRENCH_TORQUE);
         ui->labelWrenchTorqueValue->setText(QString("%1, %2, %3").arg(wrenchTorque.x).arg(wrenchTorque.y).arg(wrenchTorque.z));
     }
 
     // Update parameter.
     if(thisModel()->getInsertStatus(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelCtlUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelCtlUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelCtlUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
@@ -400,7 +402,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
      */
     if(thisModel()->getInsertStatus(telemetry::Index::PROP_STATUS_HEADER_STAMP))
     {
-        ui->labelPropStatusTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::PROP_STATUS_HEADER_STAMP)));
+        ui->labelPropStatusTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::PROP_STATUS_HEADER_STAMP)));
         ui->labelPropStatusPowerValue->setText(getPowerStatusAsString(thisModel()->data(telemetry::Index::PROP_STATUS_POWER)));
         auto dutyList = thisModel()->data<std::vector<double>>(telemetry::Index::PROP_STATUS_DUTY);
         QString dutyString = "";
@@ -419,7 +421,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // Update parameter.
     if(thisModel()->getInsertStatus(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelPropUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelPropUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelPropUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
@@ -429,7 +431,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
      */
     if(thisModel()->getInsertStatus(telemetry::Index::NAVIGATION_HEADER_STAMP))
     {
-        ui->labelNavigationStampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::NAVIGATION_HEADER_STAMP)));
+        ui->labelNavigationStampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::NAVIGATION_HEADER_STAMP)));
         ui->labelNavigationSequenceValue->setText(QString("%1").arg(thisModel()->data<unsigned int>(telemetry::Index::NAVIGATION_HEADER_SEQ)));
         ui->labelNavigationFrameIDValue->setText(QString::fromStdString(thisModel()->data<std::string>(telemetry::Index::NAVIGATION_HEADER_FRAME_ID)));
 
@@ -439,20 +441,20 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
                 .arg(navigationPosition.y())
                 .arg(navigationPosition.z()));
 
-        auto navigationOrientation = geometryToQt(thisModel()->data<geometry_msgs::Quaternion>(telemetry::Index::NAVIGATION_POSE_ORIENTATION));
+        auto navigationOrientation = geometryToQt(thisModel()->data<geometry_msgs::msg::Quaternion>(telemetry::Index::NAVIGATION_POSE_ORIENTATION));
         ui->labelNavigationOrientationQuaternionValue->setText(getQuaternionAsString(navigationOrientation));
         ui->labelNavigationOrientationDegreeValue->setText(getDegreeAsString(navigationOrientation));
-        ui->labelNavigationStatusTypeValue->setText(getNavigationStatusAsString(thisModel()->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS).status));
+        ui->labelNavigationStatusTypeValue->setText(getNavigationStatusAsString(thisModel()->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS).status));
         ui->labelNavigationStatusMarkerValue->setText(
-                    getBoolAsString(thisModel()->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS).marker));
+                    getBoolAsString(thisModel()->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS).marker));
 
-        auto navigationA = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::NAVIGATION_A);
+        auto navigationA = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::NAVIGATION_A);
         ui->labelNavigationAValue->setText(QString("%1, %2, %3").arg(navigationA.x).arg(navigationA.y).arg(navigationA.z));
 
-        auto navigationLinear = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::NAVIGATION_TWIST_LINEAR);
+        auto navigationLinear = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::NAVIGATION_TWIST_LINEAR);
         ui->labelNavigationLinearValue->setText(QString("%1, %2, %3").arg(navigationLinear.x).arg(navigationLinear.y).arg(navigationLinear.z));
 
-        auto navigationAngular = thisModel()->data<geometry_msgs::Vector3>(telemetry::Index::NAVIGATION_TWIST_ANGULAR);
+        auto navigationAngular = thisModel()->data<geometry_msgs::msg::Vector3>(telemetry::Index::NAVIGATION_TWIST_ANGULAR);
         ui->labelNavigationAngularValue->setText(QString("%1, %2, %3").arg(navigationAngular.x).arg(navigationAngular.y).arg(navigationAngular.z));
     }
 
@@ -460,14 +462,14 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     if(thisModel()->getInsertStatus(telemetry::Index::NAVIGATION_STARTUP_FEEDBACK_DURATION))
     {
         ui->labelNavigationStartUpFeedbackDurationValue->setText(
-                    QString("%1 sec.").arg(thisModel()->data<ros::Duration>(telemetry::Index::NAVIGATION_STARTUP_FEEDBACK_DURATION).toSec()));
+                    QString("%1 sec.").arg(toSec(thisModel()->data<builtin_interfaces::msg::Duration>(telemetry::Index::NAVIGATION_STARTUP_FEEDBACK_DURATION))));
     }
 
     // StartUp action result.
     if(thisModel()->getInsertStatus(telemetry::Index::NAVIGATION_STARTUP_RESULT_TIMESTAMP))
     {
         ui->labelNavigationStartUpResultTimestampValue->setText(
-                    dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::NAVIGATION_STARTUP_RESULT_TIMESTAMP)));
+                    dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::NAVIGATION_STARTUP_RESULT_TIMESTAMP)));
         ui->labelNavigationStartUpResultStatusValue->setText(
                     getNavigationStartUpResultAsString(thisModel()->data<unsigned char>(telemetry::Index::NAVIGATION_STARTUP_RESULT_TYPE)));
     }
@@ -497,36 +499,36 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     if(thisModel()->getInsertStatus(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS))
     {
         ui->labelNavigationStatusTopicStatusValue->setText(
-                    getNavigationStatusAsString(thisModel()->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status));
+                    getNavigationStatusAsString(thisModel()->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status));
         ui->labelNavigationStatusTopicMarkerValue->setText(
-                    getBoolAsString(thisModel()->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).marker));
+                    getBoolAsString(thisModel()->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).marker));
     }
 
     // MarkerCorrection
     if(thisModel()->getInsertStatus(telemetry::Index::MARKER_CORRECTION_TIMESTAMP))
     {
-        ui->labelMarkerCorrectionTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::MARKER_CORRECTION_TIMESTAMP)));
+        ui->labelMarkerCorrectionTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::MARKER_CORRECTION_TIMESTAMP)));
         ui->labelMarkerCorrectionResultValue->setText(getMarkerCorrectionResultString(thisModel()->data(telemetry::Index::MARKER_CORRECTION_STATUS)));
     }
 
     // Update parameter.
     if(thisModel()->getInsertStatus(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelNavigationUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelNavigationUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelNavigationUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
 
     if(thisModel()->getInsertStatus(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelImuUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelImuUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelImuUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
 
     if(thisModel()->getInsertStatus(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelUpdateParameterSlamWrapperTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelUpdateParameterSlamWrapperTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelUpdateParameterSlamWrapperResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_RESULT)));
 
@@ -567,7 +569,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
      */
     if(thisModel()->getInsertStatus(telemetry::Index::IMU_TIMESTAMP))
     {
-        ui->labelImuTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::IMU_TIMESTAMP)));
+        ui->labelImuTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::IMU_TIMESTAMP)));
         ui->labelImuAccValue->setText(QString("%1, %2, %3")
                                          .arg(static_cast<double>(thisModel()->data<float>(telemetry::Index::IMU_ACC_X)))
                                          .arg(static_cast<double>(thisModel()->data<float>(telemetry::Index::IMU_ACC_Y)))
@@ -596,7 +598,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
         ui->labelWhiteBalanceValue->setText(getWhiteBalanceModeAsString(thisModel()->data(telemetry::Index::CAMERA_MIC_WHITE_BALANCE_MODE)));
         ui->labelResolutionValue->setText(
                     cameraConfig_->getQualitySettingAsStringById(
-                        thisModel()->data<ib2_msgs::MainCameraResolutionType>(telemetry::Index::CAMERA_MIC_RESOLUTION_TYPE).type));
+                        thisModel()->data<ib2_msgs::msg::MainCameraResolutionType>(telemetry::Index::CAMERA_MIC_RESOLUTION_TYPE).type));
         ui->labelBitRateValue->setNum(static_cast<int>(thisModel()->data<float>(telemetry::Index::CAMERA_MIC_SENDING_BIT_RATE)));
         ui->labelFrameRateValue->setNum(static_cast<int>(thisModel()->data<float>(telemetry::Index::CAMERA_MIC_FRAME_RATE)));
 
@@ -608,7 +610,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     if(thisModel()->getInsertStatus(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
         ui->labelCameraUpdateParameterTimestampValue->setText(
-                    dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+                    dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelCameraUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
@@ -643,7 +645,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
 
     if(thisModel()->getInsertStatus(telemetry::Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelDisplayManagerUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelDisplayManagerUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelDisplayManagerUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::DISPLAY_MANAGER_UPDATE_PARAMETER_RESPONSE_RESULT)));
     }
@@ -651,7 +653,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // LED left.
     if(thisModel()->getInsertStatus(telemetry::Index::LED_LEFT_LED_COLORS))
     {
-        auto colors = thisModel()->data<QVector<std_msgs::ColorRGBA>>(telemetry::Index::LED_LEFT_LED_COLORS);
+        auto colors = thisModel()->data<QVector<std_msgs::msg::ColorRGBA>>(telemetry::Index::LED_LEFT_LED_COLORS);
         ui->labelLedLeftColorsValue->setText(getColorRGBAAsString(QVariant::fromValue(colors[0])));
         ui->labelLedLeftColorsValue_2->setText(getColorRGBAAsString(QVariant::fromValue(colors[1])));
         ui->labelLedLeftColorsValue_3->setText(getColorRGBAAsString(QVariant::fromValue(colors[2])));
@@ -663,7 +665,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     }
     if(thisModel()->getInsertStatus(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelLedLeftUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelLedLeftUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelLedLeftUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_RESULT)));
 
@@ -710,14 +712,14 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     // LED right.
     if(thisModel()->getInsertStatus(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP))
     {
-        ui->labelLedRightUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
+        ui->labelLedRightUpdateParameterTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_TIMESTAMP)));
         ui->labelLedRightUpdateParameterResultValue->setText(
                     getUpdateParameterResponseResultAsString(thisModel()->data(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_RESULT)));
 
     }
     if(thisModel()->getInsertStatus(telemetry::Index::LED_RIGHT_LED_COLORS))
     {
-        auto colors = thisModel()->data<QVector<std_msgs::ColorRGBA>>(telemetry::Index::LED_RIGHT_LED_COLORS);
+        auto colors = thisModel()->data<QVector<std_msgs::msg::ColorRGBA>>(telemetry::Index::LED_RIGHT_LED_COLORS);
         ui->labelLedRightColorsValue->setText(getColorRGBAAsString(QVariant::fromValue(colors[0])));
         ui->labelLedRightColorsValue_2->setText(getColorRGBAAsString(QVariant::fromValue(colors[1])));
         ui->labelLedRightColorsValue_3->setText(getColorRGBAAsString(QVariant::fromValue(colors[2])));
@@ -771,7 +773,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
      */
     if(thisModel()->getInsertStatus(telemetry::Index::FILE_MONITOR_CHECK_TIME))
     {
-        ui->labelFileMonitorCheckTimeValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::FILE_MONITOR_CHECK_TIME)));
+        ui->labelFileMonitorCheckTimeValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::FILE_MONITOR_CHECK_TIME)));
         QString timeSyncLog = QString::fromStdString(thisModel()->data<std::string>(telemetry::Index::FILE_MONITOR_TIMESYNC_LOG));
         auto timeSyncLogUnixTime = static_cast<unsigned int>(timeSyncLog.toDouble());
         QDateTime timeSyncLogDateTime;
@@ -789,7 +791,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     }
 
     if(thisModel()->getInsertStatus(telemetry::Index::SET_ROS_PARAM_SUCCESS_TIMESTAMP))
-        ui->labelSetRosparamTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::SET_ROS_PARAM_SUCCESS_TIMESTAMP)));
+        ui->labelSetRosparamTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::SET_ROS_PARAM_SUCCESS_TIMESTAMP)));
 
     if(thisModel()->getInsertStatus(telemetry::Index::SET_ROS_PARAMS_SUCCESS_ALL))
     {
@@ -798,7 +800,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     }
 
     if(thisModel()->getInsertStatus(telemetry::Index::SET_ROS_PARAMS_SUCCESS_ALL_TIMESTAMP))
-        ui->labelSetRosparamsSuccessAllTimestampValue->setText(dateTimeString(thisModel()->data<ros::Time>(telemetry::Index::SET_ROS_PARAMS_SUCCESS_ALL_TIMESTAMP)));
+        ui->labelSetRosparamsSuccessAllTimestampValue->setText(dateTimeString(thisModel()->data<builtin_interfaces::msg::Time>(telemetry::Index::SET_ROS_PARAMS_SUCCESS_ALL_TIMESTAMP)));
 
     auto setRosParamsList = thisModel()->data<QMap<QString, RosParam>>(telemetry::Index::SET_ROS_PARAMS_PARAMS_LIST);
     for(auto i = setRosParamsList.keyBegin(); i != setRosParamsList.keyEnd(); ++i)
@@ -815,7 +817,7 @@ void IntBallTelemetryWidget::dataChanged(const QModelIndex &topLeft, const QMode
     {
         auto getParam = thisModel()->data<RosParam>(telemetry::Index::GET_ROS_PARAM_VALUES);
         if(!getRosParamsList.contains(QString::fromStdString(getParam.id)) ||
-                getParam.stamp.toSec() > getRosParamsList.value(QString::fromStdString(getParam.id)).stamp.toSec())
+                toSec(getParam.stamp) > toSec(getRosParamsList.value(QString::fromStdString(getParam.id)).stamp))
         {
             // GetParam結果とGetParams結果のうち、新しい方を表示データとして採用する.
             getRosParamsList.insert(QString::fromStdString(getParam.id), getParam);

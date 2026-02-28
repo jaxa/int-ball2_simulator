@@ -392,7 +392,7 @@ void CtlCommandClient::resultCb(const GoalHandle::WrappedResult& result)
 
 	RCLCPP_INFO(this->get_logger(), "Finished in state [%s]", state_str.c_str());
 
-	double stamp_sec = rclcpp::Time(result.result->stamp).seconds();
+	double stamp_sec = rclcpp::Time(result.result->stamp, RCL_ROS_TIME).seconds();
 	RCLCPP_INFO(this->get_logger(), "Finished at %.3f (Simulation Time)", stamp_sec);
 
 	static const std::vector<std::string> RESULT_STRINGS = {

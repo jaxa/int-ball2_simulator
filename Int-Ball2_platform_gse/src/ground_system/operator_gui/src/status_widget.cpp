@@ -223,12 +223,12 @@ void StatusWidget::IntBall2Telemetry_dataChanged(const QModelIndex &topLeft, con
     ui->labelControlStateValue->setText(getCtlStatusAsString(intballTelemetry_->data(telemetry::Index::CTL_STATUS_TYPE)));
 
     // LEDの色.
-    if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_POWER).status == ib2_msgs::PowerStatus::OFF)
+    if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_POWER).status == ib2_msgs::msg::PowerStatus::OFF)
     {
         // 表示管理機能がOFFの場合は色表記無し.
         ui->widgetIntBallLedValue->setStyleSheet("background-color: rgb(0, 0, 0);");
     }
-    if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status == ib2_msgs::PowerStatus::ON)
+    if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status == ib2_msgs::msg::PowerStatus::ON)
     {
         // 撮影用フラッシュ転倒時は白色表示.
         ui->widgetIntBallLedValue->setStyleSheet("background-color: rgb(255, 255, 255);");
@@ -236,7 +236,7 @@ void StatusWidget::IntBall2Telemetry_dataChanged(const QModelIndex &topLeft, con
     else
     {
         // フラッシュ未点灯時は表示管理の色を採用.
-        auto color = intballTelemetry_->data<std_msgs::ColorRGBA>(telemetry::Index::DISPLAY_MANAGER_STATUS_COLOR);
+        auto color = intballTelemetry_->data<std_msgs::msg::ColorRGBA>(telemetry::Index::DISPLAY_MANAGER_STATUS_COLOR);
         ui->widgetIntBallLedValue->setStyleSheet(
                     QString("background-color: rgb(%1, %2, %3);")
                     .arg(static_cast<int>(color.r * 255))
@@ -412,7 +412,7 @@ void StatusWidget::TelemetryMonitor_detected(TelemetryMonitor::Event event, QVar
         eventOccurred(CommandLog(CommandLogLevel::INFO, "The guidance control is running KEEP_POSE(hold position)."));
         break;
     case TelemetryMonitor::Event::FAILED_CTL_COMMAND:
-        if(value.isValid() && value.toUInt() == ib2_msgs::CtlCommandResult::TERMINATE_ABORTED)
+        if(value.isValid() && value.toUInt() == ib2_msgs::action::CtlCommand_Result::TERMINATE_ABORTED)
         {
             eventOccurred(CommandLog(CommandLogLevel::WARN, "The guidance control process has aborted."));
         }

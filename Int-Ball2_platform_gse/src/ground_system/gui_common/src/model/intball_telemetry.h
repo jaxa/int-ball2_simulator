@@ -4,7 +4,7 @@
 #include <QAbstractListModel>
 #include <QDateTime>
 #include <QString>
-#include <ros/time.h>
+#include "builtin_interfaces/msg/time.hpp"
 #include "communication_config.h"
 #include "ib2_msgs.h"
 #include "telemetry_telecommand_config.h"
@@ -26,7 +26,7 @@ public:
     QVariant data(telemetry::Index item) const;
     bool setData(const QModelIndex &index, const QVariant &value, int role = Qt::EditRole) override;
     bool setData(const QMap<telemetry::Index, QVariant>& data);
-    void setReceivedTimestamp(const ros::Time& receivedTimestamp);
+    void setReceivedTimestamp(const builtin_interfaces::msg::Time& receivedTimestamp);
 
     template<typename T>
     T data(telemetry::Index item) const

@@ -95,7 +95,7 @@ ib2::PosController& ib2::PosController::operator=(PosController&&) = default;
 void ib2::PosController::flash()
 {
 	s_ = Eigen::Vector3d::Zero();
-	ts_ = rclcpp::Time(0, 0);
+	ts_ = rclcpp::Time(0, 0, RCL_ROS_TIME);
 }
 
 //------------------------------------------------------------------------------

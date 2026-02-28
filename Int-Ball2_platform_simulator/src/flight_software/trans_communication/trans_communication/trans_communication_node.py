@@ -19,7 +19,7 @@ from rclpy.serialization import deserialize_message
 from rclpy.serialization import serialize_message
 
 from ib2_msgs.msg import Mode
-from std_msgs.msg import Time
+from builtin_interfaces.msg import Time
 
 from trans_communication.telemetry_header_builder import TelemetryHeaderBuilder
 
@@ -363,7 +363,7 @@ class TransCommunication(Node):
                     self.get_logger().error(
                         'This element is removed from OcsCommandHandler.'
                         'telemetry_config. (id: "{}")'.format(config['id']))
-                    OcsCommandHandler.telemetry_config.pop(config['id'])
+                    OcsCommandHandler.telemetry_config.pop(config['id'], None)
 
         # Telemetry settings (split)
         for config in OcsCommandHandler.intball_app_config['telemetry']['split']:
@@ -446,7 +446,7 @@ class TransCommunication(Node):
                     self.get_logger().error(
                         'This element is removed from OcsCommandHandler.'
                         'telemetry_config. (id: "{}")'.format(config['id']))
-                    OcsCommandHandler.telemetry_config.pop(config['id'])
+                    OcsCommandHandler.telemetry_config.pop(config['id'], None)
         self.get_logger().debug('telemetry_id_for_bind: {}'.format(self.telemetry_id_for_bind))
 
         if not rclpy.ok():
@@ -530,9 +530,10 @@ class OcsCommandHandler(socketserver.BaseRequestHandler, object):
         serialized_data = serialize_message(data)
         if add_timestamp:
             # Add a timestamp to the end of the data
-            timestamp_msg = Time()
             if OcsCommandHandler.node is not None:
-                timestamp_msg.data = OcsCommandHandler.node.get_clock().now().to_msg()
+                timestamp_msg = OcsCommandHandler.node.get_clock().now().to_msg()
+            else:
+                timestamp_msg = Time()
             serialized_timestamp = serialize_message(timestamp_msg)
             serialized_data = serialized_data + serialized_timestamp
         with LOCK_TELEMETRY_DICT:

@@ -8,7 +8,6 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QJsonArray>
-#include <ros/ros.h>
 #include "common_log_object.h"
 #include "monitor_status_model.h"
 #include "model/dock_telemetry.h"
@@ -84,7 +83,6 @@ private slots:
 
 private:
     Ui::PlatformMainWindow *ui;
-    ros::Subscriber telemetrySubscriber;
     intball::IntBallTelemetry* intballTelemetry_;
     intball::DockTelemetry* dockTelemetry_;
     intball::TelemetryMonitor* telemetryMonitor_;
@@ -145,7 +143,7 @@ private:
     void sendTargetGoalAbsolute();
     void sendTargetGoalRelative(const QVector3D& position, const QQuaternion& orientation);
     void sendUserNode(const bool on, const QString& user, const QString& launch, const QString& container);
-    void sendUserLogic(const bool on, const platform_msgs::UserLogic& userLogic);
+    void sendUserLogic(const bool on, const platform_msgs::msg::UserLogic& userLogic);
 
 };
 

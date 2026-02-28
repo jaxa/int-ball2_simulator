@@ -32,20 +32,19 @@ def generate_launch_description():
         DeclareLaunchArgument('temperature_to_revive', default_value='50.0'),
         DeclareLaunchArgument('temperature_to_shutdown', default_value='70.0'),
         DeclareLaunchArgument('user_container_name', default_value='ib2_user'),
-        DeclareLaunchArgument('waiting_time_for_action_server', default_value='10.0'),
+        DeclareLaunchArgument('waiting_time_for_server', default_value='30.0'),
         DeclareLaunchArgument('waiting_time_for_topic', default_value='3.0'),
         DeclareLaunchArgument('wifi_duration', default_value='5.0'),
     ]
 
-    # Load YAML config file parameters
-    # These will be passed to the node alongside the launch arguments
+    # Node reads config_for_simulator.yml internally via yaml.safe_load,
+    # so do NOT pass it as a --params-file (it has non-ROS2-parameter YAML structure).
     platform_manager_node = Node(
         package='platform_manager',
-        executable='platform_manager.py',
+        executable='platform_manager',
         name='platform_manager',
         output='screen',
         parameters=[
-            config_file,
             {
                 'color_with_camera_mic': LaunchConfiguration('color_with_camera_mic'),
                 'container_ros_master_uri': LaunchConfiguration('container_ros_master_uri'),
@@ -65,7 +64,7 @@ def generate_launch_description():
                 'temperature_to_revive': LaunchConfiguration('temperature_to_revive'),
                 'temperature_to_shutdown': LaunchConfiguration('temperature_to_shutdown'),
                 'user_container_name': LaunchConfiguration('user_container_name'),
-                'waiting_time_for_action_server': LaunchConfiguration('waiting_time_for_action_server'),
+                'waiting_time_for_server': LaunchConfiguration('waiting_time_for_server'),
                 'waiting_time_for_topic': LaunchConfiguration('waiting_time_for_topic'),
                 'wifi_duration': LaunchConfiguration('wifi_duration'),
             },

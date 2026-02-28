@@ -1,6 +1,8 @@
 
 #include "ib2_route_display/ib2_route_display.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/components/Name.hh>
 #include <gz/sim/components/Model.hh>
 #include <gz/sim/components/Link.hh>
@@ -39,7 +41,18 @@ void Ib2RouteDisplay::Configure(
 		rclcpp::init(0, nullptr);
 	}
 
-	ros_node_ = std::make_shared<rclcpp::Node>("ib2_route_display");
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
+	ros_node_ = std::make_shared<rclcpp::Node>("ib2_route_display", node_options);
 
 	// Get Int-Ball2 model name from SDF
 	auto sdfClone = _sdf->Clone();

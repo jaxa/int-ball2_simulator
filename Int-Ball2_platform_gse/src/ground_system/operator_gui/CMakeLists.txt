@@ -1,143 +1,88 @@
-cmake_minimum_required(VERSION 3.1.0)
+cmake_minimum_required(VERSION 3.8)
 project(operator_gui)
 
-find_package(catkin REQUIRED COMPONENTS rviz roscpp ib2_msgs gui_common communication_software)
-catkin_package()
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
 
-set(QT5_BASE_DIR "/opt/Qt/5/gcc_64")
-include_directories(
-  "src"
-  "/usr/local/include"
-  "/usr/local/include/vlc/plugins"
-  "/usr/local/src/vlc"
-  "/usr/local/src/vlc/lib"
-  "/usr/local/src/vlc/include"
-  "${QT5_BASE_DIR}/include"
-  #"${QT5_BASE_DIR}/include/Qt3DAnimation"
-  #"${QT5_BASE_DIR}/include/Qt3DCore"
-  #"${QT5_BASE_DIR}/include/Qt3DExtras"
-  #"${QT5_BASE_DIR}/include/Qt3DInput"
-  #"${QT5_BASE_DIR}/include/Qt3DLogic"
-  #"${QT5_BASE_DIR}/include/Qt3DQuick"
-  #"${QT5_BASE_DIR}/include/Qt3DQuickAnimation"
-  #"${QT5_BASE_DIR}/include/Qt3DQuickExtras"
-  #"${QT5_BASE_DIR}/include/Qt3DQuickInput"
-  #"${QT5_BASE_DIR}/include/Qt3DQuickRender"
-  #"${QT5_BASE_DIR}/include/Qt3DQuickScene2D"
-  #"${QT5_BASE_DIR}/include/Qt3DRender"
-  #"${QT5_BASE_DIR}/include/Qt3DStudioRuntime2"
-  "${QT5_BASE_DIR}/include/QtAccessibilitySupport"
-  "${QT5_BASE_DIR}/include/QtBluetooth"
-  "${QT5_BASE_DIR}/include/QtConcurrent"
-  "${QT5_BASE_DIR}/include/QtCore"
-  "${QT5_BASE_DIR}/include/QtDBus"
-  "${QT5_BASE_DIR}/include/QtDesigner"
-  "${QT5_BASE_DIR}/include/QtDesignerComponents"
-  "${QT5_BASE_DIR}/include/QtDeviceDiscoverySupport"
-  "${QT5_BASE_DIR}/include/QtEdidSupport"
-  "${QT5_BASE_DIR}/include/QtEglFSDeviceIntegration"
-  "${QT5_BASE_DIR}/include/QtEglSupport"
-  "${QT5_BASE_DIR}/include/QtEventDispatcherSupport"
-  "${QT5_BASE_DIR}/include/QtFbSupport"
-  "${QT5_BASE_DIR}/include/QtFontDatabaseSupport"
-  "${QT5_BASE_DIR}/include/QtGamepad"
-  "${QT5_BASE_DIR}/include/QtGlxSupport"
-  "${QT5_BASE_DIR}/include/QtGui"
-  "${QT5_BASE_DIR}/include/QtHelp"
-  "${QT5_BASE_DIR}/include/QtInputSupport"
-  "${QT5_BASE_DIR}/include/QtKmsSupport"
-  "${QT5_BASE_DIR}/include/QtLinuxAccessibilitySupport"
-  "${QT5_BASE_DIR}/include/QtLocation"
-  "${QT5_BASE_DIR}/include/QtMultimedia"
-  "${QT5_BASE_DIR}/include/QtMultimediaGstTools"
-  "${QT5_BASE_DIR}/include/QtMultimediaQuick"
-  "${QT5_BASE_DIR}/include/QtMultimediaWidgets"
-  "${QT5_BASE_DIR}/include/QtNetwork"
-  "${QT5_BASE_DIR}/include/QtNfc"
-  "${QT5_BASE_DIR}/include/QtOpenGL"
-  "${QT5_BASE_DIR}/include/QtOpenGLExtensions"
-  "${QT5_BASE_DIR}/include/QtPacketProtocol"
-  "${QT5_BASE_DIR}/include/QtPlatformCompositorSupport"
-  "${QT5_BASE_DIR}/include/QtPlatformHeaders"
-  "${QT5_BASE_DIR}/include/QtPositioning"
-  "${QT5_BASE_DIR}/include/QtPositioningQuick"
-  "${QT5_BASE_DIR}/include/QtPrintSupport"
-  #"${QT5_BASE_DIR}/include/QtQml"
-  #"${QT5_BASE_DIR}/include/QtQmlDebug"
-  #"${QT5_BASE_DIR}/include/QtQuick"
-  #"${QT5_BASE_DIR}/include/QtQuickControls2"
-  #"${QT5_BASE_DIR}/include/QtQuickParticles"
-  #"${QT5_BASE_DIR}/include/QtQuickShapes"
-  #"${QT5_BASE_DIR}/include/QtQuickTemplates2"
-  #"${QT5_BASE_DIR}/include/QtQuickTest"
-  #"${QT5_BASE_DIR}/include/QtQuickWidgets"
-  "${QT5_BASE_DIR}/include/QtRemoteObjects"
-  "${QT5_BASE_DIR}/include/QtRepParser"
-  "${QT5_BASE_DIR}/include/QtScxml"
-  "${QT5_BASE_DIR}/include/QtSensors"
-  "${QT5_BASE_DIR}/include/QtSerialBus"
-  "${QT5_BASE_DIR}/include/QtSerialPort"
-  "${QT5_BASE_DIR}/include/QtServiceSupport"
-  "${QT5_BASE_DIR}/include/QtSql"
-  "${QT5_BASE_DIR}/include/QtSvg"
-  "${QT5_BASE_DIR}/include/QtTest"
-  "${QT5_BASE_DIR}/include/QtTextToSpeech"
-  "${QT5_BASE_DIR}/include/QtThemeSupport"
-  "${QT5_BASE_DIR}/include/QtUiPlugin"
-  "${QT5_BASE_DIR}/include/QtUiTools"
-  "${QT5_BASE_DIR}/include/QtWaylandClient"
-  "${QT5_BASE_DIR}/include/QtWaylandCompositor"
-  "${QT5_BASE_DIR}/include/QtWebChannel"
-  "${QT5_BASE_DIR}/include/QtWebSockets"
-  "${QT5_BASE_DIR}/include/QtWebView"
-  "${QT5_BASE_DIR}/include/QtWidgets"
-  "${QT5_BASE_DIR}/include/QtX11Extras"
-  "${QT5_BASE_DIR}/include/QtXml"
-  "${QT5_BASE_DIR}/include/QtXmlPatterns"
-  "${QT5_BASE_DIR}/include/QtXmlPatterns"
-  "${CMAKE_CURRENT_SOURCE_DIR}/oss"
-  ${catkin_INCLUDE_DIRS})
+# ROS 2 dependencies
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(pluginlib REQUIRED)
+find_package(ib2_msgs REQUIRED)
+find_package(communication_software REQUIRED)
+find_package(gui_common REQUIRED)
+find_package(rviz_common REQUIRED)
+find_package(rviz_default_plugins REQUIRED)
+find_package(rviz_rendering REQUIRED)
+find_package(rviz_ogre_vendor REQUIRED)
+find_package(visualization_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(builtin_interfaces REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
-link_directories(
-  "/usr/local/lib"
-  "${QT5_BASE_DIR}/lib"
-  ${catkin_LIBRARY_DIRS})
+# Qt5
+find_package(Qt5 REQUIRED COMPONENTS Widgets Multimedia Svg Xml Scxml Network)
 
-# Find includes in corresponding build directories
+# VLC
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(LIBVLC REQUIRED libvlc)
+
+# yaml-cpp
+find_package(yaml-cpp REQUIRED)
+
+# Qt auto-processing
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
-
-# Instruct CMake to run moc automatically when needed
 set(CMAKE_AUTOMOC ON)
-
-# Create code from a list of Qt designer ui files
 set(CMAKE_AUTOUIC ON)
-
 set(CMAKE_AUTORCC ON)
 
-set(QT5_MODULES Widgets Multimedia Svg Xml Scxml)
-find_package(
-  Qt5 
-  REQUIRED CONFIG 
-  PATHS "${QT5_BASE_DIR}" NO_DEFAULT_PATH
-  COMPONENTS ${QT5_MODULES}
+add_compile_options(-fPIC -DQT_FORCE_ASSERTS)
+
+# Qt5 resources
+qt5_add_resources(QT5_RESOURCES "resources.qrc")
+
+# rviz2 plugin library (custom view controller + tool)
+add_library(operator_gui_rviz_plugins SHARED
+  src/main_camera_view_controller.cpp
+  src/set_target_orientation_tool.cpp
+)
+target_include_directories(operator_gui_rviz_plugins PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+ament_target_dependencies(operator_gui_rviz_plugins
+  rclcpp
+  pluginlib
+  gui_common
+  rviz_common
+  rviz_default_plugins
+  rviz_rendering
+  rviz_ogre_vendor
+)
+target_link_libraries(operator_gui_rviz_plugins
+  Qt5::Widgets
+  fmt
 )
 
-## Add compile options
-add_compile_options(-std=c++11 -fPIC -DQT_FORCE_ASSERTS)
+pluginlib_export_plugin_description_file(rviz_common plugin_description.xml)
 
-## Add Qt5 resources
-QT5_ADD_RESOURCES(QT5_RESOURCES
-  "resources.qrc"
-)
-
+# Source files (exclude plugin sources from executable to avoid duplicate symbols)
 file(GLOB_RECURSE SRC_FILES
-    src/*.cpp
-    src/model/*.cpp
-    src/view/*.cpp
-    src/exception/*.cpp
+  src/*.cpp
+  src/model/*.cpp
+  src/view/*.cpp
 )
+list(REMOVE_ITEM SRC_FILES
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/main_camera_view_controller.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/src/set_target_orientation_tool.cpp
+)
+
 file(GLOB_RECURSE UI_FILES src/*.ui)
 
+# SCXML state charts
 file(GLOB_RECURSE SCXML_FILES scxml/*.scxml)
 qt5_add_statecharts(QT5_SCXML_COMPILED ${SCXML_FILES})
 
@@ -148,17 +93,68 @@ add_executable(${PROJECT_NAME}
   ${QT5_RESOURCES}
 )
 
-## Link the myviz executable with whatever Qt libraries have been defined by
-## the ``find_package(Qt4 ...)`` line above, or by the
-## ``set(QT_LIBRARIES Qt5::Widgets)``, and with whatever libraries
-## catkin has included.
-#target_link_libraries(ground_system ${catkin_LIBRARIES})
+# Version script: spdlogシンボルの衝突を防止する.
+# rviz_rendering等のspdlog ABI不一致によるクラッシュを回避.
+target_link_options(${PROJECT_NAME} PRIVATE
+  "LINKER:--version-script=${CMAKE_CURRENT_SOURCE_DIR}/hide_spdlog.ver"
+)
 
-# catkin_LIBRARIES, VLC, rviz plugin and other libraries
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES} vlc vlccore rviz_default_plugin yaml-cpp gui_common)
+target_include_directories(${PROJECT_NAME} PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${LIBVLC_INCLUDE_DIRS}
+)
 
-# Qt5 modules
-QT5_USE_MODULES(${PROJECT_NAME} ${QT5_MODULES})
+ament_target_dependencies(${PROJECT_NAME}
+  rclcpp
+  pluginlib
+  ib2_msgs
+  communication_software
+  gui_common
+  rviz_common
+  rviz_default_plugins
+  rviz_rendering
+  rviz_ogre_vendor
+  visualization_msgs
+  geometry_msgs
+  sensor_msgs
+  builtin_interfaces
+  tf2
+  tf2_ros
+  tf2_geometry_msgs
+)
 
-## Install
-install(TARGETS ${PROJECT_NAME} DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION})
+target_link_libraries(${PROJECT_NAME}
+  operator_gui_rviz_plugins
+  Qt5::Widgets
+  Qt5::Multimedia
+  Qt5::Svg
+  Qt5::Xml
+  Qt5::Scxml
+  Qt5::Network
+  ${LIBVLC_LIBRARIES}
+  fmt
+  yaml-cpp
+)
+
+# Install
+install(TARGETS ${PROJECT_NAME} operator_gui_rviz_plugins
+  RUNTIME DESTINATION lib/${PROJECT_NAME}
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
+install(DIRECTORY urdf/
+  DESTINATION share/${PROJECT_NAME}/urdf
+)
+
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+  PATTERN "*.launch" EXCLUDE
+)
+
+ament_package()

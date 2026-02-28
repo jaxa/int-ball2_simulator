@@ -8,12 +8,13 @@
 #include <QString>
 #include <QTextCodec>
 #include <QUrl>
-#include <rviz/config.h>
-#include <rviz/display.h>
-#include <rviz/visualization_manager.h>
-#include <rviz/yaml_config_reader.h>
-#include <std_msgs/Time.h>
-#include <tf/transform_listener.h>
+#include <rviz_common/config.hpp>
+#include <rviz_common/display.hpp>
+#include <rviz_common/visualization_manager.hpp>
+#include <rviz_common/yaml_config_reader.hpp>
+#include <builtin_interfaces/msg/time.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 #include "amount_slider_widget.h"
 #include "dialog_factory.h"
 #include "editing_page.h"
@@ -24,7 +25,7 @@
 #include "model/intball_telemetry.h"
 #include "model/dock_telemetry.h"
 #include "model/route_information.h"
-#include "communication_software/Telemetry.h"
+#include "communication_software/msg/telemetry.hpp"
 #include "qdebug_custom.h"
 #include "ros_common.h"
 #include "route_setting.h"
@@ -109,7 +110,8 @@ void MainPage::initialize(const QString& pathRvizConfig,
     // Y軸を反転する.
     ui->transferSideView->initialize(transform);
     ui->transferTopDownView->initialize(transform);
-    ui->transferBirdEyeView->initialize(pathRvizConfig);
+    // RenderPanelのみ作成（VisualizationManagerはinitializeRviz()で後から初期化する）.
+    ui->transferBirdEyeView->createRenderPanel();
 
     // 経路のデータモデル登録.
     routeInformation_ = routeInformation;
@@ -159,10 +161,25 @@ void MainPage::initialize(const QString& pathRvizConfig,
     DialogFactory::getLedSettingsDialog().initialize(intballTelemetry_, telecommandClient_);
 }
 
+void MainPage::initializeRviz(const QString& pathRvizConfig)
+{
+    ui->transferBirdEyeView->initializeVisualizationManager(pathRvizConfig);
+}
+
+void MainPage::startRendering()
+{
+    ui->transferBirdEyeView->startRendering();
+}
+
+void MainPage::stopRendering()
+{
+    ui->transferBirdEyeView->stopRendering();
+}
+
 void MainPage::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event);
-    ros::shutdown();
+    rclcpp::shutdown();
 }
 
 void MainPage::setVideoArea(QWidget* video)
@@ -198,7 +215,7 @@ void MainPage::TelemetryMonitor_modeTrackingStarted()
 {
     INFO_START_FUNCTION();
 
-    if(intballTelemetry_->getMode() == ib2_msgs::Mode::STANDBY &&
+    if(intballTelemetry_->getMode() == ib2_msgs::msg::Mode::STANDBY &&
             controlStatus_ != CONTROL_STATUS::NONE)
     {
         LOG_INFO() << "The GUI is in control display even though Int-Ball2 is in standby mode. Cancels the display under control.";
@@ -327,13 +344,13 @@ void MainPage::TelemetryMonitor_detected(TelemetryMonitor::Event event, QVariant
 
 bool MainPage::isMovableModeAndCtlStatus()
 {
-    return (intballTelemetry_->getMode() == ib2_msgs::Mode::OPERATION ||
-            intballTelemetry_->getMode() == ib2_msgs::Mode::STANDBY ||
-            intballTelemetry_->getMode() == ib2_msgs::Mode::MAINTENANCE ||
-            intballTelemetry_->getMode() == ib2_msgs::Mode::OFF_NOMINAL) &&
-                (intballTelemetry_->getCtlStatus() == ib2_msgs::CtlStatusType::STAND_BY ||
-                 intballTelemetry_->getCtlStatus() == ib2_msgs::CtlStatusType::KEEP_POSE ||
-                 intballTelemetry_->getCtlStatus() == ib2_msgs::CtlStatusType::KEEPING_POSE_BY_COLLISION);
+    return (intballTelemetry_->getMode() == ib2_msgs::msg::Mode::OPERATION ||
+            intballTelemetry_->getMode() == ib2_msgs::msg::Mode::STANDBY ||
+            intballTelemetry_->getMode() == ib2_msgs::msg::Mode::MAINTENANCE ||
+            intballTelemetry_->getMode() == ib2_msgs::msg::Mode::OFF_NOMINAL) &&
+                (intballTelemetry_->getCtlStatus() == ib2_msgs::msg::CtlStatusType::STAND_BY ||
+                 intballTelemetry_->getCtlStatus() == ib2_msgs::msg::CtlStatusType::KEEP_POSE ||
+                 intballTelemetry_->getCtlStatus() == ib2_msgs::msg::CtlStatusType::KEEPING_POSE_BY_COLLISION);
 }
 
 bool MainPage::isReleaseEnabled()
@@ -341,7 +358,7 @@ bool MainPage::isReleaseEnabled()
     // 機体側でオフノミナルを検知していた場合,リリースコマンドが破棄されるため
     // リリースの実行可否判断は画面側の操作状況（CONTROL_STATUS）は見ずに
     // テレメトリ値のみを基準に行う
-    return (intballTelemetry_->getMode() == ib2_msgs::Mode::STANDBY) &&
+    return (intballTelemetry_->getMode() == ib2_msgs::msg::Mode::STANDBY) &&
             (intballTelemetry_->isFlightSoftwareStarted() &&
             !isOffNominalBattery_ &&
             !isOffNominalDiskSpace_ &&
@@ -350,11 +367,11 @@ bool MainPage::isReleaseEnabled()
 
 bool MainPage::isDockingEnabled()
 {
-    // ドッキングはib2_msgs::Mode::STANDBY時は実行不可.
+    // ドッキングはib2_msgs::msg::Mode::STANDBY時は実行不可.
     return (controlStatus_ == CONTROL_STATUS::NONE) &&
             intballTelemetry_->isFlightSoftwareStarted() &&
             isMovableModeAndCtlStatus() &&
-            intballTelemetry_->getMode() != ib2_msgs::Mode::STANDBY;
+            intballTelemetry_->getMode() != ib2_msgs::msg::Mode::STANDBY;
 }
 
 bool MainPage::isNormalMoveCommandEnabled()
@@ -371,8 +388,8 @@ void MainPage::switchingAdditionalCommands()
     case 2:
     case 3:
         //ExitDockingModeは、ドッキング中であれば送信可能とする.
-        ui->executeAdditionalCommandButton->setEnabled(intballTelemetry_->getMode() == ib2_msgs::Mode::DOCKING);
-        ui->executeAdditionalCommandButton->setEnabled(intballTelemetry_->getMode() == ib2_msgs::Mode::DOCKING);
+        ui->executeAdditionalCommandButton->setEnabled(intballTelemetry_->getMode() == ib2_msgs::msg::Mode::DOCKING);
+        ui->executeAdditionalCommandButton->setEnabled(intballTelemetry_->getMode() == ib2_msgs::msg::Mode::DOCKING);
         break;
     case 4:
         //Forced releaseが選択された場合、実行可否はリリースボタンと同じ.

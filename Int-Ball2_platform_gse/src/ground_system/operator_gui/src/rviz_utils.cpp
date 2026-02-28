@@ -1,7 +1,9 @@
 #include "rviz_utils.h"
-#include <rviz/render_panel.h>
-#include <rviz/view_controller.h>
-#include <tf/transform_datatypes.h>
+#include <rviz_common/render_panel.hpp>
+#include <rviz_common/view_controller.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Transform.h>
 #include "main_camera_view_controller.h"
 #include "ros_common.h"
 #include "utils.h"
@@ -9,14 +11,14 @@
 namespace intball
 {
 
-void issBodyValuesToBaseFrameCameraPosition(rviz::MainCameraViewController* controller, const QVector3D& position, const QQuaternion& quaternion)
+void issBodyValuesToBaseFrameCameraPosition(MainCameraViewController* controller, const QVector3D& position, const QQuaternion& quaternion)
 {
     // iss_body座標系からbase座標系に変換する.
-    tf::Transform baseToIssBody = getStaticBaseToIssBodyTransform();
+    tf2::Transform baseToIssBody = getStaticBaseToIssBodyTransform();
     auto rvizPosition = baseToIssBody * qtToTf(position);
     auto rvizQuaternion = baseToIssBody * qtToTf(quaternion);
-    tfScalar tmpRoll, tmpPitch, tmpYaw;
-    tf::Matrix3x3 m(rvizQuaternion);
+    tf2Scalar tmpRoll, tmpPitch, tmpYaw;
+    tf2::Matrix3x3 m(rvizQuaternion);
     m.getRPY(tmpRoll, tmpPitch, tmpYaw);
 
     // rvizのcontrollerに値を設定する.
@@ -29,10 +31,10 @@ void issBodyValuesToBaseFrameCameraPosition(rviz::MainCameraViewController* cont
     controller->subProp("Yaw")->setValue(tmpYaw);
 }
 
-void issBodyValuesToIssBodyFrameCameraFocalPoint(rviz::ViewController* controller, const QVector3D& position)
+void issBodyValuesToIssBodyFrameCameraFocalPoint(rviz_common::ViewController* controller, const QVector3D& position)
 {
     // iss_body座標系からbase座標系に変換する.
-    tf::Transform baseToIssBody = getStaticBaseToIssBodyTransform();
+    tf2::Transform baseToIssBody = getStaticBaseToIssBodyTransform();
     auto rvizPosition = baseToIssBody * qtToTf(position);
 
     // rvizのcontrollerに値を設定する.
@@ -50,12 +52,12 @@ void issBodyValuesToIssBodyFrameCameraFocalPoint(rviz::ViewController* controlle
     controller->subProp("Yaw")->setValue(0);
 }
 
-void changeTargetFrame(rviz::ViewController* controller, const QString& targetFrame)
+void changeTargetFrame(rviz_common::ViewController* controller, const QString& targetFrame)
 {
     controller->subProp("Target Frame")->setValue(QVariant(targetFrame));
 }
 
-void resetViewController(rviz::ViewController* controller, const QString& targetFrame)
+void resetViewController(rviz_common::ViewController* controller, const QString& targetFrame)
 {
     changeTargetFrame(controller, targetFrame);
     controller->subProp("Distance")->setValue(RVIZ_VIEW_CONTROLLER_DEFAULT_CAMERA_DISTANCE);

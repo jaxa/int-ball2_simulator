@@ -4,29 +4,22 @@
 #include <QItemSelectionModel>
 #include <QMainWindow>
 #include <QMessageBox>
-#include <boost/shared_ptr.hpp>
-#include <geometry_msgs/TransformStamped.h>
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
+#include <memory>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_broadcaster.h>
 #include "camera_microphone_settings_dialog.h"
 #include "led_settings_dialog.h"
-#include "communication_software/Telemetry.h"
+#include "communication_software/msg/telemetry.hpp"
 #include "model/intball_telemetry.h"
 #include "model/route_information.h"
 #include "telemetry_monitor.h"
 
-namespace rviz
+namespace rviz_common
 {
 class Display;
 class VisualizationManager;
-} // namespace rviz
-
-namespace tf
-{
-class StampedTransform;
-class TransformListener;
-class TransformBroadcaster;
-} // namespace tf
+} // namespace rviz_common
 
 namespace intball
 {
@@ -61,6 +54,10 @@ public:
                     intball::IntBallTelemetry* intballTelemetry,
                     intball::TelecommandClient* telecommandClient,
                     intball::DockTelemetry* dockTelemetry);
+
+    void initializeRviz(const QString& pathRvizConfig);
+    void startRendering();
+    void stopRendering();
 
     void setVideoArea(QWidget* video);
 
@@ -135,9 +132,8 @@ private slots:
 private:
     intball::Ui::MainPage *ui;
 
-    ros::Subscriber telemetrySubscriber;
-    tf::TransformBroadcaster tfBroadcaster_;
-    QScopedPointer<rviz::VisualizationManager> rvizVisualizationManager_;
+    std::unique_ptr<tf2_ros::TransformBroadcaster> tfBroadcaster_;
+    QScopedPointer<rviz_common::VisualizationManager> rvizVisualizationManager_;
 
     intball::VideoController* videoController_;
 

@@ -13,7 +13,7 @@ Launches:
 
 import os
 
-from ament_index_python.packages import get_package_share_directory
+from ament_index_python.packages import get_package_share_directory, get_package_prefix
 from launch import LaunchDescription
 from launch.actions import (
     DeclareLaunchArgument,
@@ -31,6 +31,7 @@ def generate_launch_description():
     # Package directories
     ib2_gazebo_share = get_package_share_directory('ib2_gazebo')
     description_share = get_package_share_directory('description')
+    ctl_only_share = get_package_share_directory('ctl_only')
 
     # Launch arguments
     use_platform_arg = DeclareLaunchArgument(
@@ -50,9 +51,35 @@ def generate_launch_description():
     world_file = os.path.join(ib2_gazebo_share, 'worlds', 'empty.sdf')
 
     # Set GZ_SIM_RESOURCE_PATH so gz-sim can find model:// URIs
+    # Include both model/ (for model://ib2 etc.) and share/ parent (for model://description/media/)
+    description_prefix = get_package_prefix('description')
     gz_resource_path = SetEnvironmentVariable(
         name='GZ_SIM_RESOURCE_PATH',
-        value=os.path.join(description_share, 'model'),
+        value=':'.join([
+            os.path.join(description_share, 'model'),
+            os.path.join(description_prefix, 'share'),
+        ]),
+    )
+
+    # Set GZ_SIM_SYSTEM_PLUGIN_PATH so gz-sim can find custom plugins
+    plugin_packages = [
+        'airflow', 'nav', 'hill', 'mag', 'thr', 'issdyn',
+        'custom_pose_spawn_plugin', 'ib2_route_display_plugin',
+        'ib2_imu_sensor_plugin',
+    ]
+    plugin_lib_dirs = []
+    for pkg in plugin_packages:
+        try:
+            plugin_lib_dirs.append(os.path.join(get_package_prefix(pkg), 'lib'))
+        except Exception:
+            pass
+    existing_plugin_path = os.environ.get('GZ_SIM_SYSTEM_PLUGIN_PATH', '')
+    all_plugin_paths = ':'.join(plugin_lib_dirs)
+    if existing_plugin_path:
+        all_plugin_paths = all_plugin_paths + ':' + existing_plugin_path
+    gz_plugin_path = SetEnvironmentVariable(
+        name='GZ_SIM_SYSTEM_PLUGIN_PATH',
+        value=all_plugin_paths,
     )
 
     # --- Gazebo Harmonic (gz sim) ---
@@ -115,23 +142,22 @@ def generate_launch_description():
     # --- Load simulation parameters ---
     sim_yaml = os.path.join(ib2_gazebo_share, 'sim', 'sim.yaml')
     custom_yaml = os.path.join(ib2_gazebo_share, 'sim', 'custom.yaml')
+    ctl_yaml = os.path.join(ctl_only_share, 'config', 'ctl.yaml')
 
     # --- Propulsion node ---
-    # NOTE: The 'prop' package must be ported to ROS 2 first.
     prop_node = Node(
         package='prop',
         executable='prop',
         name='prop',
-        parameters=[sim_yaml, custom_yaml],
+        parameters=[sim_yaml, custom_yaml, {'use_sim_time': True}],
     )
 
     # --- Control nodes (conditional) ---
-    # NOTE: ctl_only and fsm packages must be ported to ROS 2 first.
     ctl_only_node = Node(
         package='ctl_only',
         executable='ctl_only',
         name='ctl_only',
-        parameters=[sim_yaml, custom_yaml],
+        parameters=[sim_yaml, custom_yaml, ctl_yaml, {'use_sim_time': True}],
         condition=IfCondition(LaunchConfiguration('use_ctl_only')),
     )
 
@@ -139,7 +165,7 @@ def generate_launch_description():
         package='fsm',
         executable='fsm',
         name='fsm',
-        parameters=[sim_yaml, custom_yaml],
+        parameters=[sim_yaml, custom_yaml, ctl_yaml, {'use_sim_time': True}],
         condition=IfCondition(LaunchConfiguration('use_fsm')),
     )
 
@@ -166,6 +192,7 @@ def generate_launch_description():
         rviz_arg,
         # Environment
         gz_resource_path,
+        gz_plugin_path,
         # Gazebo
         gz_sim,
         bridge_node,

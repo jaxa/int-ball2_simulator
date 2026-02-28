@@ -37,28 +37,69 @@
     <plugin filename="gz-sim-imu-system"
             name="gz::sim::systems::Imu"/>
 
-    <!-- Pose publisher (publishes model poses for ros_gz_bridge / trans node) -->
-    <plugin filename="gz-sim-pose-publisher-system"
-            name="gz::sim::systems::PosePublisher">
-      <publish_link_pose>false</publish_link_pose>
-      <publish_nested_model_pose>true</publish_nested_model_pose>
-      <update_frequency>50.0</update_frequency>
+    <!-- NOTE: PosePublisher must be added per-model (not world-level) via URDF <gazebo> tags -->
+
+    <!-- ======================================= -->
+    <!-- Custom simulation plugins                -->
+    <!-- ======================================= -->
+
+    <!-- Airflow disturbance (JEM airflow) -->
+    <plugin filename="libairflow.so"
+            name="airflow::Airflow"/>
+
+    <!-- Navigation sensor simulation -->
+    <plugin filename="libnav.so"
+            name="nav::Nav"/>
+
+    <!-- Hill equations orbital mechanics -->
+    <plugin filename="libhill.so"
+            name="hill::Hill"/>
+
+    <!-- Docking magnetic attraction -->
+    <plugin filename="libmag.so"
+            name="mag::Mag"/>
+
+    <!-- Model spawning (Int-Ball2 + custom objects) -->
+    <plugin filename="libcustom_pose_spawn_plugin.so"
+            name="custom_pose_spawn::CustomPoseSpawn">
+
+      <!-- Int-Ball2 -->
+      <model>
+        <uri>model://ib2</uri>
+        <specify>
+          <key_x>/ib2/x</key_x>
+          <key_y>/ib2/y</key_y>
+          <key_z>/ib2/z</key_z>
+          <key_roll>/ib2/roll</key_roll>
+          <key_pitch>/ib2/pitch</key_pitch>
+          <key_yaw>/ib2/yaw</key_yaw>
+        </specify>
+      </model>
+
+      <!-- Custom object -->
+      <model>
+        <uri>model://custom_object_01</uri>
+        <random>
+          <key_min_x>/custom_object_01/min_x</key_min_x>
+          <key_min_y>/custom_object_01/min_y</key_min_y>
+          <key_min_z>/custom_object_01/min_z</key_min_z>
+          <key_max_x>/custom_object_01/max_x</key_max_x>
+          <key_max_y>/custom_object_01/max_y</key_max_y>
+          <key_max_z>/custom_object_01/max_z</key_max_z>
+          <key_min_roll>/custom_object_01/min_roll</key_min_roll>
+          <key_min_pitch>/custom_object_01/min_pitch</key_min_pitch>
+          <key_min_yaw>/custom_object_01/min_yaw</key_min_yaw>
+          <key_max_roll>/custom_object_01/max_roll</key_max_roll>
+          <key_max_pitch>/custom_object_01/max_pitch</key_max_pitch>
+          <key_max_yaw>/custom_object_01/max_yaw</key_max_yaw>
+        </random>
+      </model>
+
     </plugin>
 
-    <!-- ======================================= -->
-    <!-- Custom simulation plugins (require porting) -->
-    <!-- ======================================= -->
-
-    <!-- TODO: Port these Gazebo Classic world plugins to gz-sim system plugins.
-         Each plugin needs to be rewritten as a gz::sim::System implementation.
-         Original Gazebo Classic plugins:
-           - libairflow.so     → airflow (gz-sim system plugin)
-           - libnav.so         → nav (gz-sim system plugin)
-           - libhill.so        → hill (gz-sim system plugin)
-           - libmag.so         → mag (gz-sim system plugin)
-           - libcustom_pose_spawn_plugin.so → custom_pose_spawn (gz-sim system plugin)
-           - libib2_route_display_plugin.so → ib2_route_display (gz-sim system plugin)
-    -->
+    <!-- Trajectory visualization markers -->
+    <plugin filename="libib2_route_display_plugin.so"
+            name="ib2_route_display::Ib2RouteDisplay"/>
 
     <!-- Camera Pose (GUI default view) -->
     <gui fullscreen="false">

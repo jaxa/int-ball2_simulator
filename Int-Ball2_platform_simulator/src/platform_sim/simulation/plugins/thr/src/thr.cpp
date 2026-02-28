@@ -1,6 +1,8 @@
 
 #include "thr/thr.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -46,8 +48,19 @@ void thr_plugin::Thr::Configure(
 		link_entity_ = links[0];
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("thr");
+	ros_node_ = std::make_shared<rclcpp::Node>("thr", node_options);
 
 	// Thr Parameter Update Server
 	thr_param_server_ = ros_node_->create_service<sim_msgs::srv::UpdateParameter>(

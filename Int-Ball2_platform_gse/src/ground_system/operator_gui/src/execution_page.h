@@ -39,6 +39,9 @@ public:
                     intball::RouteInformation* routeInformation,
                     intball::TelecommandClient* telecommandClient,
                     intball::IntBallTelemetry* intballTelemetry);
+    void initializeRviz(const QString& pathRvizConfig);
+    void startRendering();
+    void stopRendering();
     void setVideoArea(QWidget* video);
     void setStatusArea(QWidget* status);
     void start();

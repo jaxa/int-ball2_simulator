@@ -106,7 +106,7 @@ DebugMainWindow::DebugMainWindow(QWidget *parent) :
 
     // テレメトリの受信を開始.
     subscriber_ = new TelemetrySubscriber(this);
-    subscriber_->start(*getNodeHandle(), intballTelemetry_, dockTelemetry_);
+    subscriber_->start(getNode(), intballTelemetry_, dockTelemetry_);
 
     // 表示制御用のウィジット初期化.
     for(auto i: TELEMETRY_WIDGET_GROUP_LABEL.keys())
@@ -134,7 +134,7 @@ DebugMainWindow::~DebugMainWindow()
 void DebugMainWindow::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event);
-    ros::shutdown();
+    rclcpp::shutdown();
 }
 
 void DebugMainWindow::resetView()

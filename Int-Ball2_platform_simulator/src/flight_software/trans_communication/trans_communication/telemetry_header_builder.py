@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 # license removed for brevity
 from rclpy.serialization import serialize_message
-from std_msgs.msg import Time
+from builtin_interfaces.msg import Time
 from std_msgs.msg import UInt8
 from std_msgs.msg import UInt16
 
@@ -33,5 +33,10 @@ class TelemetryHeaderBuilder(object):
 
     def set_serialized_ros_msg(self, ros_msg_type, value, output_dict, output_index):
         msg = ros_msg_type()
-        msg.data = value
+        if hasattr(msg, 'data'):
+            msg.data = value
+        else:
+            # For types like builtin_interfaces/Time that don't have .data,
+            # the value is already a message of the correct type
+            msg = value
         output_dict[output_index] = serialize_message(msg)

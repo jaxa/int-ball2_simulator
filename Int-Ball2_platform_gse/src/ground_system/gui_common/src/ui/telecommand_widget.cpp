@@ -5,7 +5,7 @@
 #include "telecommand_widget.h"
 #include "telecommand_client.h"
 #include "telemetry_telecommand_config.h"
-#include "tf/transform_datatypes.h"
+#include <tf2/LinearMath/Quaternion.h>
 #include "ui_telecommand_widget.h"
 #include "utils.h"
 

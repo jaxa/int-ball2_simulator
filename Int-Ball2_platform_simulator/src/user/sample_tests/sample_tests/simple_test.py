@@ -3,9 +3,11 @@
 import math
 import sys
 import threading
+import time
 
 import rclpy
 from rclpy.action import ActionClient
+from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from rclpy.clock import Clock
 from action_msgs.msg import GoalStatus
@@ -191,10 +193,14 @@ class SimpleTestNode(Node):
         self.__stop_processing_server = self.create_service(
             StopProcessingUserNode, '/ib2_user/stop', self.__stop_processing)
 
-        # Action clients
-        self.__ctl_command_client = ActionClient(self, CtlCommand, '/ctl/command')
+        # Action clients (use ReentrantCallbackGroup to avoid blocking with other callbacks)
+        self._action_cb_group = ReentrantCallbackGroup()
+        self.__ctl_command_client = ActionClient(
+            self, CtlCommand, '/ctl/command',
+            callback_group=self._action_cb_group)
         self.__navigation_start_up_client = ActionClient(
-            self, NavigationStartUp, '/sensor_fusion/navigation_start_up')
+            self, NavigationStartUp, '/sensor_fusion/navigation_start_up',
+            callback_group=self._action_cb_group)
 
         # __process_count_up
         self.__status_count = 0
@@ -217,7 +223,7 @@ class SimpleTestNode(Node):
             Generate a request for /ctl/command
         """
         goal = CtlCommand.Goal()
-        goal.type = CtlStatus(type=goal_type)
+        goal.type = CtlStatusType(type=goal_type)
         goal.target = PoseStamped(
             header=Header(stamp=self.get_clock().now().to_msg()),
             pose=Pose(position=position, orientation=orientation)
@@ -230,36 +236,49 @@ class SimpleTestNode(Node):
             position and orientation specifications (e.g. KEEP_POSE).
         """
         goal = CtlCommand.Goal()
-        goal.type = CtlStatus(type=goal_type)
+        goal.type = CtlStatusType(type=goal_type)
         # Even in cases where the Pose value is not used (e.g. KEEP_POSE),
         # it is necessary to set a valid quaternion value.
         goal.target.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
         return goal
+
+    def __wait_future(self, future, timeout_sec=None):
+        """Wait for a future to complete (executor is already spinning)."""
+        start = time.time()
+        while not future.done():
+            if self.__stop_requested:
+                return False
+            if timeout_sec is not None and (time.time() - start) > timeout_sec:
+                return False
+            time.sleep(0.05)
+        return True
 
     def __send_ctl_goal_and_wait(self, goal):
         """
             Send a goal to /ctl/command and wait for the result.
         """
         send_goal_future = self.__ctl_command_client.send_goal_async(goal)
-        rclpy.spin_until_future_complete(self, send_goal_future)
+        self.__wait_future(send_goal_future, timeout_sec=10.0)
         goal_handle = send_goal_future.result()
         if not goal_handle.accepted:
             self.get_logger().error('CtlCommand goal rejected')
             return None
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        if not self.__wait_future(result_future, timeout_sec=120.0):
+            self.get_logger().warn('CtlCommand result wait timed out')
+            return None
         return result_future.result()
 
     def __cancel_ctl_command(self):
         """
             If /ctl/command is running, cancel it.
         """
-        # In ROS 2 the action client does not directly expose goal state
-        # the same way as ROS 1.  We issue cancel_all_goals as a safe fallback.
         cancel_future = self.__ctl_command_client._cancel_goal_async(None)
         try:
-            rclpy.spin_until_future_complete(self, cancel_future, timeout_sec=5.0)
-            self.get_logger().info('Successfully canceled action of ctl.')
+            if self.__wait_future(cancel_future, timeout_sec=5.0):
+                self.get_logger().info('Successfully canceled action of ctl.')
+            else:
+                self.get_logger().info('Cancel timed out.')
         except Exception:
             self.get_logger().info('No active ctl goal to cancel.')
 
@@ -402,7 +421,11 @@ class SimpleTestNode(Node):
 
     def __callback_start(self, msg):
         self.get_logger().info('start {}'.format(msg))
+        # Dispatch to a worker thread to avoid calling spin_until_future_complete
+        # from within the executor callback (which causes "Executor is already spinning").
+        threading.Thread(target=self.__handle_start, args=[msg], daemon=True).start()
 
+    def __handle_start(self, msg):
         # Start navigation node
         waiting_time_for_action_server = 20
         wait_result = self.__navigation_start_up_client.wait_for_server(
@@ -417,7 +440,7 @@ class SimpleTestNode(Node):
         navigation_request = NavigationStartUp.Goal()
         navigation_request.command = NavigationStartUp.Goal.ON
         send_goal_future = self.__navigation_start_up_client.send_goal_async(navigation_request)
-        rclpy.spin_until_future_complete(self, send_goal_future)
+        self.__wait_future(send_goal_future)
         goal_handle = send_goal_future.result()
         if not goal_handle.accepted:
             self.__status = 'Navigation goal rejected.'
@@ -425,7 +448,7 @@ class SimpleTestNode(Node):
             self.__process_complete()
             return
         result_future = goal_handle.get_result_async()
-        rclpy.spin_until_future_complete(self, result_future)
+        self.__wait_future(result_future)
         navigation_start_up_result = result_future.result()
         if not (navigation_start_up_result and
                 navigation_start_up_result.result.type == NavigationStartUp.Result.ON_READY):
@@ -449,11 +472,14 @@ class SimpleTestNode(Node):
                 self.__process_relative_target_004,
                 self.__process_complete,
             ]
+            self.__logic_in_progress = True
+            self.__current_logic = msg
             self.__thread = threading.Thread(target=self.__process_execution, args=[process_list])
             self.__thread.start()
 
         elif msg.id == 2:
-
+            self.__logic_in_progress = True
+            self.__current_logic = msg
             if self.__wait_for_ctl_command():
                 # KEEP_POSE only
                 self.__status = 'KEEP_POSE'
@@ -462,6 +488,7 @@ class SimpleTestNode(Node):
                 )
             else:
                 self.__status = "/ctl/command did not start op"
+            self.__process_complete()
 
         elif msg.id == 3:
             # Count up test
@@ -469,6 +496,8 @@ class SimpleTestNode(Node):
                 self.__process_count_up,
                 self.__process_complete,
             ]
+            self.__logic_in_progress = True
+            self.__current_logic = msg
             self.__thread = threading.Thread(target=self.__process_execution, args=[process_list])
             self.__thread.start()
 
@@ -476,9 +505,6 @@ class SimpleTestNode(Node):
             self.__status = 'Unimplemented logic: {}'.format(msg)
             self.get_logger().warning(self.__status)
             return
-
-        self.__logic_in_progress = True
-        self.__current_logic = msg
 
     def __stop_processing(self, request, response):
         self.__stop_requested = True
@@ -501,8 +527,10 @@ class SimpleTestNode(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = SimpleTestNode()
+    executor = rclpy.executors.MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

@@ -1,6 +1,8 @@
 
 #include "issdyn/issdyn.h"
 
+#include <ament_index_cpp/get_package_share_directory.hpp>
+
 #include <gz/sim/Model.hh>
 #include <gz/sim/Link.hh>
 #include <gz/sim/Util.hh>
@@ -54,8 +56,19 @@ void issdyn_plugin::Issdyn::Configure(
 		iss_link_ = links[0];
 	}
 
+	// Load simulation parameter files
+	rclcpp::NodeOptions node_options;
+	try {
+		std::string ib2_gazebo_share = ament_index_cpp::get_package_share_directory("ib2_gazebo");
+		node_options.arguments({
+			"--ros-args",
+			"--params-file", ib2_gazebo_share + "/sim/sim.yaml",
+			"--params-file", ib2_gazebo_share + "/sim/custom.yaml"
+		});
+	} catch (...) {}
+
 	// Create ROS node
-	ros_node_ = std::make_shared<rclcpp::Node>("issdyn");
+	ros_node_ = std::make_shared<rclcpp::Node>("issdyn", node_options);
 
 	// Create a Navigation topic, and publish it
 	pub_nav_ = ros_node_->create_publisher<ib2_msgs::msg::Navigation>(

@@ -13,7 +13,7 @@ TelecommandManagerWidget::TelecommandManagerWidget(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    client_ = new TelecommandClient(*getNodeHandle(), this);
+    client_ = new TelecommandClient(getNode(), this);
     connect(client_, &TelecommandClient::executed, this, &TelecommandManagerWidget::executed);
 }
 
@@ -28,7 +28,7 @@ void TelecommandManagerWidget::on_buttonExitDockingMode_clicked()
     {
         return;
     }
-    auto mode = ui->comboBoxExitDockingMode->currentIndex() == 0 ? ib2_msgs::Mode::OPERATION : ib2_msgs::Mode::STANDBY;
+    auto mode = ui->comboBoxExitDockingMode->currentIndex() == 0 ? ib2_msgs::msg::Mode::OPERATION : ib2_msgs::msg::Mode::STANDBY;
     client_->sendExitDockingMode(mode);
 }
 
@@ -39,7 +39,7 @@ void TelecommandManagerWidget::on_buttonSetMaintenanceMode_clicked()
     {
         return;
     }
-    auto mode = ui->comboBoxSetMaintenanceMode->currentIndex() == 0 ? ib2_msgs::Mode::MAINTENANCE : ib2_msgs::Mode::STANDBY;
+    auto mode = ui->comboBoxSetMaintenanceMode->currentIndex() == 0 ? ib2_msgs::msg::Mode::MAINTENANCE : ib2_msgs::msg::Mode::STANDBY;
     client_->sendSetMaintenanceMode(mode);
 }
 

@@ -1,13 +1,19 @@
 #include "editing_page.h"
 #include "ui_editing_page.h"
+#include <QApplication>
 #include <QDoubleValidator>
 #include <QQuaternion>
 #include <QString>
 #include <QtMath>
 #include <QVector3D>
-#include <sensor_msgs/Range.h>
-#include <tf/transform_datatypes.h>
-#include <visualization_msgs/MarkerArray.h>
+#include <sensor_msgs/msg/range.hpp>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2/exceptions.h>
+#include <tf2/time.h>
+#include <geometry_msgs/msg/transform_stamped.hpp>
+#include <visualization_msgs/msg/marker_array.hpp>
 #include "amount_slider_widget.h"
 #include "camera_view_panel.h"
 #include "gui_common.h"
@@ -89,8 +95,10 @@ void EditingPage::initialize(const QString& pathRvizConfig, RouteInformation* ro
     routeInformation_ = routeInformation;
     routeInformationSelectionModel_ = routeInformationSelectionModel;
     telecommandClient_ = telecommandClient;
+    tfBroadcaster_ = std::make_unique<tf2_ros::TransformBroadcaster>(getNode());
 
-    ui->editBirdEyeViewPanel->initialize(pathRvizConfig);
+    // RenderPanelのみ作成（VisualizationManagerはinitializeRviz()で後から初期化する）.
+    ui->editBirdEyeViewPanel->createRenderPanel();
 
     /*
      * QtのViewクラスでは,setModelが呼ばれた際に内部でSelectionModelが自動生成されるため
@@ -109,18 +117,70 @@ void EditingPage::initialize(const QString& pathRvizConfig, RouteInformation* ro
     connect(routeInformationSelectionModel_, &QItemSelectionModel::selectionChanged,
             this, &EditingPage::RouteInformation_selectionChanged);
 
-    ui->editCameraSimulationPanel->initialize(Config::packagePath() + Config::valueAsString(KEY_RVIZ_CONFIG_CAMERA));
+    // RenderPanelのみ作成（VisualizationManagerはinitializeRviz()で後から初期化する）.
+    // hide()はinitializeRviz()後に行う（非表示だとexpose/paintイベントが来ずSceneManagerが作られない）.
+    ui->editCameraSimulationPanel->createRenderPanel();
+}
+
+void EditingPage::initializeRviz(const QString& pathRvizConfig, const QString& pathRvizConfigCamera)
+{
+    ui->editBirdEyeViewPanel->initializeVisualizationManager(pathRvizConfig);
+    // CameraViewPanel VMは遅延初期化する.
+    // 同一ページ上で2つのVMを同時に作成すると PropertyTreeModel::propertyHiddenChanged が
+    // 不正なPropertyを処理してSIGSEGVになるため、ユーザーが経路点を選択した時に初めて作成する.
+    pathRvizConfigCamera_ = pathRvizConfigCamera;
+}
+
+void EditingPage::hideCameraPanel()
+{
     ui->editCameraSimulationPanel->hide();
+}
+
+void EditingPage::ensureCameraVmInitialized()
+{
+    if (cameraVmInitialized_) {
+        return;
+    }
+    // CameraViewPanelを表示状態にしてSceneManagerを生成してからVM初期化.
+    // 非表示状態でVM作成するとPropertyTreeModel::propertyHiddenChangedでSIGSEGVになるため.
+    ui->editCameraSimulationPanel->show();
+    QApplication::processEvents();
+    ui->editCameraSimulationPanel->initializeVisualizationManager(pathRvizConfigCamera_);
+    cameraVmInitialized_ = true;
+    QApplication::processEvents();
+}
+
+void EditingPage::startRendering()
+{
+    ui->editBirdEyeViewPanel->startRendering();
+    if (cameraVmInitialized_) {
+        ui->editCameraSimulationPanel->startRendering();
+    }
+}
+
+void EditingPage::stopRendering()
+{
+    ui->editBirdEyeViewPanel->stopRendering();
+    if (cameraVmInitialized_) {
+        ui->editCameraSimulationPanel->stopRendering();
+    }
 }
 
 void EditingPage::removeCameraTf()
 {
     // カメラのtfをリセットする.
-    tf::Vector3 v(0, 0, 0);
-    tf::Quaternion q(0, 0, 0, 1);
-    tf::Transform transform(q, v);
-    ros::Time now = ros::Time::now();
-    tfBroadcaster_.sendTransform(tf::StampedTransform(transform, now, rosframe::ISS_BODY, rosframe::CAMERA));
+    geometry_msgs::msg::TransformStamped transform;
+    transform.header.stamp = getNode()->now();
+    transform.header.frame_id = rosframe::ISS_BODY;
+    transform.child_frame_id = rosframe::CAMERA;
+    transform.transform.translation.x = 0;
+    transform.transform.translation.y = 0;
+    transform.transform.translation.z = 0;
+    transform.transform.rotation.x = 0;
+    transform.transform.rotation.y = 0;
+    transform.transform.rotation.z = 0;
+    transform.transform.rotation.w = 1;
+    tfBroadcaster_->sendTransform(transform);
 
     // カメラ表示パネルをリセットする.
     ui->editCameraSimulationPanel->clear();
@@ -128,10 +188,18 @@ void EditingPage::removeCameraTf()
 
 void EditingPage::publishCameraTf(const QVector3D& position, const QQuaternion& orientation)
 {
-    tf::Vector3 v = qtToTf(position);
-    tf::Transform transform_goal(qtToTf(orientation), v);
-    ros::Time now = ros::Time::now();
-    tfBroadcaster_.sendTransform(tf::StampedTransform(transform_goal, now,rosframe::ISS_BODY, rosframe::CAMERA));
+    geometry_msgs::msg::TransformStamped transform;
+    transform.header.stamp = getNode()->now();
+    transform.header.frame_id = rosframe::ISS_BODY;
+    transform.child_frame_id = rosframe::CAMERA;
+    transform.transform.translation.x = position.x();
+    transform.transform.translation.y = position.y();
+    transform.transform.translation.z = position.z();
+    transform.transform.rotation.x = orientation.x();
+    transform.transform.rotation.y = orientation.y();
+    transform.transform.rotation.z = orientation.z();
+    transform.transform.rotation.w = orientation.scalar();
+    tfBroadcaster_->sendTransform(transform);
 }
 
 void EditingPage::GoalCameraSimulationPanel_changed()
@@ -143,24 +211,28 @@ void EditingPage::GoalCameraSimulationPanel_changed()
         qDebug() << __FUNCTION__ << " Index of the target point=" << selectedIndex;
 
         // rvizのパネル用に/tfを送信する.
-        tf::StampedTransform transform;
+        geometry_msgs::msg::TransformStamped transform;
         try
         {
-            getTransformListener()->lookupTransform(rosframe::ISS_BODY, rosframe::CAMERA, ros::Time(0), transform);
+            transform = getTfBuffer()->lookupTransform(rosframe::ISS_BODY, rosframe::CAMERA, tf2::TimePointZero);
         }
-        catch (tf::TransformException &ex)
+        catch (tf2::TransformException &ex)
         {
             LOG_WARNING() << "Can't lookup transform: " <<  ex.what();
             return;
         }
 
-        ros::Time now = ros::Time::now();
-        transform.setRotation(ui->editCameraSimulationPanel->getQuaternion());
+        transform.header.stamp = getNode()->now();
+        auto q = ui->editCameraSimulationPanel->getQuaternion();
+        transform.transform.rotation.x = q.x();
+        transform.transform.rotation.y = q.y();
+        transform.transform.rotation.z = q.z();
+        transform.transform.rotation.w = q.scalar();
 
-        tfBroadcaster_.sendTransform(tf::StampedTransform(transform, now, rosframe::ISS_BODY, rosframe::CAMERA));
+        tfBroadcaster_->sendTransform(transform);
 
         // モデルのデータを更新する.
-        routeInformation_->setDataOrientation(selectedIndex, tfToQt(ui->editCameraSimulationPanel->getQuaternion()));
+        routeInformation_->setDataOrientation(selectedIndex, ui->editCameraSimulationPanel->getQuaternion());
     }
 }
 
@@ -373,6 +445,9 @@ void EditingPage::RouteInformation_selectionChanged(const QItemSelection &select
     if(!selected.empty())
     {
         int selectedIndex = selected.first().top();
+
+        // CameraViewPanel VMの遅延初期化（初回のみ）.
+        ensureCameraVmInitialized();
 
         // 点が選択された場合,カメラのシミュレーションを表示する.
         if(!ui->editCameraSimulationPanel->isVisible())

@@ -9,17 +9,18 @@
 #include <QTextCodec>
 #include <QTimer>
 #include <QUrl>
-#include <ros/ros.h>
-#include <tf/transform_broadcaster.h>
-#include <visualization_msgs/MarkerArray.h>
-#include <rviz/config.h>
-#include <rviz/display.h>
-#include <rviz/visualization_manager.h>
-#include <rviz/yaml_config_reader.h>
-#include <std_msgs/Time.h>
-#include <tf/transform_listener.h>
+#include <rclcpp/rclcpp.hpp>
+#include <tf2_ros/transform_broadcaster.h>
+#include <visualization_msgs/msg/marker_array.hpp>
+#include <rviz_common/config.hpp>
+#include <rviz_common/display.hpp>
+#include <rviz_common/visualization_manager.hpp>
+#include <rviz_common/yaml_config_reader.hpp>
+#include <builtin_interfaces/msg/time.hpp>
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/buffer.h>
 #include "amount_slider_widget.h"
-#include "communication_software/Telemetry.h"
+#include "communication_software/msg/telemetry.hpp"
 #include "common_log_object.h"
 #include "dialog_factory.h"
 #include "editing_page.h"
@@ -54,6 +55,7 @@ GroundSystemMainWindow::GroundSystemMainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::GroundSystemMainWindow),
     videoAreaAspectRatio_(9.0 / 16.0),
+    tfBroadcaster_(*getNode()),
     intballPositionBeforeMoving_(QVector3D())
 {
     qRegisterMetaType<intball::RoutePoint>("intball::RoutePoint");
@@ -104,40 +106,29 @@ GroundSystemMainWindow::GroundSystemMainWindow(QWidget *parent) :
 
 
     // テレコマンド送信用クライアント.
-    telecommandClient_ = new TelecommandClient(*getNodeHandle(), this);
+    telecommandClient_ = new TelecommandClient(getNode(), this);
     connect(telecommandClient_, &TelecommandClient::executed, this, &GroundSystemMainWindow::clientLog);
-
-    // 各種ページの初期化.
-    QString pathRvizConfig = Config::packagePath() +
-                             Config::valueAsString(KEY_RVIZ_CONFIG_ROUTE);
-    ui->mainPageWidget->initialize(pathRvizConfig, routeInformation_, routeInformationSelectionModel_, videoController_,
-                                   intballTelemetry_, telecommandClient_, dockTelemetry_);
-    ui->mainPageWidget->setVideoArea(videoAreaWidget_);
-
-    ui->editPageWidget->initialize(pathRvizConfig, routeInformation_, routeInformationSelectionModel_, telecommandClient_);
-    ui->execPageWidget->initialize(pathRvizConfig, routeInformation_, telecommandClient_, intballTelemetry_);
 
     // テレメトリ情報表示用ウィジット.
     statusAreaWidget_ = new StatusWidget(this);
     statusAreaWidget_->initialize(intballTelemetry_, dockTelemetry_, telemetryMonitor_);
     // 一部ログはテレメトリ情報表示用ウィジットにも表示する.
     connect(telecommandClient_, &TelecommandClient::executed, this, &GroundSystemMainWindow::statusWidgetEvent);
-    ui->mainPageWidget->setStatusArea(statusAreaWidget_);
 
     // rviz画面の経路用マーカーのPublish.
-    publisherRoute_ = getNodeHandle()->advertise<visualization_msgs::MarkerArray>("marker_route", 100);
+    publisherRoute_ = getNode()->create_publisher<visualization_msgs::msg::MarkerArray>("marker_route", 100);
     //rvizパネルにマーカーを配置するためのメッセージの初期化.
     markerArrayView_.markers.resize(2);
 
     // 経路の線を配置する.
     markerArrayView_.markers[MARKER_INDEX_LINE].header.frame_id = rosframe::ISS_BODY;
-    markerArrayView_.markers[MARKER_INDEX_LINE].header.stamp = ros::Time(0);
+    markerArrayView_.markers[MARKER_INDEX_LINE].header.stamp = rclcpp::Time(0);
     markerArrayView_.markers[MARKER_INDEX_LINE].ns = "route";
     markerArrayView_.markers[MARKER_INDEX_LINE].id = 0;
-    markerArrayView_.markers[MARKER_INDEX_LINE].lifetime = ros::Duration(0);
+    markerArrayView_.markers[MARKER_INDEX_LINE].lifetime = rclcpp::Duration(0, 0);
 
-    markerArrayView_.markers[MARKER_INDEX_LINE].type = visualization_msgs::Marker::LINE_STRIP;
-    markerArrayView_.markers[MARKER_INDEX_LINE].action = visualization_msgs::Marker::MODIFY;
+    markerArrayView_.markers[MARKER_INDEX_LINE].type = visualization_msgs::msg::Marker::LINE_STRIP;
+    markerArrayView_.markers[MARKER_INDEX_LINE].action = visualization_msgs::msg::Marker::MODIFY;
     markerArrayView_.markers[MARKER_INDEX_LINE].scale.x = 0.1;
     markerArrayView_.markers[MARKER_INDEX_LINE].pose.orientation.w = 1.0;
 
@@ -148,13 +139,13 @@ GroundSystemMainWindow::GroundSystemMainWindow(QWidget *parent) :
 
     // 経路の点を配置する.
     markerArrayView_.markers[MARKER_INDEX_POINT].header.frame_id = rosframe::ISS_BODY;
-    markerArrayView_.markers[MARKER_INDEX_POINT].header.stamp = ros::Time(0);
+    markerArrayView_.markers[MARKER_INDEX_POINT].header.stamp = rclcpp::Time(0);
     markerArrayView_.markers[MARKER_INDEX_POINT].ns = "route";
     markerArrayView_.markers[MARKER_INDEX_POINT].id = 1;
-    markerArrayView_.markers[MARKER_INDEX_POINT].lifetime = ros::Duration(0);
+    markerArrayView_.markers[MARKER_INDEX_POINT].lifetime = rclcpp::Duration(0, 0);
 
-    markerArrayView_.markers[MARKER_INDEX_POINT].type = visualization_msgs::Marker::SPHERE_LIST;
-    markerArrayView_.markers[MARKER_INDEX_POINT].action = visualization_msgs::Marker::MODIFY;
+    markerArrayView_.markers[MARKER_INDEX_POINT].type = visualization_msgs::msg::Marker::SPHERE_LIST;
+    markerArrayView_.markers[MARKER_INDEX_POINT].action = visualization_msgs::msg::Marker::MODIFY;
     markerArrayView_.markers[MARKER_INDEX_POINT].scale.x = 0.2;
     markerArrayView_.markers[MARKER_INDEX_POINT].pose.orientation.w = 1.0;
 
@@ -168,19 +159,19 @@ GroundSystemMainWindow::GroundSystemMainWindow(QWidget *parent) :
 
     // 経路の点を削除する.
     markerArrayDelete_.markers[MARKER_INDEX_LINE].header.frame_id = rosframe::ISS_BODY;
-    markerArrayDelete_.markers[MARKER_INDEX_LINE].header.stamp = ros::Time(0);
+    markerArrayDelete_.markers[MARKER_INDEX_LINE].header.stamp = rclcpp::Time(0);
     markerArrayDelete_.markers[MARKER_INDEX_LINE].ns = "route";
     markerArrayDelete_.markers[MARKER_INDEX_LINE].id = 0;
-    markerArrayDelete_.markers[MARKER_INDEX_LINE].lifetime = ros::Duration(0);
-    markerArrayDelete_.markers[MARKER_INDEX_LINE].action = visualization_msgs::Marker::DELETE;
+    markerArrayDelete_.markers[MARKER_INDEX_LINE].lifetime = rclcpp::Duration(0, 0);
+    markerArrayDelete_.markers[MARKER_INDEX_LINE].action = visualization_msgs::msg::Marker::DELETE;
 
     // 経路の線を削除する.
     markerArrayDelete_.markers[MARKER_INDEX_POINT].header.frame_id = rosframe::ISS_BODY;
-    markerArrayDelete_.markers[MARKER_INDEX_POINT].header.stamp = ros::Time(0);
+    markerArrayDelete_.markers[MARKER_INDEX_POINT].header.stamp = rclcpp::Time(0);
     markerArrayDelete_.markers[MARKER_INDEX_POINT].ns = "route";
     markerArrayDelete_.markers[MARKER_INDEX_POINT].id = 1;
-    markerArrayDelete_.markers[MARKER_INDEX_POINT].lifetime = ros::Duration(0);
-    markerArrayDelete_.markers[MARKER_INDEX_POINT].action = visualization_msgs::Marker::DELETE;
+    markerArrayDelete_.markers[MARKER_INDEX_POINT].lifetime = rclcpp::Duration(0, 0);
+    markerArrayDelete_.markers[MARKER_INDEX_POINT].action = visualization_msgs::msg::Marker::DELETE;
 
     // ページ切り替えイベント
     connect(ui->execPageWidget, &ExecutionPage::readyToSwitch, this, &GroundSystemMainWindow::switchPageEvent);
@@ -188,19 +179,76 @@ GroundSystemMainWindow::GroundSystemMainWindow(QWidget *parent) :
 
     // その他初期化が完了してからテレメトリの受信処理を開始する.
     telemetrySubscriber_ = new TelemetrySubscriber(this);
-    telemetrySubscriber_->start(*getNodeHandle(), intballTelemetry_, dockTelemetry_);
+    telemetrySubscriber_->start(getNode(), intballTelemetry_, dockTelemetry_);
+}
+
+void GroundSystemMainWindow::initializePages()
+{
+    // rviz2のVisualizationManagerはコンストラクタでsetEnabled(true)を呼び、
+    // Display::onEnableChanged()がscene_node_->setVisible()を実行する.
+    // scene_node_はOgre SceneManagerの存在下でのみ設定されるため、
+    // SceneManagerが未初期化だとSIGSEGVとなる.
+    //
+    // Ogre SceneManagerはRenderPanelのexpose/paintイベント処理時に遅延生成される.
+    // QStackedWidgetは現在ページのみ表示するため、非表示ページのRenderPanelには
+    // expose/paintイベントが配信されない.
+    //
+    // 解決策: 各ページを順番に表示し、processEventsでSceneManagerを生成してから
+    // VisualizationManagerを初期化する.
+
+    pathRvizConfig_ = Config::packagePath() +
+                      Config::valueAsString(KEY_RVIZ_CONFIG_ROUTE);
+    pathRvizConfigCamera_ = Config::packagePath() +
+                            Config::valueAsString(KEY_RVIZ_CONFIG_CAMERA);
+
+    // Phase 1: 全ページのUI初期化（RenderPanel作成のみ、rvizオブジェクトなし）.
+    ui->mainPageWidget->initialize(pathRvizConfig_, routeInformation_, routeInformationSelectionModel_, videoController_,
+                                   intballTelemetry_, telecommandClient_, dockTelemetry_);
+    ui->mainPageWidget->setVideoArea(videoAreaWidget_);
+    ui->mainPageWidget->setStatusArea(statusAreaWidget_);
+    ui->editPageWidget->initialize(pathRvizConfig_, routeInformation_, routeInformationSelectionModel_, telecommandClient_);
+    ui->execPageWidget->initialize(pathRvizConfig_, routeInformation_, telecommandClient_, intballTelemetry_);
+
+    // Phase 2+3: 各ページを順番に表示し、SceneManager生成 → VM初期化を行う.
+    // VMはページが表示されている間に作成する必要がある.
+    // 非表示ページでVM作成すると PropertyTreeModel::propertyHiddenChanged が
+    // 不正なPropertyを処理してSIGSEGVになるため.
+
+    // MainPage（現在表示中）: SceneManager生成 + VM初期化.
+    QApplication::processEvents();
+    ui->mainPageWidget->initializeRviz(pathRvizConfig_);
+    QApplication::processEvents();  // mainPage VMのイベントを処理.
+
+    // EditingPage: 表示 → SceneManager生成 → VM初期化 → イベント処理.
+    // CameraViewPanel VMは遅延初期化（ユーザーが経路点を選択した時に初めて作成）.
+    ui->stackedWidget->setCurrentIndex(PAGE_EDIT);
+    QApplication::processEvents();
+    ui->editPageWidget->initializeRviz(pathRvizConfig_, pathRvizConfigCamera_);
+    editPageRvizInitialized_ = true;
+    QApplication::processEvents();  // editPage VMのイベントを処理.
+
+    // ExecutionPage: 表示 → SceneManager生成 → VM初期化 → イベント処理.
+    ui->stackedWidget->setCurrentIndex(PAGE_EXECUTION);
+    QApplication::processEvents();
+    ui->execPageWidget->initializeRviz(pathRvizConfig_);
+    execPageRvizInitialized_ = true;
+    QApplication::processEvents();  // execPage VMのイベントを処理.
+
+    // メインページに戻す.
+    ui->stackedWidget->setCurrentIndex(PAGE_MAIN);
+    QApplication::processEvents();
 }
 
 GroundSystemMainWindow::~GroundSystemMainWindow()
 {
-    publisherRoute_.shutdown();
+    publisherRoute_.reset();
     delete ui;
 }
 
 void GroundSystemMainWindow::closeEvent(QCloseEvent *event)
 {
     Q_UNUSED(event);
-    ros::shutdown();
+    rclcpp::shutdown();
 }
 
 void GroundSystemMainWindow::clientLog(CommandLog log)
@@ -221,15 +269,20 @@ void GroundSystemMainWindow::clientLog(CommandLog log)
 void GroundSystemMainWindow::switchToMainPage()
 {
     LOG_INFO() << "Switching screen to the MainPage";
+    // 現在のページのレンダリングを停止.
+    stopCurrentPageRendering();
     ui->mainPageWidget->setVideoArea(videoAreaWidget_);
     statusAreaWidget_->setOrientation(Qt::Horizontal);
     ui->mainPageWidget->setStatusArea(statusAreaWidget_);
     ui->stackedWidget->setCurrentIndex(PAGE_MAIN);
+    ui->mainPageWidget->startRendering();
 }
 
 void GroundSystemMainWindow::switchToEditPage()
 {
     LOG_INFO() << "Switching screen to the EditPage";
+    // 現在のページのレンダリングを停止.
+    stopCurrentPageRendering();
 
     // 編集前状態を保存する
     beforeEditRoutePointList_ = routeInformation_->routeWithoutStartPointAsList();
@@ -239,11 +292,21 @@ void GroundSystemMainWindow::switchToEditPage()
     ui->editPageWidget->setStatusArea(statusAreaWidget_);
     ui->editPageWidget->setCamera();
     ui->stackedWidget->setCurrentIndex(PAGE_EDIT);
+
+    // EditPageのrviz初期化がまだの場合、オンデマンドで初期化する.
+    // Phase 2でSceneManagerは既に生成済みのためprocessEvents()は不要.
+    if (!editPageRvizInitialized_) {
+        ui->editPageWidget->initializeRviz(pathRvizConfig_, pathRvizConfigCamera_);
+        editPageRvizInitialized_ = true;
+    }
+    ui->editPageWidget->startRendering();
 }
 
 void GroundSystemMainWindow::switchToExecutionPage()
 {
     LOG_INFO() << "Switching screen to the ExecutionPage";
+    // 現在のページのレンダリングを停止.
+    stopCurrentPageRendering();
 
     //Int-Ball2現在位置を保持する.
     intballPositionBeforeMoving_ = routeInformation_->currentIntBallPose().position();
@@ -253,6 +316,29 @@ void GroundSystemMainWindow::switchToExecutionPage()
     ui->execPageWidget->setStatusArea(statusAreaWidget_);
     ui->execPageWidget->start();
     ui->stackedWidget->setCurrentIndex(PAGE_EXECUTION);
+
+    // ExecPageのrviz初期化がまだの場合、オンデマンドで初期化する.
+    // Phase 2でSceneManagerは既に生成済みのためprocessEvents()は不要.
+    if (!execPageRvizInitialized_) {
+        ui->execPageWidget->initializeRviz(pathRvizConfig_);
+        execPageRvizInitialized_ = true;
+    }
+    ui->execPageWidget->startRendering();
+}
+
+void GroundSystemMainWindow::stopCurrentPageRendering()
+{
+    switch (ui->stackedWidget->currentIndex()) {
+    case PAGE_MAIN:
+        ui->mainPageWidget->stopRendering();
+        break;
+    case PAGE_EDIT:
+        ui->editPageWidget->stopRendering();
+        break;
+    case PAGE_EXECUTION:
+        ui->execPageWidget->stopRendering();
+        break;
+    }
 }
 
 void GroundSystemMainWindow::on_editGoalButton_clicked()
@@ -274,21 +360,25 @@ void GroundSystemMainWindow::IntBall2Telemetry_dataChanged(const QModelIndex &to
     Q_UNUSED(roles);
 
     // 有効な座標値の場合はPublish.
-    auto quaternion = intballTelemetry_->data<geometry_msgs::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION);
+    auto quaternion = intballTelemetry_->data<geometry_msgs::msg::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION);
     if(quaternion.w != 0.0)
     {
         // rviz表示用のtfをPublish.
-        tf::StampedTransform transform;
-        transform.frame_id_ = rosframe::ISS_BODY;
-        transform.child_frame_id_ = rosframe::BODY;
-        transform.stamp_ = ros::Time::now();
-        transform.setOrigin(geometryToTf(intballTelemetry_->data<geometry_msgs::Point>(Index::NAVIGATION_POSE_POSITION)));
-        transform.setRotation(geometryToTf(intballTelemetry_->data<geometry_msgs::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION)));
+        geometry_msgs::msg::TransformStamped transform;
+        transform.header.frame_id = rosframe::ISS_BODY;
+        transform.child_frame_id = rosframe::BODY;
+        transform.header.stamp = getNode()->now();
+        auto pos = intballTelemetry_->data<geometry_msgs::msg::Point>(Index::NAVIGATION_POSE_POSITION);
+        transform.transform.translation.x = pos.x;
+        transform.transform.translation.y = pos.y;
+        transform.transform.translation.z = pos.z;
+        auto quat = intballTelemetry_->data<geometry_msgs::msg::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION);
+        transform.transform.rotation = quat;
         tfBroadcaster_.sendTransform(transform);
 
         // Int-Ball2現在位置姿勢の更新.
-        routeInformation_->setData(0, geometryToQt(intballTelemetry_->data<geometry_msgs::Point>(Index::NAVIGATION_POSE_POSITION)),
-                                   geometryToQt(intballTelemetry_->data<geometry_msgs::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION)));
+        routeInformation_->setData(0, geometryToQt(intballTelemetry_->data<geometry_msgs::msg::Point>(Index::NAVIGATION_POSE_POSITION)),
+                                   geometryToQt(intballTelemetry_->data<geometry_msgs::msg::Quaternion>(Index::NAVIGATION_POSE_ORIENTATION)));
     }
 }
 
@@ -477,11 +567,11 @@ void GroundSystemMainWindow::publishRouteMarkerArray(const int firstToBeRemoved,
             markerArrayView_.markers[MARKER_INDEX_POINT].points[i + point_index_offset].z = routeInformation_->data(targetIndex.at(i)).position().z();
 
         }
-        publisherRoute_.publish(markerArrayView_);
+        publisherRoute_->publish(markerArrayView_);
     }
     else
     {
         // 経路の点と線を削除する.
-        publisherRoute_.publish(markerArrayDelete_);
+        publisherRoute_->publish(markerArrayDelete_);
     }
 }

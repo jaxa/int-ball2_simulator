@@ -1,6 +1,7 @@
 #include <QApplication>
-#include <QDesktopWidget>
-#include <ros/ros.h>
+#include <QScreen>
+#include <QTimer>
+#include <rclcpp/rclcpp.hpp>
 #include "ground_system_main_window.h"
 #include "gui_color.h"
 #include "operator_gui_config.h"
@@ -18,6 +19,7 @@ namespace  {
 
 void logHandler(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
+    Q_UNUSED(context);
     QByteArray local_msg = msg.toLocal8Bit();
     switch (type)
     {
@@ -72,8 +74,11 @@ void setLogger()
 
 int main(int argc, char *argv[])
 {
-    ros::init(argc, argv, THIS_PACKAGE_NAME.toStdString(), ros::init_options::AnonymousName);
-    intball::getNodeHandle();
+    rclcpp::init(argc, argv);
+    auto node = std::make_shared<rclcpp::Node>(
+        THIS_PACKAGE_NAME.toStdString(),
+        rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true));
+    intball::setNode(node);
 
     Config::load(THIS_PACKAGE_NAME);
 
@@ -98,20 +103,36 @@ int main(int argc, char *argv[])
     // ウィンドウはフレームレスで、デスクトップ領域（タスクメニューを除く領域）を埋めるように表示する
     w.setWindowFlags(Qt::WindowType::FramelessWindowHint);
     w.show();
-    auto availableGeometry = QApplication::desktop()->availableGeometry();
+    auto availableGeometry = QGuiApplication::primaryScreen()->availableGeometry();
     w.setGeometry(availableGeometry.x(),
                   availableGeometry.y(),
                   availableGeometry.width(),
                   availableGeometry.height());
 
-    ros::Rate rate(60);
-    while(ros::ok())
-    {
-        ros::spinOnce();
-        a.processEvents();
-        rate.sleep();
-    }
-    spdlog::shutdown();
+    // rviz2パネルの初期化をイベントループ開始後に遅延実行する.
+    // rviz2と同様、QApplication::exec()でイベントループを実行し、
+    // ROS 2のスピンはQTimerで周期的に行う.
+    QTimer rosSpinTimer;
+    QObject::connect(&rosSpinTimer, &QTimer::timeout, [&node]() {
+        if (rclcpp::ok()) {
+            rclcpp::spin_some(node);
+        } else {
+            QApplication::quit();
+        }
+    });
+    rosSpinTimer.start(16); // ~60Hz
 
-    return 0;
+    // rviz2パネルの初期化はイベントループ開始直後にスケジュールする.
+    // この時点で全ウィジェットのexpose/paintイベントが処理済みとなり、
+    // OgreのSceneManagerが遅延初期化される.
+    QTimer::singleShot(0, [&w]() {
+        w.initializePages();
+    });
+
+    int ret = a.exec();
+
+    spdlog::shutdown();
+    rclcpp::shutdown();
+
+    return ret;
 }

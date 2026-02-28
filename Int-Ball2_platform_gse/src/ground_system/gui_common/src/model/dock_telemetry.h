@@ -1,7 +1,8 @@
 #ifndef DOCK_TELEMETRY_H
 #define DOCK_TELEMETRY_H
 
-#include <ros/ros.h>
+#include <rclcpp/rclcpp.hpp>
+#include "builtin_interfaces/msg/time.hpp"
 #include <QAbstractListModel>
 #include <QDateTime>
 #include "telemetry_telecommand_config.h"
@@ -31,7 +32,7 @@ public:
         return data_[createIndex(static_cast<int>(item), 0)].value<T>();
     }
 
-    void setReceivedTimestamp(const ros::Time& receivedTimestamp);
+    void setReceivedTimestamp(const builtin_interfaces::msg::Time& receivedTimestamp);
 
     QString getReceivedTimestampString();
     QString getChargeStateAsString();

@@ -105,7 +105,7 @@ namespace ib2
 		Eigen::Vector3d s_;
 
 		/** 積分値s_のタイムタグ */
-		rclcpp::Time ts_;
+		rclcpp::Time ts_{0, 0, RCL_ROS_TIME};
 	};
 }
 

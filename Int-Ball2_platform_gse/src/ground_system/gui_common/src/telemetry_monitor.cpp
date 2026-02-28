@@ -4,6 +4,7 @@
 #include "model/dock_telemetry.h"
 #include "gui_config_base.h"
 #include "qdebug_custom.h"
+#include "utils.h"
 
 using namespace intball;
 using namespace intball::qsettings;
@@ -114,19 +115,19 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
         switch(intballTelemetry_->data<unsigned char>(telemetry::Index::MODE))
         {
-        case ib2_msgs::Mode::OPERATION:
+        case ib2_msgs::msg::Mode::OPERATION:
             // 運用モード遷移.
-            if(intballTelemetry_->data<int>(telemetry::Index::CTL_STATUS_TYPE) == ib2_msgs::CtlStatusType::STAND_BY)
+            if(intballTelemetry_->data<int>(telemetry::Index::CTL_STATUS_TYPE) == ib2_msgs::msg::CtlStatusType::STAND_BY)
             {
                 // 誘導制御スタンバイのまま運用モードに遷移した場合はイベントを通知する.
                 emitEventSignal(Event::CTL_ABNORMAL_SHUTDOWN, intballTelemetry_->data(telemetry::Index::MODE));
             }
             break;
-        case ib2_msgs::Mode::IDLING:
+        case ib2_msgs::msg::Mode::IDLING:
             // アイドリングモード遷移.
             emitEventSignal(Event::MODE_IDLING, intballTelemetry_->data(telemetry::Index::MODE));
             break;
-        case ib2_msgs::Mode::OFF_NOMINAL:
+        case ib2_msgs::msg::Mode::OFF_NOMINAL:
             // オフノミナル遷移.
             emitEventSignal(Event::MODE_OFF_NOMINAL, intballTelemetry_->data(telemetry::Index::MODE));
             break;
@@ -144,8 +145,8 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
     if(rowList.contains(static_cast<int>(telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO)))
     {
         if(!moveNotYetComplete_ &&
-                (intballTelemetry_->data<ros::Duration>(
-                     telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO).toSec() <= static_cast<double>(checkTimeToGoThreshold_)))
+                (toSec(intballTelemetry_->data<builtin_interfaces::msg::Duration>(
+                     telemetry::Index::CTL_ACTION_FEEDBACK_TIME_TO_GO)) <= static_cast<double>(checkTimeToGoThreshold_)))
         {
             emitEventSignal(Event::MOVE_NOT_YET_COMPLETE, QVariant());
             moveNotYetComplete_ = true;
@@ -158,7 +159,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         emitEventSignal(Event::FINISH_CTL_COMMAND, intballTelemetry_->data(telemetry::Index::CTL_ACTION_RESULT_TYPE));
 
         auto status = intballTelemetry_->data<unsigned char>(telemetry::Index::CTL_ACTION_RESULT_TYPE);
-        if(status != ib2_msgs::CtlCommandResult::TERMINATE_SUCCESS)
+        if(status != ib2_msgs::action::CtlCommand_Result::TERMINATE_SUCCESS)
         {
             // アクション失敗.
             emitEventSignal(Event::FAILED_CTL_COMMAND, intballTelemetry_->data(telemetry::Index::CTL_ACTION_RESULT_TYPE));
@@ -171,19 +172,19 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         emitEventSignal(Event::CTL_STATUS_CHANGED, intballTelemetry_->data(telemetry::Index::CTL_STATUS_TYPE));
         auto status = intballTelemetry_->data<int>(telemetry::Index::CTL_STATUS_TYPE);
 
-        if(captured_ && status != ib2_msgs::CtlStatusType::CAPTURED)
+        if(captured_ && status != ib2_msgs::msg::CtlStatusType::CAPTURED)
         {
             // キャプチャ状態から解除.
             captured_ = false;
 
-            if(status == ib2_msgs::CtlStatusType::KEEP_POSE)
+            if(status == ib2_msgs::msg::CtlStatusType::KEEP_POSE)
             {
                 // キャプチャからのリリース.
                 emitEventSignal(Event::RELEASE_CAPTURE, QVariant());
             }
         }
 
-        if(!ctlStatus_ && status != ib2_msgs::CtlStatusType::STAND_BY)
+        if(!ctlStatus_ && status != ib2_msgs::msg::CtlStatusType::STAND_BY)
         {
             emitEventSignal(Event::CTL_ACTIVE, QVariant());
             ctlStatus_ = true;
@@ -191,25 +192,25 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
         switch(status)
         {
-        case ib2_msgs::CtlStatusType::SCAN:
+        case ib2_msgs::msg::CtlStatusType::SCAN:
             // スキャン動作開始.
             emitEventSignal(Event::START_SCAN, QVariant());
             break;
-        case ib2_msgs::CtlStatusType::CAPTURED:
+        case ib2_msgs::msg::CtlStatusType::CAPTURED:
             // キャプチャ.
             emitEventSignal(Event::CAPTURED, QVariant());
             captured_ = true;
             break;
-        case ib2_msgs::CtlStatusType::KEEPING_POSE_BY_COLLISION:
+        case ib2_msgs::msg::CtlStatusType::KEEPING_POSE_BY_COLLISION:
             // 衝突による停止.
             emitEventSignal(Event::STOPPED_BY_COLLISION, QVariant());
             break;
-        case ib2_msgs::CtlStatusType::STAND_BY:
+        case ib2_msgs::msg::CtlStatusType::STAND_BY:
             // スタンバイ.
             if(intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != INTBALL_MODE_UNKNOWN &&
-                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::Mode::MAINTENANCE &&
-                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::Mode::STANDBY &&
-                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::Mode::IDLING)
+                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::msg::Mode::MAINTENANCE &&
+                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::msg::Mode::STANDBY &&
+                    intballTelemetry_->data<unsigned char>(telemetry::Index::MODE) != ib2_msgs::msg::Mode::IDLING)
             {
                 // 運用中に誘導制御が異常終了した（STAND_BYに遷移した）と判定する.
                 emitEventSignal(Event::CTL_ABNORMAL_SHUTDOWN, QVariant());
@@ -221,7 +222,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
                 ctlStatus_ = false;
             }
             break;
-        case ib2_msgs::CtlStatusType::KEEP_POSE:
+        case ib2_msgs::msg::CtlStatusType::KEEP_POSE:
             emitEventSignal(Event::KEEP_POSE, QVariant());
             break;
         }
@@ -232,10 +233,10 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
     {
         switch(intballTelemetry_->data<unsigned char>(telemetry::Index::NAVIGATION_STARTUP_RESULT_TYPE))
         {
-        case ib2_msgs::NavigationStartUpResult::TIME_OUT:
+        case ib2_msgs::action::NavigationStartUp_Result::TIME_OUT:
             emitEventSignal(Event::NAVIGATION_ACTION_TIMEOUT, QVariant());
             break;
-        case ib2_msgs::NavigationStartUpResult::ABORTED:
+        case ib2_msgs::action::NavigationStartUp_Result::ABORTED:
             emitEventSignal(Event::NAVIGATION_ACTION_ABORTED, QVariant());
             break;
         }
@@ -390,7 +391,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_MIC_CAMERA_POWER)))
     {
-        if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_CAMERA_POWER).status == ib2_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_CAMERA_POWER).status == ib2_msgs::msg::PowerStatus::ON)
         {
             // カメラON.
             emitEventSignal(Event::CAMERA_ON, QVariant());
@@ -404,7 +405,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER)))
     {
-        if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER).status == ib2_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_MICROPHONE_POWER).status == ib2_msgs::msg::PowerStatus::ON)
         {
             // マイクON.
             emitEventSignal(Event::MICROPHONE_ON, QVariant());
@@ -418,7 +419,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_MIC_STREAMING_STATUS)))
     {
-        if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_STREAMING_STATUS).status == ib2_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_STREAMING_STATUS).status == ib2_msgs::msg::PowerStatus::ON)
         {
             // ストリーミングON.
             emitEventSignal(Event::STREAMING_ON, QVariant());
@@ -432,7 +433,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_MIC_RECORDING_STATUS)))
     {
-        if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::CAMERA_MIC_RECORDING_STATUS).status == ib2_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MIC_RECORDING_STATUS).status == ib2_msgs::msg::PowerStatus::ON)
         {
             // 録画ON.
             emitEventSignal(Event::RECORDING_ON, QVariant());
@@ -446,7 +447,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH)))
     {
-        if(intballTelemetry_->data<ib2_msgs::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status == ib2_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<ib2_msgs::msg::PowerStatus>(telemetry::Index::DISPLAY_MANAGER_STATUS_FLASH).status == ib2_msgs::msg::PowerStatus::ON)
         {
             // カメラ用照明ON.
             emitEventSignal(Event::CAMERA_FLASH_ON, QVariant());
@@ -462,7 +463,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
     {
         // パラメータの再読み込み 航法機能.
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::NAVIGATION_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::NAVIGATION_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -480,7 +481,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み SLAMノード.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::SLAM_WRAPPER_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::SLAM_WRAPPER_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -498,7 +499,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み 誘導制御.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::CTL_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::CTL_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -516,7 +517,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み 推力.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::PROP_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::PROP_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -534,7 +535,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み IMU.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::IMU_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::IMU_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -552,7 +553,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み カメラ・マイク.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::CAMERA_MIC_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::CAMERA_MIC_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -570,7 +571,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み LED左.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::LED_LEFT_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::LED_LEFT_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -588,7 +589,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
         // パラメータの再読み込み LED右.
 
         if(intballTelemetry_->data<unsigned char>(telemetry::Index::LED_RIGHT_UPDATE_PARAMETER_RESPONSE_RESULT)
-                == ib2_msgs::UpdateParameterResponse::SUCCESS)
+                == ib2_msgs::srv::UpdateParameter::Response::SUCCESS)
         {
             // 再読み込み成功.
             emitEventSignal(Event::LED_RIGHT_UPDATE_PARAMETER_SUCCESS, QVariant());
@@ -603,7 +604,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::MARKER_CORRECTION_TIMESTAMP)))
     {
-        if(intballTelemetry_->data<short>(telemetry::Index::MARKER_CORRECTION_STATUS) == ib2_msgs::MarkerCorrectionResponse::SUCCESS)
+        if(intballTelemetry_->data<short>(telemetry::Index::MARKER_CORRECTION_STATUS) == ib2_msgs::srv::MarkerCorrection::Response::SUCCESS)
         {
             // マーカー補正成功.
             emitEventSignal(Event::MARKER_CORRECTION_SUCCESS, QVariant());
@@ -656,9 +657,9 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
         switch(mode)
         {
-        case platform_msgs::Mode::USER_OFF:
+        case platform_msgs::msg::Mode::USER_OFF:
             // ユーザプログラムOFF.
-            if (lastPlatformManagerMode_ == platform_msgs::Mode::USER_IN_PROGRESS)
+            if (lastPlatformManagerMode_ == platform_msgs::msg::Mode::USER_IN_PROGRESS)
             {
                 // ユーザ実装ロジックの実行中からユーザプログラムOFFへ遷移した場合、ユーザノードが異常終了したと判断する
                 emitEventSignal(Event::USER_NODE_ABNORMAL_SHUTDOWN, QVariant());
@@ -679,7 +680,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
             userNodeStatus_ = false;
             userLogicStatus_ = false;
             break;
-        case platform_msgs::Mode::USER_READY:
+        case platform_msgs::msg::Mode::USER_READY:
             // ユーザ実装ロジック開始待ち.
             if(!userNodeStatus_)
             {
@@ -694,7 +695,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
                 userLogicStatus_ = false;
             }
             break;
-        case platform_msgs::Mode::USER_IN_PROGRESS:
+        case platform_msgs::msg::Mode::USER_IN_PROGRESS:
             // ユーザ実装ロジック実行中.
             if(!userNodeStatus_)
             {
@@ -723,15 +724,15 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
     // 航法ステータスの更新.
     if(rowList.contains(static_cast<int>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS)))
     {
-        emitEventSignal(Event::NAVIGATION_STATUS_CHANGED, intballTelemetry_->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status);
+        emitEventSignal(Event::NAVIGATION_STATUS_CHANGED, intballTelemetry_->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status);
 
-        auto status = intballTelemetry_->data<ib2_msgs::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status;
-        if(status == ib2_msgs::NavigationStatus::NAV_OFF)
+        auto status = intballTelemetry_->data<ib2_msgs::msg::NavigationStatus>(telemetry::Index::NAVIGATION_STATUS_TOPIC_STASUS).status;
+        if(status == ib2_msgs::msg::NavigationStatus::NAV_OFF)
         {
             emitEventSignal(Event::NAVIGATION_OFF, QVariant());
             navigationStatus_ = false;
         }
-        if(!navigationStatus_ && status != ib2_msgs::NavigationStatus::NAV_OFF)
+        if(!navigationStatus_ && status != ib2_msgs::msg::NavigationStatus::NAV_OFF)
         {
             emitEventSignal(Event::NAVIGATION_ON, QVariant());
             navigationStatus_ = true;
@@ -740,7 +741,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS)))
     {
-        if(intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS).status == platform_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_MAIN_STREAMING_STATUS).status == platform_msgs::msg::PowerStatus::ON)
         {
             // メインカメラ ストリーミングON.
             emitEventSignal(Event::CAMERA_MAIN_STREAMING_ON, QVariant());
@@ -754,7 +755,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS)))
     {
-        if(intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS).status == platform_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_LEFT_STREAMING_STATUS).status == platform_msgs::msg::PowerStatus::ON)
         {
             // 航法カメラ左 ストリーミングON.
             emitEventSignal(Event::CAMERA_LEFT_STREAMING_ON, QVariant());
@@ -768,7 +769,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS)))
     {
-        if(intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS).status == platform_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::CAMERA_RIGHT_STREAMING_STATUS).status == platform_msgs::msg::PowerStatus::ON)
         {
             // 航法カメラ右 ストリーミングON.
             emitEventSignal(Event::CAMERA_RIGHT_STREAMING_ON, QVariant());
@@ -782,7 +783,7 @@ void TelemetryMonitor::IntBall2Telemetry_rowsChanged(QList<int> rowList)
 
     if(rowList.contains(static_cast<int>(telemetry::Index::MICROPHONE_STREAMING_STATUS)))
     {
-        if(intballTelemetry_->data<platform_msgs::PowerStatus>(telemetry::Index::MICROPHONE_STREAMING_STATUS).status == platform_msgs::PowerStatus::ON)
+        if(intballTelemetry_->data<platform_msgs::msg::PowerStatus>(telemetry::Index::MICROPHONE_STREAMING_STATUS).status == platform_msgs::msg::PowerStatus::ON)
         {
             // マイク ストリーミングON.
             emitEventSignal(Event::MICROPHONE_STREAMING_ON, QVariant());

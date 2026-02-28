@@ -4,7 +4,12 @@
 #include <QDateTime>
 #include <QFontMetrics>
 #include <QtMath>
-#include <tf/transform_listener.h>
+#include <tf2/LinearMath/Quaternion.h>
+#include <tf2/LinearMath/Vector3.h>
+#include <tf2/LinearMath/Matrix3x3.h>
+#include <tf2/LinearMath/Transform.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "ib2_msgs.h"
 #include "ros_common.h"
 #include "telemetry_telecommand_config.h"
@@ -46,42 +51,42 @@ bool comparisonFloat(const float a, const float b)
     return fabsf(a - b) < FLT_EPSILON;
 }
 
-QQuaternion tfToQt(const tf::Quaternion &tfQuaternion)
+QQuaternion tfToQt(const tf2::Quaternion &tfQuaternion)
 {
     return QQuaternion(tfQuaternion.getW(), tfQuaternion.getX(), tfQuaternion.getY(), tfQuaternion.getZ());
 }
 
-QVector3D tfToQt(const tf::Vector3 &tfVector)
+QVector3D tfToQt(const tf2::Vector3 &tfVector)
 {
     return QVector3D(tfVector.getX(), tfVector.getY(), tfVector.getZ());
 }
 
-tf::Quaternion qtToTf(const QQuaternion &qtQuaternion)
+tf2::Quaternion qtToTf(const QQuaternion &qtQuaternion)
 {
-    return tf::Quaternion(qtQuaternion.x(), qtQuaternion.y(), qtQuaternion.z(), qtQuaternion.scalar());
+    return tf2::Quaternion(qtQuaternion.x(), qtQuaternion.y(), qtQuaternion.z(), qtQuaternion.scalar());
 }
 
-tf::Vector3 qtToTf(const QVector3D &qtVector)
+tf2::Vector3 qtToTf(const QVector3D &qtVector)
 {
-    return tf::Vector3(qtVector.x(), qtVector.y(), qtVector.z());
+    return tf2::Vector3(qtVector.x(), qtVector.y(), qtVector.z());
 }
 
-tf::Vector3 geometryToTf(const geometry_msgs::Point& geometryPoint)
+tf2::Vector3 geometryToTf(const geometry_msgs::msg::Point& geometryPoint)
 {
-    return tf::Vector3(geometryPoint.x, geometryPoint.y, geometryPoint.z);
+    return tf2::Vector3(geometryPoint.x, geometryPoint.y, geometryPoint.z);
 }
 
-tf::Quaternion geometryToTf(const geometry_msgs::Quaternion& geometryQuaternion)
+tf2::Quaternion geometryToTf(const geometry_msgs::msg::Quaternion& geometryQuaternion)
 {
-    return tf::Quaternion(geometryQuaternion.x, geometryQuaternion.y, geometryQuaternion.z, geometryQuaternion.w);
+    return tf2::Quaternion(geometryQuaternion.x, geometryQuaternion.y, geometryQuaternion.z, geometryQuaternion.w);
 }
 
-QVector3D geometryToQt(const geometry_msgs::Point& geometryPoint)
+QVector3D geometryToQt(const geometry_msgs::msg::Point& geometryPoint)
 {
     return QVector3D(geometryPoint.x, geometryPoint.y, geometryPoint.z);
 }
 
-QQuaternion geometryToQt(const geometry_msgs::Quaternion& geometryQuaternion)
+QQuaternion geometryToQt(const geometry_msgs::msg::Quaternion& geometryQuaternion)
 {
     return QQuaternion(geometryQuaternion.w, geometryQuaternion.x, geometryQuaternion.y, geometryQuaternion.z);
 }
@@ -89,9 +94,9 @@ QQuaternion geometryToQt(const geometry_msgs::Quaternion& geometryQuaternion)
 
 void getRPY(const QQuaternion& orientation, qreal& roll, qreal& pitch, qreal& yaw)
 {
-    tfScalar tmpRoll, tmpPitch, tmpYaw;
-    tf::Quaternion tfQuaternion = qtToTf(orientation);
-    tf::Matrix3x3 m(tfQuaternion);
+    tf2Scalar tmpRoll, tmpPitch, tmpYaw;
+    tf2::Quaternion tfQuaternion = qtToTf(orientation);
+    tf2::Matrix3x3 m(tfQuaternion);
     m.getRPY(tmpRoll, tmpPitch, tmpYaw);
     roll = tmpRoll;
     pitch = tmpPitch;
@@ -100,25 +105,28 @@ void getRPY(const QQuaternion& orientation, qreal& roll, qreal& pitch, qreal& ya
 
 QQuaternion fromRPYRadian(const qreal roll, const qreal pitch, const qreal yaw)
 {
-    return tfToQt(tf::createQuaternionFromRPY(roll, pitch, yaw));
+    tf2::Quaternion q;
+    q.setRPY(roll, pitch, yaw);
+    return tfToQt(q);
 }
 
 QQuaternion fromRPYDegree(const qreal roll, const qreal pitch, const qreal yaw)
 {
-    return tfToQt(tf::createQuaternionFromRPY(qDegreesToRadians(roll), qDegreesToRadians(pitch), qDegreesToRadians(yaw)));
+    tf2::Quaternion q;
+    q.setRPY(qDegreesToRadians(roll), qDegreesToRadians(pitch), qDegreesToRadians(yaw));
+    return tfToQt(q);
 }
 
 QVector3D transformPosition(const std::string& parentFrame, const std::string& childFrame, const QVector3D& childPosition)
 {
-    geometry_msgs::PointStamped pointBody;
+    geometry_msgs::msg::PointStamped pointBody;
     pointBody.point.x = static_cast<double>(childPosition.x());
     pointBody.point.y = static_cast<double>(childPosition.y());
     pointBody.point.z = static_cast<double>(childPosition.z());
     pointBody.header.frame_id = childFrame;
-    pointBody.header.stamp = ros::Time(0);
+    pointBody.header.stamp = builtin_interfaces::msg::Time();
 
-    geometry_msgs::PointStamped result;
-    getTransformListener()->transformPoint(parentFrame, pointBody, result);
+    auto result = getTfBuffer()->transform(pointBody, parentFrame);
 
     return QVector3D(static_cast<float>(result.point.x),
                      static_cast<float>(result.point.y),
@@ -127,18 +135,17 @@ QVector3D transformPosition(const std::string& parentFrame, const std::string& c
 
 QQuaternion transformQuaternion(const std::string& parentFrame, const std::string& childFrame, const QQuaternion& childQuaternion)
 {
-    tf::Quaternion tfQuaternion = qtToTf(childQuaternion);
+    tf2::Quaternion tfQuaternion = qtToTf(childQuaternion);
 
-    geometry_msgs::QuaternionStamped childTfQuaternion;
+    geometry_msgs::msg::QuaternionStamped childTfQuaternion;
     childTfQuaternion.quaternion.x = tfQuaternion.x();
     childTfQuaternion.quaternion.y = tfQuaternion.y();
     childTfQuaternion.quaternion.z = tfQuaternion.z();
     childTfQuaternion.quaternion.w = tfQuaternion.w();
     childTfQuaternion.header.frame_id = childFrame;
-    childTfQuaternion.header.stamp = ros::Time(0);
+    childTfQuaternion.header.stamp = builtin_interfaces::msg::Time();
 
-    geometry_msgs::QuaternionStamped result;
-    getTransformListener()->transformQuaternion(parentFrame, childTfQuaternion, result);
+    auto result = getTfBuffer()->transform(childTfQuaternion, parentFrame);
 
     return QQuaternion(static_cast<float>(result.quaternion.w),
                        static_cast<float>(result.quaternion.x),
@@ -148,32 +155,30 @@ QQuaternion transformQuaternion(const std::string& parentFrame, const std::strin
 
 QVector3D transformRelative(const QVector3D& basePosition, const QQuaternion& baseQuaternion, const QVector3D& diff)
 {
-    tf::Transform transform;
+    tf2::Transform transform;
     transform.setOrigin(qtToTf(basePosition));
     transform.setRotation(qtToTf(baseQuaternion));
 
-    tf::Vector3 resultVector3 = transform * qtToTf(diff);
+    tf2::Vector3 resultVector3 = transform * qtToTf(diff);
     return tfToQt(resultVector3);
 }
 
 QQuaternion transformRelative(const QVector3D& basePosition, const QQuaternion& baseQuaternion, const QQuaternion& diff)
 {
-    tf::Transform transform;
+    tf2::Transform transform;
     transform.setOrigin(qtToTf(basePosition));
     transform.setRotation(qtToTf(baseQuaternion));
 
-    tf::Quaternion resultQuaternion = transform * qtToTf(diff);
+    tf2::Quaternion resultQuaternion = transform * qtToTf(diff);
     return tfToQt(resultQuaternion);
 }
 
 QQuaternion transformRelativeRPY(const QVector3D& basePosition, const QQuaternion& baseQuaternion,
                                  const float roll, const float pitch, const float yaw)
 {
-    return transformRelative(basePosition, baseQuaternion,
-                             tfToQt(tf::createQuaternionFromRPY(
-                                        static_cast<double>(roll),
-                                        static_cast<double>(pitch),
-                                        static_cast<double>(yaw))));
+    tf2::Quaternion q;
+    q.setRPY(static_cast<double>(roll), static_cast<double>(pitch), static_cast<double>(yaw));
+    return transformRelative(basePosition, baseQuaternion, tfToQt(q));
 }
 
 qreal roundPositionValue(const qreal value)
@@ -196,10 +201,10 @@ qreal roundDegree(const float value)
     return static_cast<qreal>(std::round(qRadiansToDegrees(value)));
 }
 
-QDateTime rosToQt(const ros::Time& time, const Qt::TimeSpec timeSpec)
+QDateTime rosToQt(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec)
 {
     QDateTime returnDateTime;
-    returnDateTime.setMSecsSinceEpoch(static_cast<long long>(time.sec) * 1000 + static_cast<long long>(time.nsec / 1000000));
+    returnDateTime.setMSecsSinceEpoch(static_cast<long long>(time.sec) * 1000 + static_cast<long long>(time.nanosec / 1000000));
     returnDateTime.setTimeSpec(timeSpec);
     return returnDateTime;
 }
@@ -209,7 +214,7 @@ QString dateTimeString(const QDateTime& time)
     return time.toUTC().toString("yyyy/MM/dd hh:mm:ss t");
 }
 
-QString dateTimeString(const ros::Time& time, const Qt::TimeSpec timeSpec)
+QString dateTimeString(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec)
 {
     return dateTimeString(rosToQt(time, timeSpec));
 }
@@ -219,7 +224,7 @@ QString dateTimeStringWithoutYear(const QDateTime& time)
     return time.toUTC().toString("MM/dd hh:mm:ss t");
 }
 
-QString dateTimeStringWithoutYear(const ros::Time& time, const Qt::TimeSpec timeSpec)
+QString dateTimeStringWithoutYear(const builtin_interfaces::msg::Time& time, const Qt::TimeSpec timeSpec)
 {
     return dateTimeStringWithoutYear(rosToQt(time, timeSpec));
 }
@@ -337,8 +342,8 @@ QString getMarkerCorrectionResultString(const QVariant& qvariant)
 
 QString getColorRGBAAsString(const QVariant& qvariant)
 {
-    Q_ASSERT(qvariant.canConvert<std_msgs::ColorRGBA>());
-    auto color = qvariant.value<std_msgs::ColorRGBA>();
+    Q_ASSERT(qvariant.canConvert<std_msgs::msg::ColorRGBA>());
+    auto color = qvariant.value<std_msgs::msg::ColorRGBA>();
 
     return QString("R:%1   G:%2   B:%3").arg(color.r).arg(color.g).arg(color.b);
 }
@@ -360,8 +365,8 @@ QString getBoolAsString(const QVariant& qvariant)
 
 QString getWhiteBalanceModeAsString(const QVariant& qvariant)
 {
-    Q_ASSERT(qvariant.canConvert<ib2_msgs::MainCameraWhiteBalanceMode>());
-    auto mode = qvariant.value<ib2_msgs::MainCameraWhiteBalanceMode>();
+    Q_ASSERT(qvariant.canConvert<ib2_msgs::msg::MainCameraWhiteBalanceMode>());
+    auto mode = qvariant.value<ib2_msgs::msg::MainCameraWhiteBalanceMode>();
 
     return createValueString(mode.mode, MAIN_CAMERA_WHITE_BALANCE_MODE_LABEL);
 }
@@ -393,8 +398,8 @@ QString getDegreeAsString(const QQuaternion& quaternion)
 
 QString getPowerStatusAsString(const QVariant& qvariant)
 {
-    Q_ASSERT(qvariant.canConvert<ib2_msgs::PowerStatus>());
-    auto power = qvariant.value<ib2_msgs::PowerStatus>();
+    Q_ASSERT(qvariant.canConvert<ib2_msgs::msg::PowerStatus>());
+    auto power = qvariant.value<ib2_msgs::msg::PowerStatus>();
 
     return createValueString(power.status, POWER_STATUS_LABEL);
 }
@@ -467,7 +472,7 @@ QString automaticLineBreak(const QString& string, const int width, const QFontMe
     return splitAsFixedWidthString(string, width, metrics).join("\n");
 }
 
-QColor fromColorRGBA(const std_msgs::ColorRGBA& color)
+QColor fromColorRGBA(const std_msgs::msg::ColorRGBA& color)
 {
     return QColor(color.r,
                   color.g,

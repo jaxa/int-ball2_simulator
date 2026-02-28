@@ -336,7 +336,7 @@ void ib2::PosAttProfiler::setPose(const ib2_msgs::msg::Navigation& nav)
 	auto& vn(nav.twist.linear);
 	auto& qn(nav.pose.pose.orientation);
 
-	t0_ = tn;
+	t0_ = rclcpp::Time(tn, RCL_ROS_TIME);
 	r0_ = Eigen::Vector3d(rn.x, rn.y, rn.z);
 	v0_ = Eigen::Vector3d(vn.x, vn.y, vn.z);
 	q0_ = Eigen::Quaterniond(qn.w, qn.x, qn.y, qn.z);
@@ -469,7 +469,7 @@ ib2_msgs::action::CtlCommand::Feedback ib2::PosAttProfiler::statesToGoal
 	ib2_msgs::action::CtlCommand::Feedback fb;
 
 	// 制御終了までの時間
-	rclcpp::Duration d = rclcpp::Time(tn) - t0_;
+	rclcpp::Duration d = rclcpp::Time(tn, RCL_ROS_TIME) - t0_;
 	double t(d.seconds());
 	double dur(seq_ == SEQUENCE::PARALLEL ? std::max(xtt_, qtt_) : xtt_ + qtt_);
 	auto dp = rclcpp::Duration::from_seconds(dur);
