@@ -4,8 +4,9 @@
 
 <p style="display: inline">
 
-  <img src="https://img.shields.io/badge/-Ubuntu_18.04_LTS-555555.svg?style=flat&logo=ubuntu">
-  <img src="https://img.shields.io/badge/-ROS1--Melodic-%2322314E?style=flat&logo=ROS&logoColor=white">
+  <img src="https://img.shields.io/badge/-Ubuntu_24.04_LTS-555555.svg?style=flat&logo=ubuntu">
+  <img src="https://img.shields.io/badge/-ROS2--Jazzy-%2322314E?style=flat&logo=ROS&logoColor=white">
+  <img src="https://img.shields.io/badge/-Gazebo_Harmonic-F58113.svg?style=flat">
   <img src="https://img.shields.io/badge/-Python-F2C63C.svg?logo=python&style=flat">
   <img src="https://img.shields.io/badge/-C++-00599C.svg?logo=cplusplus&style=flat">
   <img src="https://img.shields.io/badge/-Docker-1488C6.svg?logo=docker&style=flat">
@@ -21,44 +22,44 @@
 
 加えてInt-Ball2はその拡張機能としてユーザが開発した任意のソフトウェアを実行し、宇宙空間でロボット技術の実証のプラットフォームとして使用できます。
 
-**このリポジトリ**は、**Int-Ball2**を活用したソフトウェア開発をするためのROS/Gazeboシミュレータを提供します。
+**このリポジトリ**は、**Int-Ball2**を活用したソフトウェア開発をするための ROS 2 / Gazebo シミュレータを提供します。
 
 ## Int-Ball2シミュレータの主な機能
-- **シミュレーション環境**：Gazebo シミュレータ上での Int-Ball2 と ISS 環境（エアフロー含む）の模擬。(*シミュレータ上ではInt-Ball2機体に実装されているSLAMは模擬されていません。）
+- **シミュレーション環境**：ROS 2 Jazzy と Gazebo Harmonic を使用し、Gazebo シミュレータ上での Int-Ball2 と ISS 環境（エアフロー含む）を模擬します。(*シミュレータ上ではInt-Ball2機体に実装されているSLAMは模擬されていません。）
 - **ユーザー実証環境**：Int-Ball2用のセンサーデータ取得およびアクチュエーター制御インターフェースを個別のROSノードとして提供し、既存の機能（例：ビジュアルSLAM、センサーフュージョン）の選択的な有効化または無効化を可能にします。
 - **ユーザー実証環境の地上支援装置（GSE）**：ユーザー実証プログラムを軌道上のInt-Ball2に適用し、地上から運用する際に使われる地上支援装置（GSE）の模擬。GUI でのプログラム選択・実行の運用模擬が可能。
 
 <div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sim.gif" align="center"/></div>
 
 ## 必要条件
-- **オペレーティングシステム**：Ubuntu 18.04 Bionic 
-- **ROSバージョン**：ROS 1 Melody (Python3)
-- **Gazeboバージョン**：Gazebo 9 
+- **オペレーティングシステム**：Ubuntu 24.04 Noble
+- **ROSバージョン**：ROS 2 Jazzy
+- **Gazeboバージョン**：Gazebo Harmonic (gz-sim 8)
+
 追加ライブラリ：
 
 | Name | Version |
 | ---- | ---- |
-|NumPy|1.18.2|
-|EmPy|3.3.4|
+|Qt|5.15（システム版）|
 |NASM|2.15.05|
 |FFmpeg|4.1.3|
 |VLC|3.0.7.1|
-|Qt|5.12.3|
 
 
 ## インストール
-[INSTALL.md](https://github.com/jaxa/int-ball2_simulator/blob/main/INSTALL.md)
+[INSTALL.md](INSTALL.md)
 
 日本語版は「[Int-Ball2技術実証プラットフォームユーザーマニュアル](https://github.com/jaxa/int-ball2_simulator/blob/main/docs/manual/Int-Ball2%E6%8A%80%E8%A1%93%E5%AE%9F%E8%A8%BC%E3%83%97%E3%83%A9%E3%83%83%E3%83%88%E3%83%95%E3%82%A9%E3%83%BC%E3%83%A0%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%83%9E%E3%83%8B%E3%83%A5%E3%82%A2%E3%83%AB.pdf)」の「4. 環境構築手順」を参照してください。
 
 ## プロジェクト構造
-```.
-├── Int-Ball2_platform_gse/ # 地上支援装置 S/W
+```
+.
+├── Int-Ball2_platform_gse/        # 地上支援装置 S/W
 │   └── ...
 ├── Int-Ball2_platform_simulator/  # 3D Simulator
 │   └── ...
-├── docs/ 
-│   ├── manual/ 
+├── docs/
+│   ├── manual/
 │   │   ├── Int-Ball2 Technology Demonstration Platform User's Manual.pdf  # マニュアル（EN）
 │   │   └── Int-Ball2ユーザプラットフォームマニュアル.pdf                     # マニュアル(JP)
 │   └── ...
@@ -82,15 +83,14 @@ Int-Ball2について
 * [Paper] [Int-Ball2: Compact High-torque Propulsion System Actively Utilizes Propeller Air Drag Polarity, 2023](https://jaxa.repo.nii.ac.jp/record/2000520/files/SA6000193042.pdf)
 
 その他
-* [Web] [ROS Melodic](https://wiki.ros.org/melodic)
-* [Web] [Gazebo 9.0.0 Release](https://classic.gazebosim.org/blog/gazebo9)
+* [Web] [ROS 2 Jazzy Jalisco](https://docs.ros.org/en/jazzy/)
+* [Web] [Gazebo Harmonic](https://gazebosim.org/docs/harmonic/)
 
-<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_hw.png" height="200" align="center"/>  
+<div align="center"><img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_hw.png" height="200" align="center"/>
 <img src="https://github.com/jaxa/int-ball2_simulator/blob/main/docs/image/ib2_sw.png" height="200" align="center"/></div>
 
 ## 計画
 Stay tuned for updates!
-
 
 
 

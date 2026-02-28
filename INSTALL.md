@@ -1,84 +1,112 @@
 # Install
 
 ## Requirements
-- **Operating System**: Ubuntu 18.04 Bionic  
-- **ROS Version**: ROS 1 Melody (Python3)
-- **Gazebo Version**: Gazebo 9 
+- **Operating System**: Ubuntu 24.04 Noble
+- **ROS Version**: ROS 2 Jazzy
+- **Gazebo Version**: Gazebo Harmonic (gz-sim 8)
 
 Additional libraries:
 
 | Name | Version |
 | ---- | ---- |
-|NumPy|1.18.2|
-|EmPy|3.3.4|
+|Qt|5.15 (system)|
 |NASM|2.15.05|
 |FFmpeg|4.1.3|
 |VLC|3.0.7.1|
-|Qt|5.12.3|
 
-## 4. Installation 
+## 4. Installation
 ## 4.2 Installing OS
-The Int-Ball2 Technology Demonstration Platform runs on Ubuntu 18.04. 
-To install Ubuntu 18.04 in your environment, refer to the following website:
-- [Ubuntu 18.04.6 LTS (Bionic Beaver)](https://releases.ubuntu.com/18.04.6/)
+The Int-Ball2 Technology Demonstration Platform runs on Ubuntu 24.04.
+To install Ubuntu 24.04 in your environment, refer to the following website:
+- [Ubuntu 24.04 LTS (Noble Numbat)](https://releases.ubuntu.com/24.04/)
 
-## 4.3 Installing ROS
-The Int-Ball2 Technology Demonstration Platform and its simulator require ROS/Gazebo. Since a Gazebo version higher than 9.0.0 is needed, follow these steps:
+## 4.3 Installing ROS 2 and Gazebo
 
-```sh
-sudo apt update
-sudo apt upgrade
-sudo apt install -y wget git vim curl gnupg2 lsb-release iproute2
-```
+The Int-Ball2 Technology Demonstration Platform and its simulator require ROS 2 Jazzy and Gazebo Harmonic.
 
-1. **Preparation to acquire the latest version, Gazebo 9:** To get the latest version of Gazebo 9, execute steps 1 and 2 of the “Alternative installation: step-by-step” on the following website:
-    - [Gazebo: Tutorial: Ubuntu](https://classic.gazebosim.org/tutorials?tut=install_ubuntu) (as of Mar. 28, 2024)
-
+1. **Install basic tools:**
     ```sh
-    sudo sh -c 'echo "deb http://packages.osrfoundation.org/gazebo/ubuntu-stable `lsb_release -cs` main" > /etc/apt/sources.list.d/gazebo-stable.list'
-    wget https://packages.osrfoundation.org/gazebo.key -O - | sudo apt-key add -
-    sudo apt-get update
-    ```
-
-2. **Installing ROS:** Install ROS by following steps 1.1 to 1.6 on the following website:
-    - [melodic/Installation/Ubuntu - ROS Wiki](http://wiki.ros.org/melodic/Installation/Ubuntu) (as of Mar. 28, 2024)
-    ```sh
-    sudo sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list'
-    sudo apt install curl
-    curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | sudo apt-key add -
     sudo apt update
-    sudo apt install ros-melodic-desktop
-    sudo apt-get install -y python-rosdep python-rosinstall python-rosinstall-generator python-wstool build-essential
+    sudo apt upgrade
+    sudo apt install -y wget git vim curl gnupg2 lsb-release software-properties-common
     ```
 
-3. **Installing the ROS-related package:** Install the ROS-Gazebo collaboration package by executing the following command:
+2. **Set up the ROS 2 repository:** Follow the instructions at:
+    - [ROS 2 Jazzy Installation (Ubuntu)](https://docs.ros.org/en/jazzy/Installation/Ubuntu-Install-Debs.html)
+
     ```sh
-    sudo apt install ros-melodic-gazebo-*
+    sudo apt install software-properties-common
+    sudo add-apt-repository universe
+    sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+    sudo apt update
     ```
 
-## 4.4 Installing Python3
-This system uses Python3 and its related packages. Follow these steps to install the necessary packages and adjust the settings file:
-
-1. **Install Python3:**
+3. **Install ROS 2 Jazzy Desktop:**
     ```sh
-    sudo apt install python3 python3-pip
+    sudo apt install ros-jazzy-desktop
     ```
 
-2. **Install the ROS-related Python3 packages:**
+4. **Install Gazebo Harmonic integration packages:**
     ```sh
-    pip3 install rospkg 
-    pip3 install empy==3.3.4
+    sudo apt install ros-jazzy-ros-gz
     ```
 
-    **Note:** When installing "empy" with `pip3 install rospkg empy`, the latest version (4.1 at the time of writing) is installed. However, the reference website [here](http://soup01.com/ja/2023/12/25/post-9789/) confirms this version has a bug causing the error “AttributeError: ‘module’ object has no attribute ‘RAW_OPT’”. Therefore, it is necessary to install version 3.3.4 specifically.
-
-3. **Switching to Python3 for ROS package (catkin) build:** Modify the settings file to use Python3 for building the ROS package (catkin):
+5. **Install additional ROS 2 packages:**
     ```sh
-    sudo vi /opt/ros/melodic/etc/catkin/profile.d/1.ros_python_version.sh
+    sudo apt install ros-jazzy-rviz2 \
+                     ros-jazzy-tf2-ros \
+                     ros-jazzy-tf2-geometry-msgs \
+                     ros-jazzy-pcl-ros
     ```
-    Add the following line:
+
+6. **Install colcon build tools:**
     ```sh
-    export ROS_PYTHON_VERSION=3
+    sudo apt install python3-colcon-common-extensions
+    ```
+
+7. **Source the ROS 2 setup file:** Add this to your `~/.bashrc`:
+    ```sh
+    source /opt/ros/jazzy/setup.bash
+    ```
+
+## 4.4 Installing Python
+
+This system uses Python 3.11 via pyenv.
+
+1. **Install pyenv dependencies:**
+    ```sh
+    sudo apt install -y make build-essential libssl-dev zlib1g-dev \
+        libbz2-dev libreadline-dev libsqlite3-dev wget curl llvm \
+        libncurses5-dev libncursesw5-dev xz-utils tk-dev libffi-dev \
+        liblzma-dev
+    ```
+
+2. **Install pyenv:**
+    ```sh
+    curl https://pyenv.run | bash
+    ```
+    Add the following to `~/.bashrc`:
+    ```sh
+    export PYENV_ROOT="$HOME/.pyenv"
+    export PATH="$PYENV_ROOT/bin:$PATH"
+    eval "$(pyenv init -)"
+    ```
+
+3. **Install Python 3.11:**
+    ```sh
+    pyenv install 3.11
+    pyenv global 3.11
+    ```
+
+4. **Set LD_LIBRARY_PATH:** Add the following to `~/.bashrc` to ensure Python shared libraries are found:
+    ```sh
+    export LD_LIBRARY_PATH="$HOME/.pyenv/versions/3.11.13/lib:$LD_LIBRARY_PATH"
+    ```
+
+5. **Install Python packages:**
+    ```sh
+    pip install docker defusedxml netifaces numpy
     ```
 
 ## 4.5 Ground Support Equipment
@@ -86,9 +114,9 @@ The software for the Technology Demonstration Platform is executed using the Gro
 Prepare the Int-Ball2 GSE operating environment with the following steps:
 
 ### 4.5.1 Netwide Assembler (NASM)
-Build and install the assembler called “NASM” from the source file using the following procedure:
+Build and install the assembler called "NASM" from the source file using the following procedure:
 
-1. **Decompress and place the NASM source files under “/usr/local/src”:**
+1. **Decompress and place the NASM source files under "/usr/local/src":**
     ```sh
     cd /usr/local/src
     sudo wget https://www.nasm.us/pub/nasm/releasebuilds/2.15.05/nasm-2.15.05.tar.gz
@@ -106,12 +134,12 @@ Build and install the assembler called “NASM” from the source file using the
     sudo make install
     ```
 
-    **Note:** As mentioned in the reference description [here](https://trans-it.net/centos7-ffmpeg43-h264-fdkaac/), it is necessary to install “nasm” beforehand to install ffmpeg.
+    **Note:** As mentioned in the reference description [here](https://trans-it.net/centos7-ffmpeg43-h264-fdkaac/), it is necessary to install "nasm" beforehand to install ffmpeg.
 
 ### 4.5.2 Video Reception Environment
-Build “x264” from the source file using the following steps:
+Build "x264" from the source file using the following steps:
 
-1. **Decompress and place the source file under “/usr/local/src”:**
+1. **Decompress and place the source file under "/usr/local/src":**
 
     ```
     cd /usr/local/src
@@ -141,7 +169,7 @@ Build “x264” from the source file using the following steps:
 
 To build `ffmpeg` from the source file, follow these steps:
 
-4. **Decompress and place the `ffmpeg` source file under “/usr/local/src”:**
+4. **Decompress and place the `ffmpeg` source file under "/usr/local/src":**
     (Option1)
     ```sh
     sudo tar xvzf ffmpeg-4.1.3.tar.gz -C /usr/local/src/
@@ -182,7 +210,7 @@ Install and build the VLC media player using the following procedure:
                      lua5.2 lua5.2-dev protobuf-compiler bison libdvbpsi-dev libpulse-dev
     ```
 
-2. **Decompress and place the downloaded source file under “/usr/local/src”:**
+2. **Decompress and place the downloaded source file under "/usr/local/src":**
 
     ```sh
     sudo wget https://download.videolan.org/vlc/3.0.7.1/vlc-3.0.7.1.tar.xz
@@ -220,85 +248,59 @@ Install and build the VLC media player using the following procedure:
     ```
 
 ### 4.5.4 Qt
-Install "Qt" using the following procedure:
+On Ubuntu 24.04, Qt 5.15 is available via the system package manager:
 
-1. **Prepare the installation directory:**
-    ```sh
-    sudo mkdir /opt/Qt
-    ```
-
-2. **Activate the downloaded installer for Linux:** (Account registration is required.)
-    ```sh
-    sudo wget https://download.qt.io/archive/qt/5.12/5.12.3/qt-opensource-linux-x64-5.12.3.run
-    sudo chmod +x qt-opensource-linux-x64-5.12.3.run
-    sudo ./qt-opensource-linux-x64-5.12.3.run
-    ```
-
-3. **Check the box for “Using Open Source Qt”.**
-
-4. **Specify the installation directory as “/opt/Qt”.**
-
-5. **Select “5.12.3 Desktop gcc 64-bit” as the target version for installation and follow the installer’s instructions.**
-
-6. **After installation is complete, prepare the symbolic link:**
-    ```sh
-    sudo ln -s /opt/Qt/5.12.3 /opt/Qt/5
-    ```
+```sh
+sudo apt install qtbase5-dev
+```
 
 ### 4.5.5 Font File
-- Since the Int-Ball2 GSE uses the Roboto font, copy the font files to the following path and install them:
+- Since the Int-Ball2 GSE uses the Roboto font, install the font package:
 
-    (Option1)
-    ```sh
-    sudo cp Roboto*.ttf /usr/local/share/fonts/.
-    fc-cache -f -v
-    ```
-
-    (Option2)
     ```sh
     sudo apt install fonts-roboto
     ```
 
 #### 4.5.6 Source Code Deployment
-Deploy “Int-Ball2_platform_gse” to an arbitrary directory.
+Deploy "Int-Ball2_platform_gse" to an arbitrary directory.
 
 ### 4.5.7 Parameter Settings
 To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters as follows:
 
 - **Command Transmission Settings:**
-  Set the IP address of the computer running this system at `intball2_telecommand_target_ip` in `IntBall2_platform_gse/src/ground_system/communication_software/config/params.yml`. Set an arbitrary command transmission port at `intball2_telecommand_target_port`.
+  Set the IP address of the computer running this system at `intball2_telecommand_target_ip` in `Int-Ball2_platform_gse/src/ground_system/communication_software/config/params.yml`. Set an arbitrary command transmission port at `intball2_telecommand_target_port`.
 
 - **Telemetry Receiving Settings:**
-  Set an arbitrary telemetry receiving port at `intball2_telemetry_receive_port` in `IntBall2_platform_gse/src/ground_system/communication_software/config/params.yml`.
+  Set an arbitrary telemetry receiving port at `intball2_telemetry_receive_port` in `Int-Ball2_platform_gse/src/ground_system/communication_software/config/params.yml`.
 
 ## 4.6 Int-Ball2 Technology Demonstration Platform Simulator
 Prepare the operating environment for using the Int-Ball2 Technology Demonstration Platform Simulator.
 
 ### 4.6.1 Docker
-Install “Docker” by following the procedure on the following website:
-- [Install Docker Engine on Ubuntu | Docker Docs](https://docs.docker.com/engine/install/ubuntu/) (as of Mar. 28, 2024)
-Follow steps 1 and 2 of “Install using the apt repository”.
+Install "Docker" by following the procedure on the following website:
+- [Install Docker Engine on Ubuntu | Docker Docs](https://docs.docker.com/engine/install/ubuntu/)
+Follow steps 1 and 2 of "Install using the apt repository".
 
 ### 4.6.2 Python
-- Install Docker-related packages on Python3:
+- Install Docker-related packages on Python:
     ```sh
-    pip3 install docker defusedxml netifaces
+    pip install docker defusedxml netifaces
     ```
 
 ### 4.6.3 Container Activation Settings
 - Ensure the services for containers are always active:
     ```sh
-    sudo systemctl enable docker docker.socket 
-    sudo systemctl start docker.socket 
+    sudo systemctl enable docker docker.socket
+    sudo systemctl start docker.socket
     ```
 
-- Grant the authority to activate containers to the user running this system. Assuming the target user is "nvidia":
+- Grant the authority to activate containers to the user running this system. Replace `$USER` with the target username if different:
     ```sh
     # Authority setting
-    sudo gpasswd -a nvidia docker 
-    sudo chgrp docker /var/run/docker.sock 
+    sudo gpasswd -a $USER docker
+    sudo chgrp docker /var/run/docker.sock
     # Restart services for containers
-    sudo service docker restart 
+    sudo service docker restart
     ```
 
 - Run the following command as the user executing this system to confirm no errors (e.g., "permission denied") occur. If operating via SSH, disconnect and reconnect the SSH session before proceeding.
@@ -307,26 +309,26 @@ Follow steps 1 and 2 of “Install using the apt repository”.
     ```
 
 ### 4.6.4 Source Code Deployment
-Deploy “Int-Ball2_platform_simulator” to an arbitrary directory.
+Deploy "Int-Ball2_platform_simulator" to an arbitrary directory.
 Also, deploy [platform_works](https://github.com/jaxa/int-ball2_platform_works) under the home directory of the user executing this system.
 
 ### 4.6.5 Parameter Settings
-To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters as follows:
+To exchange telemetry and commands between the Int-Ball2 Technology Demonstration Platform Simulator and the GSE, configure the communication setting parameters in the launch files under `Int-Ball2_platform_simulator/src/flight_software/trans_communication/launch/`.
 
 - **Command Transmission Settings:**
-  Set the same value for `intball2_telecommand_target_port` as the receive port in section 4.5.7 in `Int-Ball2_platform_simulator/src/flight_software/trans_communication/launch/bringup.launch`.
+  Set the same value for the telecommand port as the receive port in section 4.5.7.
 
 - **Telemetry Receiving Settings:**
-  Set the IP address of the computer running this system at `ocs_host` in `Int-Ball2_platform_simulator/src/flight_software/trans_communication/launch/bringup.launch`. Set the same value for `intball2_telemetry_receive_port` as in section 
+  Set the IP address and port of the OCS (Operation Control Station) as launch arguments (`ocs_host`, `ocs_port`).
 
 ### 4.6.6 Docker Settings
 The Int-Ball2 Technology Demonstration Platform executes the user program using Docker. Configure the following settings related to the exchange between the host and the container:
 
 1. **IP of the Host Computer:**
-   Set the IP address of the computer running this system at `container_ros_master_uri` in `Int-Ball2_platform_simulator/src/platform_sim/platform_sim_tools/launch/platform_manager_bringup.launch`.
+   Set the IP address of the computer running this system in the platform manager launch configuration.
 
 2. **Container Workspace in the Host Computer:**
-   Set the path to `Int-Ball2_platform_simulator` as `platform works` at `host_ib2_workspace` in `Int-Ball2_platform_simulator/src/platform_sim/platform_sim_tools/launch/platform_manager_bringup.launch`.
+   Set the path to `Int-Ball2_platform_simulator` in the platform manager launch configuration.
 
 ### 4.6.7 Setting up Containers
 - Since the Technology Demonstration Platform executes the user program in a container, it is necessary to build the container for executing the User Demonstration Platform. The tag name (`ib2_user`) can be set arbitrarily but must have the prefix "ib2" for containers handled by the flight software.
@@ -335,13 +337,12 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
    docker build . -t ib2_user:0.1
    ```
 
-
 - Docker images are not cross-platform compatible and cannot be used on different CPU architectures (e.g., images prepared on Intel/AMD for normal computers cannot be used on ARM for Int-Ball2). To prepare images to run on the actual Int-Ball2, use the extended plug-in Docker buildx as shown in the following command:
    ```sh
    docker buildx build --platform linux/arm64/v8 -t ib2_user:(version) --load
    ```
 
-- After the building is completed, execute the following command and confirm that "ib2_user" appears in the “REPOSITORY”:
+- After the building is completed, execute the following command and confirm that "ib2_user" appears in the "REPOSITORY":
    ```sh
    docker images ib2_user
    ```
@@ -352,63 +353,76 @@ The Int-Ball2 Technology Demonstration Platform executes the user program using 
    [Int-Ball2_platform_simulator_deployment_folder]/Int-Ball2_platform_simulator/src/user/
    ```
 
-The files to be deployed should follow the format described below:
+The files to be deployed should follow the ROS 2 package format described below:
 
-user001/  
-├── launch/  
-│   ├── program001.launch  
-│   ├── program002.launch  
-├── package.xml  
-├── CMakeLists.txt  
-├── (Others)  
+**Python package example (ament_python):**
+```
+user001/
+├── launch/
+│   ├── program001.launch.py
+│   └── program002.launch.py
+├── user001/
+│   ├── __init__.py
+│   └── user001_node.py
+├── package.xml
+├── setup.py
+└── setup.cfg
+```
 
-User programs are defined as ROS packages. Refer to the official procedure for preparing a new package:
-- [Creating a ROS Package](https://wiki.ros.org/ROS/Tutorials/CreatingPackage)
+**C++ package example (ament_cmake):**
+```
+user001/
+├── launch/
+│   ├── program001.launch.py
+│   └── program002.launch.py
+├── src/
+│   └── user001_node.cpp
+├── include/
+│   └── user001/
+│       └── user001_node.hpp
+├── package.xml
+└── CMakeLists.txt
+```
 
-The following is an example of the ROS package configuration for the Technology Demonstration Platform. In this configuration, it is assumed that the package name is “user001” and the user programs included in the package are “program001.launch” and “program002.launch”. The files to be placed under “launch” must follow the template of “roslaunch” for user programs as described below:
+User programs are defined as ROS 2 packages. Refer to the official procedure for preparing a new package:
+- [Creating a ROS 2 Package](https://docs.ros.org/en/jazzy/Tutorials/Beginner-Client-Libraries/Creating-Your-First-ROS2-Package.html)
 
-| Directory        | Contents                                                                                                           |
-|------------------|--------------------------------------------------------------------------------------------------------------------|
-| **user001/**     | This is a package that contains a group of programs for a specific user. It can contain multiple user programs inside. Its directory name should be the same as the package name in the ROS package definition file described below. |
-| **launch/**      | Deployment directory for “roslaunch” files. The directory name is fixed as “launch”.                              |
-| *program001.launch* | Activation settings for user programs (nodes).                                                                  |
-| *program002.launch* | Activation settings for user programs (nodes).                                                                  |
-| **package.xml**  | ROS package definition file. The “package name” to be defined must match the directory name “user001”. See the official procedure for how to define it: [package.xml](http://wiki.ros.org/catkin/package.xml).     |
-| **CMakeLists.txt** | ROS package building settings file. See the official procedure for how to define it: [CMakeLists.txt](http://wiki.ros.org/catkin/CMakeLists.txt).      |
-| **(Others)**     | Arbitrary source code and various configuration files can be deployed.                                             |
+## 4.8 Launch Files for User Programs
 
-## 4.8 `roslaunch` for User Programs
+In ROS 2, launch files use Python syntax instead of XML. Below is a template example:
 
-- A template (example definition) of the `roslaunch` file for the Technology Demonstration Platform is shown below. The `<group ns="platform_launch">` is a mandatory item; other items can be set arbitrarily.
+```python
+from launch import LaunchDescription
+from launch_ros.actions import Node, SetParameter
 
-    ```xml
-    <?xml version="1.0"?>
-    <launch>
+def generate_launch_description():
+    return LaunchDescription([
+        # Platform launch parameters: specify which existing functions to use.
+        # Nodes corresponding to functions set to False are stopped
+        # immediately before the start of the user program.
+        SetParameter(name='platform_launch.sensor_fusion', value=False),
+        SetParameter(name='platform_launch.slam_wrapper', value=False),
+        SetParameter(name='platform_launch.ctl_only', value=True),
+        SetParameter(name='platform_launch.fsm', value=True),
+        SetParameter(name='platform_launch.camera_left', value=True),
+        SetParameter(name='platform_launch.camera_right', value=True),
 
-    <group ns="platform_launch">
-    <!-- If set to false, the target nodes will be terminated when user logic is started. -->
-    <param name="sensor_fusion" value="false" />
-    <param name="slam_wrapper" value="false" />
-    <param name="ctl_only" value="true" />
-    <param name="fsm" value="true" />
-    <!-- If you want to start up camera_left and camera_right, you need to stop (set false) slam_wrapper. -->
-    <param name="camera_left" value="true" />
-    <param name="camera_right" value="true" />
-    </group>
+        Node(
+            package='user001',
+            executable='user001_node',
+            name='user001',
+            output='screen',
+            parameters=[{
+                'custom_parameter_integer': 1,
+                'custom_parameter_float': 2.0,
+                'custom_parameter_string': 'custom',
+                'custom_parameter_boolean': True,
+            }],
+        ),
+    ])
+```
 
-    <node name="user_template" pkg="user_template" type="user_template.py" output="screen">
-    <!-- Parameters to be used in the user's program can be set here -->
-    <param name="custom_parameter_integer" value="1" />
-    <param name="custom_parameter_float" value="2.0" />
-    <param name="custom_parameter_string" value="custom" />
-    <param name="custom_parameter_boolean" value="true" />
-    </node>
-
-    </launch>
-    ```
-- Specify whether to use the existing functions on the flight software side in `<group ns="platform_launch">`. The ROS node corresponding to the function defined as "not used" (value="false") is stopped immediately before the start of the user implementation logic.
-
-The correspondence between the item names in `<group ns="platform_launch">` and the flight software functions is as follows:
+The correspondence between the platform launch parameter names and the flight software functions is as follows:
 - `sensor_fusion`: Sensor fusion
 - `slam_wrapper`: Visual SLAM
 - `ctl_only`: Thrust Calculation
@@ -419,51 +433,71 @@ To call the newly prepared program while using GSE, add the necessary informatio
 ## 4.9 Building Procedure
 
 ### 4.9.1 Int-Ball2 GSE
-- Execute `catkin_make` in the directory where `Int-Ball2_platform_gse` is deployed.
-    ```sh
-    source /opt/ros/melodic/setup.bash
-    catkin_make
-    sudo mkdir /var/log/ground_system && sudo chown $USER:$USER /var/log/ground_system
-    ```
-### 4.9.2 Int-Ball2 Technology Demonstration Platform
-    ```sh
-    sudo apt install libpcl-dev ros-melodic-pcl-ros
-    catkin_make –DWITH_PCA9685=OFF
-    ```
+```sh
+source /opt/ros/jazzy/setup.bash
+cd <workspace_directory>
+colcon build
+source install/setup.bash
+```
 
-- Execute `catkin_make -DWITH_PCA9685=OFF` in the directory where `Int-Ball2_platform_simulator` is deployed. Note that `-DWITH_PCA9685=OFF` is an option to build the thrust function as a simulated node to operate the inductive control function in an environment where the PWM control board is not connected.
+### 4.9.2 Int-Ball2 Technology Demonstration Platform Simulator
+```sh
+source /opt/ros/jazzy/setup.bash
+cd <workspace_directory>
+colcon build
+source install/setup.bash
+```
+
+**Note:** By default, all packages under the workspace will be built. To build specific packages, use:
+```sh
+colcon build --packages-select <package_name>
+```
 
 ## 5. Operation Procedure
 The procedure to execute this system is shown below:
 
-1. Execute the following command in the terminal to activate the Int-Ball2 GSE:
+1. Execute the following commands in a terminal to activate the Int-Ball2 GSE:
     ```sh
-    source /opt/ros/melodic/setup.bash
-    source /home/nvidia/IB2/Int-Ball2_platform_gse/devel/setup.bash
-    roslaunch platform_gui bringup.launch
+    source /opt/ros/jazzy/setup.bash
+    source <workspace_directory>/install/setup.bash
+    ros2 launch platform_gui bringup.launch.py
     ```
 
-2. Execute the following command in a different terminal from step 1 to activate the Int-Ball2 Technology Demonstration Platform Simulator:
+2. Execute the following commands in a different terminal from step 1 to activate the Int-Ball2 Technology Demonstration Platform Simulator:
     ```sh
-    source /opt/ros/melodic/setup.bash
-    source /home/nvidia/IB2/Int-Ball2_platform_simulator/devel/setup.bash
-    rosrun platform_sim_tools simulator_bringup.sh
+    source /opt/ros/jazzy/setup.bash
+    source <workspace_directory>/install/setup.bash
+    ros2 launch ib2_gazebo sim.launch.py
     ```
 
-3. Press the “Play” button in Gazebo to start the simulation.
+    To launch the simulator with flight software (platform_manager, trans_communication, etc.):
+    ```sh
+    ros2 launch platform_sim_tools simulator_bringup_with_flight_software.launch.py
+    ```
 
-4. Press the “Navigation ON” button in the “Operation Type” on the “Platform Command” panel of the Int-Ball2 GSE to activate the navigation function.
+    **Available launch arguments:**
+    | Argument | Default | Description |
+    | ---- | ---- | ---- |
+    | `gui` | true | Enable Gazebo GUI |
+    | `rviz` | true | Enable RViz visualization |
+    | `use_ctl_only` | true | Launch thrust calculation node |
+    | `use_fsm` | true | Launch thrust allocation node |
 
-5. Set User Node, User Launch File, and User Container in the “User Programming Platform” on the “Platform Command” panel of the Int-Ball2 GSE to the user programming function to be executed and press the “Start” button.
+    Example (headless mode):
+    ```sh
+    ros2 launch ib2_gazebo sim.launch.py gui:=false rviz:=false
+    ```
+
+3. The Gazebo simulation starts automatically (no need to press a "Play" button).
+
+4. Press the "Navigation ON" button in the "Operation Type" on the "Platform Command" panel of the Int-Ball2 GSE to activate the navigation function.
+
+5. Set User Node, User Launch File, and User Container in the "User Programming Platform" on the "Platform Command" panel of the Int-Ball2 GSE to the user programming function to be executed and press the "Start" button.
    **Example:**
    - **User Node:** sample_tests
-   - **User Launch File:** simple_test.launch
+   - **User Launch File:** simple_test.launch.py
    - **User Container:** ib2_user:0.1
 
-6. Set User Logic in the “User Programming Platform” on the “Platform Command” panel of the Int-Ball2 GSE to the user logic to be executed and press the “Start” button.
+6. Set User Logic in the "User Programming Platform" on the "Platform Command" panel of the Int-Ball2 GSE to the user logic to be executed and press the "Start" button.
 
 7. When step 6 is completed, press `Ctrl+C` in terminals 1 and 2 to exit the system.
-
-**Note:** At the ISS URDF loading, a segmentation fault may occur when trying to load the `node_1` and `node_2` models. In such cases, comment out the relevant section in `iss.urdf`.
-
-
