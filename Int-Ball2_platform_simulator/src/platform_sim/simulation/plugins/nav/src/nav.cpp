@@ -674,7 +674,7 @@ double gazebo::Nav::controlFreqFluctuation()
 	double               freq = gain_cnt_ * sin(2.0 * M_PI * freq_cnt_ * t.Double()) + wg;
 	
 	// Convert Freq[Hz] to Duration[s]	
-	assert(std::abs(freq > EPS));
+	assert(std::abs(freq) > EPS);
 	double duration = 1.0 / freq;
 
 	return duration;
